@@ -17,8 +17,8 @@ message(STATUS "CXX_FLAGS_RELEASE   are ${CMAKE_CXX_FLAGS_RELEASE}")
 
 include_directories(include)
 
-#file(GLOB HEADERS include/*.hpp)
-#add_library(sim_ds STATIC ${HEADERS})
+file(GLOB HEADERS include/*.hpp)
+add_library(sim_ds STATIC include/sim_ds.cpp ${HEADERS})
 
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
@@ -31,9 +31,12 @@ else()
 endif()
 
 include_directories(${Boost_INCLUDE_DIR})
-#TARGET_LINK_LIBRARIES(sim_ds ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(sim_ds ${Boost_LIBRARIES})
 
 enable_testing()
 add_subdirectory(test)
 
-install(FILES ${HEADERS} DESTINATION include)
+file(GLOB INTERNAL_HEADERS "include/sim_ds/*.hpp")
+install(FILES include/sim_ds.hpp DESTINATION include)
+install(FILES ${INTERNAL_HEADERS} DESTINATION include/sim_ds)
+
