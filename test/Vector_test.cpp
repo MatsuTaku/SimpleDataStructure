@@ -5,7 +5,7 @@
 //  Created by 松本拓真 on 2018/05/14.
 //
 
-#include "Vector.hpp"
+#include "sim_ds/Vector.hpp"
 #include "gtest/gtest.h"
 
 using namespace sim_ds;

@@ -6,7 +6,7 @@
 //  Created by 松本拓真 on 2018/06/07.
 //
 
-#include "WaveletTree.hpp"
+#include "sim_ds/WaveletTree.hpp"
 #include "gtest/gtest.h"
 
 using namespace sim_ds;
