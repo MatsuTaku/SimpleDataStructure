@@ -36,7 +36,3 @@ TARGET_LINK_LIBRARIES(sim_ds ${Boost_LIBRARIES})
 enable_testing()
 add_subdirectory(test)
 
-file(GLOB INTERNAL_HEADERS "include/sim_ds/*.hpp")
-install(FILES include/sim_ds.hpp DESTINATION include)
-install(FILES ${INTERNAL_HEADERS} DESTINATION include/sim_ds)
-
