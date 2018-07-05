@@ -341,7 +341,6 @@ namespace sim_ds {
     }
     
     inline constexpr unsigned long long BitVector::rank0(size_t index) const {
-        auto r = rank(index);
         return index - rank(index);
     }
     

@@ -1,0 +1,2484 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		15738B12A18D413880CCD41F /* ALL_BUILD */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 071A98B21D7C41F0B1F68BDF /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */;
+			buildPhases = (
+				DA37AABE66B14DEE9FBAC3F8 /* CMake Rules */,
+			);
+			dependencies = (
+				9635D07C862E40ECA476BFAA /* PBXTargetDependency */,
+				95908177A1184749A1A0F94C /* PBXTargetDependency */,
+				D97B4993A3CB40E0863B4EDC /* PBXTargetDependency */,
+				9C67543B57464376ADCC8177 /* PBXTargetDependency */,
+				7E403739B91748A8A0D03931 /* PBXTargetDependency */,
+				E196BE8E4AF0465C918D6701 /* PBXTargetDependency */,
+				5999A544A37140DDA578A623 /* PBXTargetDependency */,
+				8FAB405C76D04029987CE7BB /* PBXTargetDependency */,
+				AF2C4DD1EBC94C13AF70320E /* PBXTargetDependency */,
+				0E092CA2AC7C482092736216 /* PBXTargetDependency */,
+			);
+			name = ALL_BUILD;
+			productName = ALL_BUILD;
+		};
+		AA787B5FE4814329B5358DCD /* RUN_TESTS */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = C47CAD92534B41BCB0344565 /* Build configuration list for PBXAggregateTarget "RUN_TESTS" */;
+			buildPhases = (
+				86B71A9A967A4E489FC084C3 /* CMake PostBuild Rules */,
+			);
+			dependencies = (
+			);
+			name = RUN_TESTS;
+			productName = RUN_TESTS;
+		};
+		CEE3C5A5824F40D3A182619E /* install */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 4463A0670DED43D299764E90 /* Build configuration list for PBXAggregateTarget "install" */;
+			buildPhases = (
+				52B5EA9690804529929615F5 /* CMake PostBuild Rules */,
+			);
+			dependencies = (
+				BCE28EA11F8F4BBB968E66F2 /* PBXTargetDependency */,
+			);
+			name = install;
+			productName = install;
+		};
+		FAE5F1F244A04BFEB2AFA77E /* ZERO_CHECK */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = F403748DD413426CBD54AB3F /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */;
+			buildPhases = (
+				F47C50AD3FC04CE6A7DD958A /* CMake Rules */,
+			);
+			dependencies = (
+			);
+			name = ZERO_CHECK;
+			productName = ZERO_CHECK;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		0821A724A01447DC8D33BE3F /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */ = {isa = PBXBuildFile; fileRef = CBD05A4B290F48CEA1FE3FD3 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */; };
+		194A6372FB4D4C09A97E4802 /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */ = {isa = PBXBuildFile; fileRef = 060127FFA7594BC8B219293A /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */; };
+		21238B9D0744450CADE05088 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */ = {isa = PBXBuildFile; fileRef = 6498C148985344F7A8F68727 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */; };
+		40F8DCFB78A64C19813A50B6 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 038B8B34116A47429124864E /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */; };
+		465A2B8339564C79B46EE8BD /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 4B165FE961934222A8B9DDAA /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */; };
+		5305119CE1634285AD5B8A01 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = D2C0A148609448CBAF254431 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */; };
+		56BE852E4ED14867AFDD1EFF /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest-all.cc */ = {isa = PBXBuildFile; fileRef = 845F39C239294D1D8817EC3E /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest-all.cc */; };
+		965600B90ADB4C5C83E8C8A1 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = AA444D523FB54982AEAABFEF /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */; };
+		9B22CB0507BF4F3597A9F2C3 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */ = {isa = PBXBuildFile; fileRef = 4DE39466B41448A3A2EE8CC1 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */; };
+		A154FBE22E0546B89C6C069E /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */ = {isa = PBXBuildFile; fileRef = 662397DB8E0744D782401364 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */; };
+		A285BA4AE237478F843372A5 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 7677E5706F1B40679B6C2F74 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */; };
+		AA575E58283F4A6EB77891F4 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */ = {isa = PBXBuildFile; fileRef = F042822703B84BA798B86FA8 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */; };
+		B7D513331CC44FC5AA23E1F6 /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */ = {isa = PBXBuildFile; fileRef = 6AF04413A3954D61833E46B2 /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */; };
+		BA15B7E4D84D4298ACB2B4F6 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = E01D92DD8BF94300A1F15F54 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */; };
+		BC807D630E484F4F87CB7A2F /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */ = {isa = PBXBuildFile; fileRef = 27FFC4DF0776400FB5680958 /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */; };
+		CBB8660A97D2444FAC403D89 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 6B2F414295EE480597385517 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */; };
+		D3EBCAEEEB704431BFF0EB3D /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest_main.cc */ = {isa = PBXBuildFile; fileRef = AD5CFDAF8A02491A852C2FA0 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest_main.cc */; };
+		D8FDD7447A5B424AB73373E9 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */ = {isa = PBXBuildFile; fileRef = 178AAC44AFFE4A47B9F93B69 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */; };
+		DAA8BE67819A44E4B2BDED11 /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */ = {isa = PBXBuildFile; fileRef = 8C4BE77215EB459E912CE57A /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */; };
+		E575335DE5F04948B703932C /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */ = {isa = PBXBuildFile; fileRef = 2D7294D8A4044DAB8A4F3032 /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */; };
+		F508ABAD17CD4BA0990EED1A /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 8F3743B8D6F744518BBFA395 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */; };
+		F90C18DAB32C4F07ABA38E7B /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */ = {isa = PBXBuildFile; fileRef = 0FF5F242AE7340F0A5941428 /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */; };
+		FF45B96250DB4DA9B59F7047 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = FF10E2AC037A452FA3949DA1 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildStyle section */
+		5873A3F53613447ABBA5ED05 /* Release */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Release;
+		};
+		776776FD931244F99DD757DE /* RelWithDebInfo */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = RelWithDebInfo;
+		};
+		78A5D04BAB834E16A24B8569 /* MinSizeRel */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = MinSizeRel;
+		};
+		ED425CB0ABBF45AF85228AA1 /* Debug */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Debug;
+		};
+/* End PBXBuildStyle section */
+
+/* Begin PBXContainerItemProxy section */
+		024F6F90602D4B59A308D542 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		0A9A1D2FF11A4B01AB819C32 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		0C3E34B514B34614945B27D9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		199D88E53AF34704A88B0C13 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FAE5F1F244A04BFEB2AFA77E;
+			remoteInfo = ZERO_CHECK;
+		};
+		1CD7ECB1C69347B6B7372BD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		49C70F8FFF004E25B19D9A2D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2D6F3B1EDD9E4C3A80CD33C1;
+			remoteInfo = Vector_test;
+		};
+		5D1F875F275A45B4B0725CDC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		6F43F8BD099C45808E4AAD1E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 489813E07BBC4F9688B634FC;
+			remoteInfo = MultiBitVector_test;
+		};
+		7077318A931B452D9E730E36 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 02D36CC644474E2DA9DB3C17;
+			remoteInfo = test_all;
+		};
+		708CC39975324467B71B37B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		75A0723FB6F04D31BBBD5028 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D39557DF54BF493DAA673FB2;
+			remoteInfo = BitVector_test;
+		};
+		860FF6529C974485AE5A8152 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		862229554162450EBC4CA089 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		872F82FDFE88413FB7BFAE6B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		971AE344AF99437AA74C9C3C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6BF3318A5168417C92DBC2B2;
+			remoteInfo = SACs_test;
+		};
+		9C270AA783AE4C0FAE855594 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		A3D2E26164E0460DAF41D635 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9933F4937C374276AD0668BD;
+			remoteInfo = WaveletTree_test;
+		};
+		A77AB3CA82464563B9FE352D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1BA20A49E7A4402956C8544;
+			remoteInfo = DACs_test;
+		};
+		B0DFE723530F42F891B7E67A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		B1C0600C505D404C925F873C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 15738B12A18D413880CCD41F;
+			remoteInfo = ALL_BUILD;
+		};
+		CF65640F8CA9437AAB3C06B6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		D13CCE9FB7FD45AEB9FCEB6C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		DC90D7DFF72C4AF681FDF1E9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		E3E952BEFF2D4367B72378F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF38748F095C41B09B66A2BC;
+			remoteInfo = gtest_main;
+		};
+		E88D0A77128A401089890AAB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+		E9448156B9F943FEABF9AEB4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39E5035043404A8B98485500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6310E400EEC04A8AA5D86D3D;
+			remoteInfo = gtest;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		038B8B34116A47429124864E /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		060127FFA7594BC8B219293A /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = SACs_test.cpp; path = test/SACs_test.cpp; sourceTree = SOURCE_ROOT; };
+		0BA05B5F19EA4F568174479D /* gtest */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libgtest.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FF5F242AE7340F0A5941428 /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = SACs_test.cpp; path = test/SACs_test.cpp; sourceTree = SOURCE_ROOT; };
+		178AAC44AFFE4A47B9F93B69 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = MultiBitVector_test.cpp; path = test/MultiBitVector_test.cpp; sourceTree = SOURCE_ROOT; };
+		27FFC4DF0776400FB5680958 /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = DACs_test.cpp; path = test/DACs_test.cpp; sourceTree = SOURCE_ROOT; };
+		28FB9012EBA64F8482FE9928 /* BitVector_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = BitVector_test; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D7294D8A4044DAB8A4F3032 /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = DACs_test.cpp; path = test/DACs_test.cpp; sourceTree = SOURCE_ROOT; };
+		2FB634F31265400DBE8235F4 /* Vector_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = Vector_test; sourceTree = BUILT_PRODUCTS_DIR; };
+		30318549440B4C18954F69E9 /* SACs_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = SACs_test; sourceTree = BUILT_PRODUCTS_DIR; };
+		39872E22FAA6483DA48CF2FC /* /Users/takumamatsumoto/Labolatory/SimDS/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		44DCDCC713FE4602910E85CE /* WaveletTree_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = WaveletTree_test; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B165FE961934222A8B9DDAA /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		4DE39466B41448A3A2EE8CC1 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = BitVector_test.cpp; path = test/BitVector_test.cpp; sourceTree = SOURCE_ROOT; };
+		5DE2B666908B40729F5C480F /* DACs_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = DACs_test; sourceTree = BUILT_PRODUCTS_DIR; };
+		6498C148985344F7A8F68727 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = BitVector_test.cpp; path = test/BitVector_test.cpp; sourceTree = SOURCE_ROOT; };
+		662397DB8E0744D782401364 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = WaveletTree_test.cpp; path = test/WaveletTree_test.cpp; sourceTree = SOURCE_ROOT; };
+		6AF04413A3954D61833E46B2 /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Vector_test.cpp; path = test/Vector_test.cpp; sourceTree = SOURCE_ROOT; };
+		6B2F414295EE480597385517 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		761562ECFC6E49E9B04D1092 /* MultiBitVector_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = MultiBitVector_test; sourceTree = BUILT_PRODUCTS_DIR; };
+		7677E5706F1B40679B6C2F74 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		845F39C239294D1D8817EC3E /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest-all.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = "gtest-all.cc"; path = "test/lib/googletest/googletest/src/gtest-all.cc"; sourceTree = SOURCE_ROOT; };
+		8C4BE77215EB459E912CE57A /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Vector_test.cpp; path = test/Vector_test.cpp; sourceTree = SOURCE_ROOT; };
+		8F3743B8D6F744518BBFA395 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		AA444D523FB54982AEAABFEF /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/lib/googletest/googletest/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		AD5CFDAF8A02491A852C2FA0 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest_main.cc */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = gtest_main.cc; path = test/lib/googletest/googletest/src/gtest_main.cc; sourceTree = SOURCE_ROOT; };
+		CBD05A4B290F48CEA1FE3FD3 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = MultiBitVector_test.cpp; path = test/MultiBitVector_test.cpp; sourceTree = SOURCE_ROOT; };
+		D2C0A148609448CBAF254431 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		D3ED3038E373400C9A37D1F4 /* test_all */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = test_all; sourceTree = BUILT_PRODUCTS_DIR; };
+		D4E381C491FF4799AC9759E5 /* gtest_main */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libgtest_main.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		E01D92DD8BF94300A1F15F54 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		F042822703B84BA798B86FA8 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = WaveletTree_test.cpp; path = test/WaveletTree_test.cpp; sourceTree = SOURCE_ROOT; };
+		FF10E2AC037A452FA3949DA1 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = test/lib/googletest/googletest/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0A4FD637C3F74E02B02E6F72 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				CBD05A4B290F48CEA1FE3FD3 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		108C4D631B0A4F2996C58CFB /* MultiBitVector_test */ = {
+			isa = PBXGroup;
+			children = (
+				0A4FD637C3F74E02B02E6F72 /* Source Files */,
+				8F3743B8D6F744518BBFA395 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */,
+			);
+			name = MultiBitVector_test;
+			sourceTree = "<group>";
+		};
+		164123B4B8564051A640AE18 /* Vector_test */ = {
+			isa = PBXGroup;
+			children = (
+				50F645F27D0842318C1497B5 /* Source Files */,
+				D2C0A148609448CBAF254431 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */,
+			);
+			name = Vector_test;
+			sourceTree = "<group>";
+		};
+		1953737695E4449D87AA6D00 /* gtest */ = {
+			isa = PBXGroup;
+			children = (
+				2A57D1E4778945D59FE2C3A4 /* Source Files */,
+				AA444D523FB54982AEAABFEF /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */,
+			);
+			name = gtest;
+			sourceTree = "<group>";
+		};
+		1D73BE773F68413C9C9D8220 /* BitVector_test */ = {
+			isa = PBXGroup;
+			children = (
+				567B926170444BEB9AFAC926 /* Source Files */,
+				4B165FE961934222A8B9DDAA /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */,
+			);
+			name = BitVector_test;
+			sourceTree = "<group>";
+		};
+		2075A60BCE7E4FB49E18BA63 /* test_all */ = {
+			isa = PBXGroup;
+			children = (
+				880DB9F16E054433982D4F79 /* Source Files */,
+				038B8B34116A47429124864E /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */,
+			);
+			name = test_all;
+			sourceTree = "<group>";
+		};
+		2A57D1E4778945D59FE2C3A4 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				845F39C239294D1D8817EC3E /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest-all.cc */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		36D444185C3348E7BA80039C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				28FB9012EBA64F8482FE9928 /* BitVector_test */,
+				5DE2B666908B40729F5C480F /* DACs_test */,
+				761562ECFC6E49E9B04D1092 /* MultiBitVector_test */,
+				30318549440B4C18954F69E9 /* SACs_test */,
+				2FB634F31265400DBE8235F4 /* Vector_test */,
+				44DCDCC713FE4602910E85CE /* WaveletTree_test */,
+				D3ED3038E373400C9A37D1F4 /* test_all */,
+				0BA05B5F19EA4F568174479D /* gtest */,
+				D4E381C491FF4799AC9759E5 /* gtest_main */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		50F645F27D0842318C1497B5 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				8C4BE77215EB459E912CE57A /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		54AB337E7260420E8323AA3A = {
+			isa = PBXGroup;
+			children = (
+				C2F86B2546404876B16AA613 /* ALL_BUILD */,
+				6A1E7E36AF7B4E018EED50A7 /* WaveletTree_test */,
+				164123B4B8564051A640AE18 /* Vector_test */,
+				FCAF950DFE7A4F47809285BA /* SACs_test */,
+				108C4D631B0A4F2996C58CFB /* MultiBitVector_test */,
+				EDC0A9419E964753ABF5CC84 /* DACs_test */,
+				2075A60BCE7E4FB49E18BA63 /* test_all */,
+				1D73BE773F68413C9C9D8220 /* BitVector_test */,
+				822AB3D0A4BD4E3E96C5F426 /* gtest_main */,
+				1953737695E4449D87AA6D00 /* gtest */,
+				36D444185C3348E7BA80039C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		567B926170444BEB9AFAC926 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				6498C148985344F7A8F68727 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		5ED68EFCDA0C45BB8FF0E47D /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				27FFC4DF0776400FB5680958 /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		6A1E7E36AF7B4E018EED50A7 /* WaveletTree_test */ = {
+			isa = PBXGroup;
+			children = (
+				A93E6F54795048E9AAE7F07F /* Source Files */,
+				7677E5706F1B40679B6C2F74 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */,
+			);
+			name = WaveletTree_test;
+			sourceTree = "<group>";
+		};
+		6BA53FBA52C6412FA93F6B2D /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				AD5CFDAF8A02491A852C2FA0 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest_main.cc */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		822AB3D0A4BD4E3E96C5F426 /* gtest_main */ = {
+			isa = PBXGroup;
+			children = (
+				6BA53FBA52C6412FA93F6B2D /* Source Files */,
+				FF10E2AC037A452FA3949DA1 /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/CMakeLists.txt */,
+			);
+			name = gtest_main;
+			sourceTree = "<group>";
+		};
+		880DB9F16E054433982D4F79 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				4DE39466B41448A3A2EE8CC1 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */,
+				2D7294D8A4044DAB8A4F3032 /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */,
+				178AAC44AFFE4A47B9F93B69 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */,
+				0FF5F242AE7340F0A5941428 /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */,
+				6AF04413A3954D61833E46B2 /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */,
+				662397DB8E0744D782401364 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		A93E6F54795048E9AAE7F07F /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				F042822703B84BA798B86FA8 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		B17CDF6DF54142D3BC9AA9D8 /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		C2F86B2546404876B16AA613 /* ALL_BUILD */ = {
+			isa = PBXGroup;
+			children = (
+				B17CDF6DF54142D3BC9AA9D8 /* CMake Rules */,
+				39872E22FAA6483DA48CF2FC /* /Users/takumamatsumoto/Labolatory/SimDS/CMakeLists.txt */,
+			);
+			name = ALL_BUILD;
+			sourceTree = "<group>";
+		};
+		EDC0A9419E964753ABF5CC84 /* DACs_test */ = {
+			isa = PBXGroup;
+			children = (
+				5ED68EFCDA0C45BB8FF0E47D /* Source Files */,
+				6B2F414295EE480597385517 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */,
+			);
+			name = DACs_test;
+			sourceTree = "<group>";
+		};
+		F267694BE2354BCEA686EBBD /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				060127FFA7594BC8B219293A /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		FCAF950DFE7A4F47809285BA /* SACs_test */ = {
+			isa = PBXGroup;
+			children = (
+				F267694BE2354BCEA686EBBD /* Source Files */,
+				E01D92DD8BF94300A1F15F54 /* /Users/takumamatsumoto/Labolatory/SimDS/test/CMakeLists.txt */,
+			);
+			name = SACs_test;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		02D36CC644474E2DA9DB3C17 /* test_all */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 48ACD6227C204D77ADD3036D /* Build configuration list for PBXNativeTarget "test_all" */;
+			buildPhases = (
+				CEC616E183074E349109C957 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				58E5459A5C1A4C1B9D0A6D29 /* PBXTargetDependency */,
+				AAE4A0814E3243219F70951A /* PBXTargetDependency */,
+			);
+			name = test_all;
+			productName = test_all;
+			productReference = D3ED3038E373400C9A37D1F4 /* test_all */;
+			productType = "com.apple.product-type.tool";
+		};
+		2D6F3B1EDD9E4C3A80CD33C1 /* Vector_test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ED9E6C44C86742DEB19D8270 /* Build configuration list for PBXNativeTarget "Vector_test" */;
+			buildPhases = (
+				6B9F79BE15F54D06BD36B487 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				648677C28FEC44A78ADE46A8 /* PBXTargetDependency */,
+				BF1629CDB7CF4B3BBFD74B74 /* PBXTargetDependency */,
+			);
+			name = Vector_test;
+			productName = Vector_test;
+			productReference = 2FB634F31265400DBE8235F4 /* Vector_test */;
+			productType = "com.apple.product-type.tool";
+		};
+		489813E07BBC4F9688B634FC /* MultiBitVector_test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1AE020409F5E4FBB9A49F709 /* Build configuration list for PBXNativeTarget "MultiBitVector_test" */;
+			buildPhases = (
+				ED139DD520614EB7B9144DFF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				310DD84398E34DE989BC0656 /* PBXTargetDependency */,
+				A8C89B2139AD418295FBB9EE /* PBXTargetDependency */,
+			);
+			name = MultiBitVector_test;
+			productName = MultiBitVector_test;
+			productReference = 761562ECFC6E49E9B04D1092 /* MultiBitVector_test */;
+			productType = "com.apple.product-type.tool";
+		};
+		6310E400EEC04A8AA5D86D3D /* gtest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 123A3C77A32B4D93BCA43EF9 /* Build configuration list for PBXNativeTarget "gtest" */;
+			buildPhases = (
+				E290C73E453F402B9C5708EB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = gtest;
+			productName = gtest;
+			productReference = 0BA05B5F19EA4F568174479D /* gtest */;
+			productType = "com.apple.product-type.library.static";
+		};
+		6BF3318A5168417C92DBC2B2 /* SACs_test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64B7D6B22A894905AF2A3347 /* Build configuration list for PBXNativeTarget "SACs_test" */;
+			buildPhases = (
+				B67E61A298D7452993FD2257 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F442EB3080DF41F0AB93FDDB /* PBXTargetDependency */,
+				508DFFFA28584D2D89943C1B /* PBXTargetDependency */,
+			);
+			name = SACs_test;
+			productName = SACs_test;
+			productReference = 30318549440B4C18954F69E9 /* SACs_test */;
+			productType = "com.apple.product-type.tool";
+		};
+		9933F4937C374276AD0668BD /* WaveletTree_test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 32F49865EFA045EF94BD330F /* Build configuration list for PBXNativeTarget "WaveletTree_test" */;
+			buildPhases = (
+				548F79406C5B4BD7B142E851 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				19539D2C4F064070BB28D5E3 /* PBXTargetDependency */,
+				85228F9E3D7A495D9984E9CC /* PBXTargetDependency */,
+			);
+			name = WaveletTree_test;
+			productName = WaveletTree_test;
+			productReference = 44DCDCC713FE4602910E85CE /* WaveletTree_test */;
+			productType = "com.apple.product-type.tool";
+		};
+		A1BA20A49E7A4402956C8544 /* DACs_test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2706428C2F02489DAC0E9E0E /* Build configuration list for PBXNativeTarget "DACs_test" */;
+			buildPhases = (
+				95C9EA3159844259BFFE881F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				83C93A77A3314A3F801F96F0 /* PBXTargetDependency */,
+				26208251482D453888962891 /* PBXTargetDependency */,
+			);
+			name = DACs_test;
+			productName = DACs_test;
+			productReference = 5DE2B666908B40729F5C480F /* DACs_test */;
+			productType = "com.apple.product-type.tool";
+		};
+		CF38748F095C41B09B66A2BC /* gtest_main */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C44E448923A441BB7453EB6 /* Build configuration list for PBXNativeTarget "gtest_main" */;
+			buildPhases = (
+				AFFC14312CFC4480B595BA93 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FC938319698C4FD7A0941387 /* PBXTargetDependency */,
+			);
+			name = gtest_main;
+			productName = gtest_main;
+			productReference = D4E381C491FF4799AC9759E5 /* gtest_main */;
+			productType = "com.apple.product-type.library.static";
+		};
+		D39557DF54BF493DAA673FB2 /* BitVector_test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D20DECBF1E334D88B4B37C8D /* Build configuration list for PBXNativeTarget "BitVector_test" */;
+			buildPhases = (
+				D258D950FC0C4E3284E184D5 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CBA161BE07D24A8E875E1E69 /* PBXTargetDependency */,
+				A6679BB1E3E741E0891482E0 /* PBXTargetDependency */,
+			);
+			name = BitVector_test;
+			productName = BitVector_test;
+			productReference = 28FB9012EBA64F8482FE9928 /* BitVector_test */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		39E5035043404A8B98485500 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 0940;
+			};
+			buildConfigurationList = 752D97E556DD41A2933877AF /* Build configuration list for PBXProject "SimDS" */;
+			buildSettings = {
+			};
+			buildStyles = (
+				ED425CB0ABBF45AF85228AA1 /* Debug */,
+				5873A3F53613447ABBA5ED05 /* Release */,
+				78A5D04BAB834E16A24B8569 /* MinSizeRel */,
+				776776FD931244F99DD757DE /* RelWithDebInfo */,
+			);
+			compatibilityVersion = "Xcode 3.2";
+			hasScannedForEncodings = 0;
+			mainGroup = 54AB337E7260420E8323AA3A;
+			projectDirPath = .;
+			projectRoot = "";
+			targets = (
+				15738B12A18D413880CCD41F /* ALL_BUILD */,
+				AA787B5FE4814329B5358DCD /* RUN_TESTS */,
+				FAE5F1F244A04BFEB2AFA77E /* ZERO_CHECK */,
+				CEE3C5A5824F40D3A182619E /* install */,
+				D39557DF54BF493DAA673FB2 /* BitVector_test */,
+				A1BA20A49E7A4402956C8544 /* DACs_test */,
+				489813E07BBC4F9688B634FC /* MultiBitVector_test */,
+				6BF3318A5168417C92DBC2B2 /* SACs_test */,
+				2D6F3B1EDD9E4C3A80CD33C1 /* Vector_test */,
+				9933F4937C374276AD0668BD /* WaveletTree_test */,
+				02D36CC644474E2DA9DB3C17 /* test_all */,
+				6310E400EEC04A8AA5D86D3D /* gtest */,
+				CF38748F095C41B09B66A2BC /* gtest_main */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3CB2890998164061B998CC43 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		52B5EA9690804529929615F5 /* CMake PostBuild Rules */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "CMake PostBuild Rules";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "make -C /Users/takumamatsumoto/Labolatory/SimDS -f /Users/takumamatsumoto/Labolatory/SimDS/CMakeScripts/install_postBuildPhase.make$CONFIGURATION all";
+			showEnvVarsInLog = 0;
+		};
+		86B71A9A967A4E489FC084C3 /* CMake PostBuild Rules */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "CMake PostBuild Rules";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "make -C /Users/takumamatsumoto/Labolatory/SimDS -f /Users/takumamatsumoto/Labolatory/SimDS/CMakeScripts/RUN_TESTS_postBuildPhase.make$CONFIGURATION all";
+			showEnvVarsInLog = 0;
+		};
+		A45CC114AFCF44C8B80CFC65 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		A86F183F95C046189D0AF33E = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		DA37AABE66B14DEE9FBAC3F8 /* CMake Rules */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "CMake Rules";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "make -C /Users/takumamatsumoto/Labolatory/SimDS -f /Users/takumamatsumoto/Labolatory/SimDS/CMakeScripts/ALL_BUILD_cmakeRulesBuildPhase.make$CONFIGURATION all";
+			showEnvVarsInLog = 0;
+		};
+		E3211DF6E23C4607841EC891 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		F47C50AD3FC04CE6A7DD958A /* CMake Rules */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "CMake Rules";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "make -C /Users/takumamatsumoto/Labolatory/SimDS -f /Users/takumamatsumoto/Labolatory/SimDS/CMakeScripts/ZERO_CHECK_cmakeRulesBuildPhase.make$CONFIGURATION all";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		548F79406C5B4BD7B142E851 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA575E58283F4A6EB77891F4 /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6B9F79BE15F54D06BD36B487 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DAA8BE67819A44E4B2BDED11 /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		95C9EA3159844259BFFE881F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC807D630E484F4F87CB7A2F /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFFC14312CFC4480B595BA93 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3EBCAEEEB704431BFF0EB3D /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest_main.cc */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B67E61A298D7452993FD2257 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				194A6372FB4D4C09A97E4802 /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEC616E183074E349109C957 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9B22CB0507BF4F3597A9F2C3 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */,
+				E575335DE5F04948B703932C /* /Users/takumamatsumoto/Labolatory/SimDS/test/DACs_test.cpp */,
+				D8FDD7447A5B424AB73373E9 /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */,
+				F90C18DAB32C4F07ABA38E7B /* /Users/takumamatsumoto/Labolatory/SimDS/test/SACs_test.cpp */,
+				B7D513331CC44FC5AA23E1F6 /* /Users/takumamatsumoto/Labolatory/SimDS/test/Vector_test.cpp */,
+				A154FBE22E0546B89C6C069E /* /Users/takumamatsumoto/Labolatory/SimDS/test/WaveletTree_test.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D258D950FC0C4E3284E184D5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				21238B9D0744450CADE05088 /* /Users/takumamatsumoto/Labolatory/SimDS/test/BitVector_test.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E290C73E453F402B9C5708EB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56BE852E4ED14867AFDD1EFF /* /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/src/gtest-all.cc */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ED139DD520614EB7B9144DFF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0821A724A01447DC8D33BE3F /* /Users/takumamatsumoto/Labolatory/SimDS/test/MultiBitVector_test.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0E092CA2AC7C482092736216 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FAE5F1F244A04BFEB2AFA77E /* ZERO_CHECK */;
+			targetProxy = 199D88E53AF34704A88B0C13 /* PBXContainerItemProxy */;
+		};
+		19539D2C4F064070BB28D5E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = DC90D7DFF72C4AF681FDF1E9 /* PBXContainerItemProxy */;
+		};
+		26208251482D453888962891 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = 0A9A1D2FF11A4B01AB819C32 /* PBXContainerItemProxy */;
+		};
+		310DD84398E34DE989BC0656 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = 5D1F875F275A45B4B0725CDC /* PBXContainerItemProxy */;
+		};
+		508DFFFA28584D2D89943C1B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = 024F6F90602D4B59A308D542 /* PBXContainerItemProxy */;
+		};
+		58E5459A5C1A4C1B9D0A6D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = 0C3E34B514B34614945B27D9 /* PBXContainerItemProxy */;
+		};
+		5999A544A37140DDA578A623 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D39557DF54BF493DAA673FB2 /* BitVector_test */;
+			targetProxy = 75A0723FB6F04D31BBBD5028 /* PBXContainerItemProxy */;
+		};
+		648677C28FEC44A78ADE46A8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = E3E952BEFF2D4367B72378F8 /* PBXContainerItemProxy */;
+		};
+		7E403739B91748A8A0D03931 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1BA20A49E7A4402956C8544 /* DACs_test */;
+			targetProxy = A77AB3CA82464563B9FE352D /* PBXContainerItemProxy */;
+		};
+		83C93A77A3314A3F801F96F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = 860FF6529C974485AE5A8152 /* PBXContainerItemProxy */;
+		};
+		85228F9E3D7A495D9984E9CC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = E88D0A77128A401089890AAB /* PBXContainerItemProxy */;
+		};
+		8FAB405C76D04029987CE7BB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = 1CD7ECB1C69347B6B7372BD0 /* PBXContainerItemProxy */;
+		};
+		95908177A1184749A1A0F94C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2D6F3B1EDD9E4C3A80CD33C1 /* Vector_test */;
+			targetProxy = 49C70F8FFF004E25B19D9A2D /* PBXContainerItemProxy */;
+		};
+		9635D07C862E40ECA476BFAA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9933F4937C374276AD0668BD /* WaveletTree_test */;
+			targetProxy = A3D2E26164E0460DAF41D635 /* PBXContainerItemProxy */;
+		};
+		9C67543B57464376ADCC8177 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 489813E07BBC4F9688B634FC /* MultiBitVector_test */;
+			targetProxy = 6F43F8BD099C45808E4AAD1E /* PBXContainerItemProxy */;
+		};
+		A6679BB1E3E741E0891482E0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = 862229554162450EBC4CA089 /* PBXContainerItemProxy */;
+		};
+		A8C89B2139AD418295FBB9EE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = E9448156B9F943FEABF9AEB4 /* PBXContainerItemProxy */;
+		};
+		AAE4A0814E3243219F70951A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = 872F82FDFE88413FB7BFAE6B /* PBXContainerItemProxy */;
+		};
+		AF2C4DD1EBC94C13AF70320E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = D13CCE9FB7FD45AEB9FCEB6C /* PBXContainerItemProxy */;
+		};
+		BCE28EA11F8F4BBB968E66F2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 15738B12A18D413880CCD41F /* ALL_BUILD */;
+			targetProxy = B1C0600C505D404C925F873C /* PBXContainerItemProxy */;
+		};
+		BF1629CDB7CF4B3BBFD74B74 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = 9C270AA783AE4C0FAE855594 /* PBXContainerItemProxy */;
+		};
+		CBA161BE07D24A8E875E1E69 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = 708CC39975324467B71B37B4 /* PBXContainerItemProxy */;
+		};
+		D97B4993A3CB40E0863B4EDC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6BF3318A5168417C92DBC2B2 /* SACs_test */;
+			targetProxy = 971AE344AF99437AA74C9C3C /* PBXContainerItemProxy */;
+		};
+		E196BE8E4AF0465C918D6701 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 02D36CC644474E2DA9DB3C17 /* test_all */;
+			targetProxy = 7077318A931B452D9E730E36 /* PBXContainerItemProxy */;
+		};
+		F442EB3080DF41F0AB93FDDB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF38748F095C41B09B66A2BC /* gtest_main */;
+			targetProxy = CF65640F8CA9437AAB3C06B6 /* PBXContainerItemProxy */;
+		};
+		FC938319698C4FD7A0941387 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6310E400EEC04A8AA5D86D3D /* gtest */;
+			targetProxy = B0DFE723530F42F891B7E67A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		02DABEAABAB240FFB8D228AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		041562B6E7F64220A5BAF565 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = MultiBitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		04EAF649B3B245438BDB7C77 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = RUN_TESTS;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		0855E9AFC2414C689470BA87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = WaveletTree_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		096F76DA721C4A80BAE14E17 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Vector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		0E6E0EEB0E65412E97ED6C0A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk;
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/build;
+			};
+			name = Debug;
+		};
+		0FABC7E4FA52445EAAE0B36D /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = WaveletTree_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		12897D7BC6D942619A820520 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		13CFAD541179454EBB9A41D9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = test_all;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		1D390BDBA7264E799DC0A9EB /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = WaveletTree_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		1DBDF2050E754030B54206D5 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = test_all;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		1FCE705E2B4F4D6FA032B876 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		2AD4CFC2F6694687A83FED89 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = install;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		2E6C064B95744DB1913A7E4A /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = test_all;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		2EC4A9DA71304DF897BB91CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		350DAEB4FD664C84B0568672 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG   -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		3783EB9091A149968A4F50C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		40998DE43A0F4B8590C0CD17 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = install;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		44DF4986492F40C19188A627 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		45E59E58481F40088C72767D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG   -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		497A0DFEDF234BBA830F0350 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "     -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest_main;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		62D67FAF8438464EADE9DA50 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		6EFDCED249CB44D686426370 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = MultiBitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		7139DFBEA9D948F99C02C740 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = test_all;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		78446486AAC74E24BAFFBEFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG   -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest_main;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		7A6CF4ED2B86412FB8B677A4 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Vector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		86C39B8F195C40E9873509C8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		898ED48A573747C78750391E /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG   -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		8B9A47A24C1E462F8AFD15F6 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = BitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		8D64A1E6CE7341669CDBFCB7 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		8E8B057D293D4E1F958F50B2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "     -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		916D2E05D83C45D297B62A37 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = MultiBitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		92B382954F3E4D99A3BC5678 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Vector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		950973A5B32E4E0395927CCC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		9817F3AC3B4B46F6B134B1A9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = RUN_TESTS;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		9CF48A5D5F6740BA9E21534E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk;
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/build;
+			};
+			name = Release;
+		};
+		A1136211B8CB47F59F928576 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		A59BF3527B9B48C0B0AB719F /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		ADA8C9D977D64B8EBDF78A7B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = RUN_TESTS;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		ADDC55902E8D43E89561B988 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = BitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		B0739C77EE864F65B3C14733 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = install;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		B3AA7335A32C4F00A81A614F /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		B40D7E4E4CF342DBB1035304 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG   -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest_main;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		B7D49F1E31564025A7E7622D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = install;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		B7F7015E134A4606B31BD2F8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Debug/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = BitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+		C17BCAC7AE924E69B63A644D /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest);
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG   -DGTEST_HAS_PTHREAD=1   '-std=gnu++1z'  ";
+				OTHER_LIBTOOLFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = gtest_main;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		C9F52B3F8CE943DB9839AED2 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		CA9A239AF6614985A9E8E836 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk;
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/build;
+			};
+			name = MinSizeRel;
+		};
+		CAAABFED257F4EBA8082F444 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/RelWithDebInfo/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DACs_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		CD45B6E601CA459FA72DEF2D /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk;
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/build;
+			};
+			name = RelWithDebInfo;
+		};
+		D85BB07BF4984089A88318AE /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = RUN_TESTS;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		DFE6C1DA6C9C46D8BBC18F79 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = BitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		E3B62999E38F466F88489843 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = WaveletTree_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		E426527BC13E4678AC034DF0 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/MinSizeRel/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Vector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		EC8B741B0F33430BB4AD793D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/takumamatsumoto/Labolatory/SimDS/include,/usr/local/include,/Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/include);
+				INSTALL_PATH = "";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++1z'  ";
+				OTHER_LDFLAGS = " -Wl,-search_paths_first -Wl,-headerpad_max_install_names  /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest_main.a /Users/takumamatsumoto/Labolatory/SimDS/test/lib/googletest/googletest/Release/libgtest.a";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = MultiBitVector_test;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS/test;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Release;
+		};
+		F1DB120115C4405F928079CF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = " ";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				SYMROOT = /Users/takumamatsumoto/Labolatory/SimDS;
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("-Wmost","-Wno-four-char-constants","-Wno-unknown-pragmas","$(inherited)");
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		071A98B21D7C41F0B1F68BDF /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1DB120115C4405F928079CF /* Debug */,
+				3783EB9091A149968A4F50C9 /* Release */,
+				44DF4986492F40C19188A627 /* MinSizeRel */,
+				A59BF3527B9B48C0B0AB719F /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		123A3C77A32B4D93BCA43EF9 /* Build configuration list for PBXNativeTarget "gtest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E8B057D293D4E1F958F50B2 /* Debug */,
+				45E59E58481F40088C72767D /* Release */,
+				898ED48A573747C78750391E /* MinSizeRel */,
+				350DAEB4FD664C84B0568672 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1AE020409F5E4FBB9A49F709 /* Build configuration list for PBXNativeTarget "MultiBitVector_test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				916D2E05D83C45D297B62A37 /* Debug */,
+				EC8B741B0F33430BB4AD793D /* Release */,
+				041562B6E7F64220A5BAF565 /* MinSizeRel */,
+				6EFDCED249CB44D686426370 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2706428C2F02489DAC0E9E0E /* Build configuration list for PBXNativeTarget "DACs_test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				12897D7BC6D942619A820520 /* Debug */,
+				950973A5B32E4E0395927CCC /* Release */,
+				A1136211B8CB47F59F928576 /* MinSizeRel */,
+				CAAABFED257F4EBA8082F444 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		32F49865EFA045EF94BD330F /* Build configuration list for PBXNativeTarget "WaveletTree_test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0855E9AFC2414C689470BA87 /* Debug */,
+				E3B62999E38F466F88489843 /* Release */,
+				1D390BDBA7264E799DC0A9EB /* MinSizeRel */,
+				0FABC7E4FA52445EAAE0B36D /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4463A0670DED43D299764E90 /* Build configuration list for PBXAggregateTarget "install" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B7D49F1E31564025A7E7622D /* Debug */,
+				B0739C77EE864F65B3C14733 /* Release */,
+				40998DE43A0F4B8590C0CD17 /* MinSizeRel */,
+				2AD4CFC2F6694687A83FED89 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		48ACD6227C204D77ADD3036D /* Build configuration list for PBXNativeTarget "test_all" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7139DFBEA9D948F99C02C740 /* Debug */,
+				13CFAD541179454EBB9A41D9 /* Release */,
+				2E6C064B95744DB1913A7E4A /* MinSizeRel */,
+				1DBDF2050E754030B54206D5 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		64B7D6B22A894905AF2A3347 /* Build configuration list for PBXNativeTarget "SACs_test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				02DABEAABAB240FFB8D228AB /* Debug */,
+				86C39B8F195C40E9873509C8 /* Release */,
+				C9F52B3F8CE943DB9839AED2 /* MinSizeRel */,
+				8D64A1E6CE7341669CDBFCB7 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6C44E448923A441BB7453EB6 /* Build configuration list for PBXNativeTarget "gtest_main" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				497A0DFEDF234BBA830F0350 /* Debug */,
+				78446486AAC74E24BAFFBEFA /* Release */,
+				B40D7E4E4CF342DBB1035304 /* MinSizeRel */,
+				C17BCAC7AE924E69B63A644D /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		752D97E556DD41A2933877AF /* Build configuration list for PBXProject "SimDS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E6E0EEB0E65412E97ED6C0A /* Debug */,
+				9CF48A5D5F6740BA9E21534E /* Release */,
+				CA9A239AF6614985A9E8E836 /* MinSizeRel */,
+				CD45B6E601CA459FA72DEF2D /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C47CAD92534B41BCB0344565 /* Build configuration list for PBXAggregateTarget "RUN_TESTS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9817F3AC3B4B46F6B134B1A9 /* Debug */,
+				ADA8C9D977D64B8EBDF78A7B /* Release */,
+				D85BB07BF4984089A88318AE /* MinSizeRel */,
+				04EAF649B3B245438BDB7C77 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D20DECBF1E334D88B4B37C8D /* Build configuration list for PBXNativeTarget "BitVector_test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B7F7015E134A4606B31BD2F8 /* Debug */,
+				ADDC55902E8D43E89561B988 /* Release */,
+				DFE6C1DA6C9C46D8BBC18F79 /* MinSizeRel */,
+				8B9A47A24C1E462F8AFD15F6 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		ED9E6C44C86742DEB19D8270 /* Build configuration list for PBXNativeTarget "Vector_test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				92B382954F3E4D99A3BC5678 /* Debug */,
+				096F76DA721C4A80BAE14E17 /* Release */,
+				E426527BC13E4678AC034DF0 /* MinSizeRel */,
+				7A6CF4ED2B86412FB8B677A4 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F403748DD413426CBD54AB3F /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				62D67FAF8438464EADE9DA50 /* Debug */,
+				2EC4A9DA71304DF897BB91CD /* Release */,
+				B3AA7335A32C4F00A81A614F /* MinSizeRel */,
+				1FCE705E2B4F4D6FA032B876 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 39E5035043404A8B98485500 /* Project object */;
+}
