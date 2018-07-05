@@ -17,7 +17,7 @@ message(STATUS "CXX_FLAGS_RELEASE   are ${CMAKE_CXX_FLAGS_RELEASE}")
 
 include_directories(include)
 
-file(GLOB HEADERS include/*.hpp)
+file(GLOB HEADERS include/sim_ds/*.hpp)
 add_library(sim_ds STATIC include/sim_ds.cpp ${HEADERS})
 
 set(Boost_USE_STATIC_LIBS ON)
