@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
+
 project(SimDS)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -17,6 +18,8 @@ message(STATUS "CXX_FLAGS_RELEASE   are ${CMAKE_CXX_FLAGS_RELEASE}")
 
 file(GLOB HEADERS include/sim_ds/*.hpp)
 add_library(sim_ds STATIC include/sim_ds.cpp ${HEADERS})
+include_directories(include)
+
 
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
@@ -28,9 +31,8 @@ else()
     message(STATUS "!!! BOOST NOT FOUND !!!")
 endif()
 
+include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
-
-include_directories(include ${Boost_INCLUDE_DIR})
 target_link_libraries(sim_ds ${Boost_LIBRARIES})
 
 
