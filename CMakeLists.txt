@@ -15,8 +15,6 @@ message(STATUS "CXX_FLAGS_DEBUG     are ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CXX_FLAGS_RELEASE   are ${CMAKE_CXX_FLAGS_RELEASE}")
 
 
-include_directories(include)
-
 file(GLOB HEADERS include/sim_ds/*.hpp)
 add_library(sim_ds STATIC include/sim_ds.cpp ${HEADERS})
 
@@ -30,10 +28,10 @@ else()
     message(STATUS "!!! BOOST NOT FOUND !!!")
 endif()
 
-include_directories(${Boost_INCLUDE_DIR})
+
+include_directories(include ${Boost_INCLUDE_DIR})
 target_link_libraries(sim_ds ${Boost_LIBRARIES})
 
-set_target_properties(sim_ds PROPERTIES INTERFACE_INCLUDE_DIRECTORIES include)
 
 enable_testing()
 add_subdirectory(test)
