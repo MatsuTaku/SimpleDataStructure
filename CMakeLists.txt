@@ -28,6 +28,7 @@ else()
     message(STATUS "!!! BOOST NOT FOUND !!!")
 endif()
 
+link_directories(${Boost_LIBRARY_DIR})
 
 include_directories(include ${Boost_INCLUDE_DIR})
 target_link_libraries(sim_ds ${Boost_LIBRARIES})
