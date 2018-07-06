@@ -31,7 +31,9 @@ else()
 endif()
 
 include_directories(${Boost_INCLUDE_DIR})
-TARGET_LINK_LIBRARIES(sim_ds ${Boost_LIBRARIES})
+target_link_libraries(sim_ds ${Boost_LIBRARIES})
+
+set_target_properties(sim_ds PROPERTIES INTERFACE_INCLUDE_DIRECTORIES include)
 
 enable_testing()
 add_subdirectory(test)
