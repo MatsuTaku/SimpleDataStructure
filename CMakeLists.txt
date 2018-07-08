@@ -15,10 +15,13 @@ message(STATUS "CXX_FLAGS           are ${CMAKE_CXX_FLAGS}")
 message(STATUS "CXX_FLAGS_DEBUG     are ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CXX_FLAGS_RELEASE   are ${CMAKE_CXX_FLAGS_RELEASE}")
 
+set(SDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-file(GLOB HEADERS include/sim_ds/*.hpp)
-add_library(sim_ds STATIC include/sim_ds.cpp ${HEADERS})
-include_directories(include)
+file(GLOB HEADERS ${SDS_INCLUDE_DIR}/sim_ds/*.hpp)
+add_library(sim_ds STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${SDS_INCLUDE_DIR}/sim_ds.hpp ${HEADERS})
+#set_target_properties(sim_ds PROPERTIES LINKER_LANGUAGE CXX)
+target_include_directories(sim_ds INTERFACE ${SDS_INCLUDE_DIR})
+include_directories(${SDS_INCLUDE_DIR})
 
 
 set(Boost_USE_STATIC_LIBS ON)
@@ -31,9 +34,8 @@ else()
     message(STATUS "!!! BOOST NOT FOUND !!!")
 endif()
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIR})
-target_link_libraries(sim_ds ${Boost_LIBRARIES})
+target_include_directories(sim_ds INTERFACE ${Boost_INCLUDE_DIR})
+target_link_libraries(sim_ds INTERFACE ${Boost_LIBRARIES})
 
 
 enable_testing()

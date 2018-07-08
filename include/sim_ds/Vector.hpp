@@ -111,7 +111,7 @@ namespace sim_ds {
         template<typename T>
         size_t typeSizeOfVector(const std::vector<T> &vector) const {
             auto maxV = *std::max_element(vector.begin(), vector.end());
-            return Calc::sizeFitInBits(maxV);
+            return sim_ds::Calc::sizeFitInBits(maxV);
         }
         
         // MARK: - getter

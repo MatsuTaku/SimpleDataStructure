@@ -12,3 +12,4 @@ endforeach()
 
 add_executable(test_all ${TEST_SOURCES})
 target_link_libraries(test_all gtest_main)
+add_test(test_all test_all)
