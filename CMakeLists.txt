@@ -20,8 +20,8 @@ set(SDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB HEADERS ${SDS_INCLUDE_DIR}/sim_ds/*.hpp)
 add_library(sim_ds STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${SDS_INCLUDE_DIR}/sim_ds.hpp ${HEADERS})
 #set_target_properties(sim_ds PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories(sim_ds INTERFACE ${SDS_INCLUDE_DIR})
-include_directories(${SDS_INCLUDE_DIR})
+#include_directories(${SDS_INCLUDE_DIR})
+target_include_directories(sim_ds PUBLIC ${SDS_INCLUDE_DIR})
 
 
 set(Boost_USE_STATIC_LIBS ON)
@@ -34,8 +34,13 @@ else()
     message(STATUS "!!! BOOST NOT FOUND !!!")
 endif()
 
-target_include_directories(sim_ds INTERFACE ${Boost_INCLUDE_DIR})
-target_link_libraries(sim_ds INTERFACE ${Boost_LIBRARIES})
+target_include_directories(sim_ds PUBLIC ${Boost_INCLUDE_DIR})
+target_link_libraries(sim_ds PUBLIC ${Boost_LIBRARIES})
+
+get_property(SDSIDIR TARGET sim_ds PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+foreach(SD ${SDSIDIR})
+	message(STATUS "INDIR: " ${SD})
+endforeach()
 
 
 enable_testing()
