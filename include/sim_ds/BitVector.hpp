@@ -217,7 +217,6 @@ namespace sim_ds {
             return *this;
         }
         
-//        BitVector(BitVector&&) noexcept = default;
         BitVector(BitVector&& rhs) noexcept {
             size_ = std::move(rhs.size_);
             bits_ = std::move(rhs.bits_);
@@ -231,6 +230,8 @@ namespace sim_ds {
             s_block_units_ = std::move(rhs.s_block_units_);
             return *this;
         }
+        
+    public:
         
         constexpr bool operator[](size_t index) const {
             return access(index);

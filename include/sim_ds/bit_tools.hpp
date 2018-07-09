@@ -101,7 +101,6 @@ namespace sim_ds::bit_tools {
     
     inline constexpr unsigned long long popCount(uint64_t x) {
         return popCount<1, 1>(x);
-//        return popCount<1>(1, x);
     }
     
 }

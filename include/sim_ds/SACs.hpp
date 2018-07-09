@@ -100,7 +100,7 @@ namespace sim_ds {
         
         void setValue(size_t index, size_t value);
         
-        void showStats(std::ostream &os) const;
+        void showStatus(std::ostream &os) const;
         
         size_t sizeInBytes() const {
             auto size = sizeof(num_units_) + sizeof(size_);
@@ -170,7 +170,7 @@ namespace sim_ds {
     }
     
     template <class C>
-    void SACs<C>::showStats(std::ostream &os) const {
+    void SACs<C>::showStatus(std::ostream &os) const {
         using std::endl;
         os << "---- Stat of " << "SACs " << " ----" << endl;
         os << "number of elements: " << size_ << endl;

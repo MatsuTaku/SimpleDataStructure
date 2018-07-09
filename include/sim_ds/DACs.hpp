@@ -90,15 +90,6 @@ namespace sim_ds {
             num_units_ = size;
         }
         
-        bool getBitInFirstUnit(size_t index) const {
-            return bits_list_[0][index];
-        }
-        
-        void setBitInFirstUnit(size_t index, bool bit) {
-            if (num_units_ == 0) expand(1);
-            return bits_list_[0].set(index, bit);
-        }
-        
         void build() {
             for (auto &bits : bits_list_)
                 bits.build();
@@ -116,7 +107,7 @@ namespace sim_ds {
         
         void setValue(size_t index, size_t value);
         
-        void showStats(std::ostream &os) const;
+        void showStatus(std::ostream &os) const;
         
         size_t sizeInBytes() const {
             auto size = sizeof(num_units_) + sizeof(size_);
@@ -192,7 +183,7 @@ namespace sim_ds {
         }
     }
     
-    void DACs::showStats(std::ostream &os) const {
+    inline void DACs::showStatus(std::ostream &os) const {
         using std::endl;
         os << "--- Stat of " << "DACs " << " ---" << endl;
         os << "number of elements: " << size_ << endl;

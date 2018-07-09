@@ -38,11 +38,14 @@ target_include_directories(sim_ds PUBLIC ${Boost_INCLUDE_DIR})
 target_link_libraries(sim_ds PUBLIC ${Boost_LIBRARIES})
 
 get_property(SDSIDIR TARGET sim_ds PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-foreach(SD ${SDSIDIR})
-	message(STATUS "INDIR: " ${SD})
+foreach(dir ${SDSIDIR})
+	message(STATUS "	include: " ${dir})
 endforeach()
 
 
-enable_testing()
-add_subdirectory(test)
+if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+	message(STATUS "Enable test SimDS")
+	enable_testing()
+	add_subdirectory(test)
+endif()
 
