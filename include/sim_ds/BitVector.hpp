@@ -186,8 +186,8 @@ namespace sim_ds {
         using id_type = uint64_t;
         using block_type = uint8_t;
         static constexpr uint8_t kSBlockSize = sizeof(id_type) * 8; // 64
-        static constexpr size_t kLBlockSize = 0x100 + kSBlockSize;
-        static constexpr uint8_t kBlocksInTip = kLBlockSize / kSBlockSize; // (256 + 64) / 64 = 5
+        static constexpr size_t kLBlockSize = 0x100;
+        static constexpr uint8_t kBlocksInTip = kLBlockSize / kSBlockSize; // (256) / 64 = 4
         static constexpr size_t kNum1sPerTip = 0x200;
         
     public:
@@ -429,6 +429,8 @@ namespace sim_ds {
             
             for (auto offset = 0; offset < kBlocksInTip; offset++) {
                 auto index = i * kBlocksInTip + offset;
+                if (index > s_block_units_.size() - 1)
+                    break;
                 s_block_units_[index] = count - l_blocks_[i];
                 if (index < bits_.size()) {
                     count += bit_tools::popCount(bits_[index]);
