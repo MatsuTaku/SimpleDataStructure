@@ -192,6 +192,7 @@ namespace sim_ds {
         
     public:
         BitVector() = default;
+        ~BitVector() = default;
         
         BitVector(const std::vector<bool> &bools, bool useRank, bool useSelect = false) {
             for (auto i = 0; i < bools.size(); i++)
@@ -199,8 +200,6 @@ namespace sim_ds {
             if (useRank)
                 build(useSelect);
         }
-        
-        ~BitVector() = default;
         
         BitVector(const BitVector& rhs) noexcept  {
             size_ = rhs.size_;
@@ -326,7 +325,8 @@ namespace sim_ds {
             return index % kSBlockSize;
         }
         
-        constexpr size_t tipL(size_t index) const {
+        size_t tipL(size_t index) const {
+//            std::cerr << index << "] L[" << block(index) << "]: " << l_blocks_[block(index)] << std::endl;;
             return l_blocks_[block(index)];
         }
         
@@ -417,10 +417,11 @@ namespace sim_ds {
     
     inline void BitVector::buildRank() {
         
-        auto blockTypeSize = Calc::sizeFitInBytes(size_);
-        l_blocks_ = Vector(8 * blockTypeSize, size_ / kLBlockSize + 1);
+//        auto blockTypeSize = Calc::sizeFitInBytes(size_);
+//        l_blocks_ = Vector(8 * blockTypeSize, size_ / kLBlockSize + 1);
+        l_blocks_ = Vector(Calc::sizeFitInBits(size_), std::ceil(float(size_) / kLBlockSize));
 //        std::vector<size_t> lBlocks(size_ / kLBlockSize + 1);
-        s_block_units_.resize(size_ / kSBlockSize + 1);
+        s_block_units_.resize(std::ceil(float(size_) / kSBlockSize));
         
         auto count = 0;
         for (auto i = 0; i < l_blocks_.size(); i++) {
