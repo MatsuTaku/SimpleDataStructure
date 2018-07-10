@@ -5,7 +5,7 @@
 //  Created by 松本拓真 on 2018/05/14.
 //
 
-#include "sim_ds/DACs.hpp"
+#include "sim_ds/DacVector.hpp"
 #include "gtest/gtest.h"
 
 #include <random>
@@ -17,7 +17,7 @@ TEST(DACsTest, ConvertVector) {
     for (auto i = 0; i < size; i++) {
         src[i] = (1U << (rnd() % 32)) - 1;
     }
-    sim_ds::DACs dac(src);
+    sim_ds::DacVector dac(src);
     for (auto i = 0; i < size; i++)
         EXPECT_EQ(src[i], dac[i]);
 }

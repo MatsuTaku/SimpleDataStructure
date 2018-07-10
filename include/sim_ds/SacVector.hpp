@@ -17,20 +17,20 @@
 namespace sim_ds {
     
     template <class SEQUENCES>
-    class SACs {
+    class SacVector {
     public:
         using idType = uint64_t;
         static constexpr size_t kMaxNumSeparates = 8;
         
         // MARK: Constructor
         
-        SACs() = default;
-        ~SACs() = default;
+        SacVector() = default;
+        ~SacVector() = default;
         
-        SACs(const SACs&) = delete;
-        SACs& operator =(const SACs&) = delete;
+        SacVector(const SacVector&) = delete;
+        SacVector& operator =(const SacVector&) = delete;
         
-        SACs(SACs&& rhs) noexcept {
+        SacVector(SacVector&& rhs) noexcept {
             size_ = std::move(rhs.size_);
             num_units_ = std::move(rhs.num_units_);
             sequences_ = std::move(rhs.sequences_);
@@ -39,24 +39,24 @@ namespace sim_ds {
                 bits_sizes_[i] = std::move(rhs.bits_sizes_[i]);
             }
         }
-        SACs& operator=(SACs&& rhs) noexcept = default;
+        SacVector& operator=(SacVector&& rhs) noexcept = default;
         
-        SACs(std::istream &is) {
+        SacVector(std::istream &is) {
             read(is);
         }
         
         template<typename T>
-        SACs(const std::vector<T> &vector, size_t minCost = 1, size_t maxLevels = 8) {
+        SacVector(const std::vector<T> &vector, size_t minCost = 1, size_t maxLevels = 8) {
             setFromVector(vector, Calc::optimizedBitsListForDac(vector, minCost, maxLevels));
         }
-        SACs(const Vector &vector, size_t minCost = 1, size_t maxLevels = 8) {
+        SacVector(const Vector &vector, size_t minCost = 1, size_t maxLevels = 8) {
             std::vector<size_t> vec(vector.size());
             for (auto i = 0; i < vector.size(); i++)
                 vec[i] = vector[i];
             setFromVector(vector, Calc::optimizedBitsListForDac(vec, minCost, maxLevels));
         }
         template<typename C>
-        SACs(const C &vector, const std::vector<size_t> &sizes) {
+        SacVector(const C &vector, const std::vector<size_t> &sizes) {
             setFromVector(vector, sizes);
         }
         
@@ -139,16 +139,16 @@ namespace sim_ds {
         
     };
     
-    using SACs2 = SACs<MultiBitVector<1>>;
-    using SACs4 = SACs<MultiBitVector<2>>;
-    using SACs8 = SACs<MultiBitVector<3>>;
+    using SACs2 = SacVector<MultiBitVector<1>>;
+    using SACs4 = SacVector<MultiBitVector<2>>;
+    using SACs8 = SacVector<MultiBitVector<3>>;
     using SACsForLCP = SACs8;
-    using SACsWV = SACs<WaveletTree>;
+    using SACsWV = SacVector<WaveletTree>;
     
     // MARK: - inline function
     
     template <class C>
-    inline size_t SACs<C>::operator[](size_t index) const {
+    inline size_t SacVector<C>::operator[](size_t index) const {
         size_t value = units_[0][index];
         auto type = sequences_[index];
         if (type > 0)
@@ -157,7 +157,7 @@ namespace sim_ds {
     }
     
     template <class C>
-    inline void SACs<C>::setValue(size_t index, size_t value) {
+    inline void SacVector<C>::setValue(size_t index, size_t value) {
         size_ = std::max(size_, index + 1);
         
         auto size = Calc::sizeFitAsSizeList(value, bits_sizes_);
@@ -170,7 +170,7 @@ namespace sim_ds {
     }
     
     template <class C>
-    void SACs<C>::showStatus(std::ostream &os) const {
+    void SacVector<C>::showStatus(std::ostream &os) const {
         using std::endl;
         os << "---- Stat of " << "SACs " << " ----" << endl;
         os << "number of elements: " << size_ << endl;

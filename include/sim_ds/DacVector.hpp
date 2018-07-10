@@ -15,20 +15,20 @@
 
 namespace sim_ds {
     
-    class DACs {
+    class DacVector {
     public:
         using idType = uint64_t;
         static constexpr size_t kMaxSeparates = 8;
         
         // MARK: Constructor
         
-        DACs() = default;
-        ~DACs() = default;
+        DacVector() = default;
+        ~DacVector() = default;
         
-        DACs(const DACs&) = delete;
-        DACs& operator =(const DACs&) = delete;
+        DacVector(const DacVector&) = delete;
+        DacVector& operator =(const DacVector&) = delete;
         
-        DACs(DACs&& rhs) noexcept {
+        DacVector(DacVector&& rhs) noexcept {
             size_ = std::move(rhs.size_);
             num_units_ = std::move(rhs.num_units_);
             for (auto i = 0; i < sizeof(idType) - 1; i++)
@@ -38,28 +38,28 @@ namespace sim_ds {
             for (auto i = 0; i < kMaxSeparates; i++)
                 bits_sizes_[i] = std::move(rhs.bits_sizes_[i]);
         }
-        DACs& operator =(DACs&& rhs) noexcept = default;
+        DacVector& operator =(DacVector&& rhs) noexcept = default;
         
-        DACs(std::istream &is) {
+        DacVector(std::istream &is) {
             read(is);
         }
         
         template<typename T>
-        DACs(const std::vector<T> &vector, size_t minCost = 1, size_t maxLevels = 8) {
+        DacVector(const std::vector<T> &vector, size_t minCost = 1, size_t maxLevels = 8) {
             setFromVector(vector, Calc::optimizedBitsListForDac(vector, minCost, maxLevels));
         }
         template<typename T>
-        DACs(const std::vector<T> &vector, const std::vector<size_t> &sizes) {
+        DacVector(const std::vector<T> &vector, const std::vector<size_t> &sizes) {
             setFromVector(vector, sizes);
         }
-        DACs(const Vector &vector, size_t minCost = 1, size_t maxLevels = 8) {
+        DacVector(const Vector &vector, size_t minCost = 1, size_t maxLevels = 8) {
             std::vector<size_t> vec(vector.size());
             for (auto i = 0; i < vector.size(); i++) {
                 vec[i] = vector[i];
             }
             setFromVector(vec, Calc::optimizedBitsListForDac(vec, minCost, maxLevels));
         }
-        DACs(const Vector &vector, const std::vector<size_t> &sizes) {
+        DacVector(const Vector &vector, const std::vector<size_t> &sizes) {
             std::vector<size_t> vec(vector.size());
             for (auto i = 0; i < vector.size(); i++) {
                 vec[i] = vector[i];
@@ -152,7 +152,7 @@ namespace sim_ds {
     
     // MARK: - inline function
     
-    inline size_t DACs::getValue(size_t index) const {
+    inline size_t DacVector::getValue(size_t index) const {
         size_t value = units_[0][index];
         if (!bits_list_[0][index]) return value;
         auto shiftSize = bits_sizes_[0];
@@ -166,7 +166,7 @@ namespace sim_ds {
         return value;
     }
     
-    inline void DACs::setValue(size_t index, size_t value) {
+    inline void DacVector::setValue(size_t index, size_t value) {
         size_ = std::max(size_, index + 1);
         
         auto size = Calc::sizeFitAsSizeList(value, bits_sizes_);
@@ -183,7 +183,7 @@ namespace sim_ds {
         }
     }
     
-    inline void DACs::showStatus(std::ostream &os) const {
+    inline void DacVector::showStatus(std::ostream &os) const {
         using std::endl;
         os << "--- Stat of " << "DACs " << " ---" << endl;
         os << "number of elements: " << size_ << endl;
@@ -193,7 +193,7 @@ namespace sim_ds {
         auto bitsSize = 0;
         for (auto i = 0; i < std::max(num_units_ - 1, size_t(1)); i++)
             bitsSize += bits_list_[i].sizeInBytes();
-        os << "size bits:   :   " << bitsSize << endl;
+        os << "size bits:   " << bitsSize << endl;
         auto flowSize = 0;
         for (auto i = 0; i < num_units_; i++)
             flowSize += units_[i].sizeInBytes();
