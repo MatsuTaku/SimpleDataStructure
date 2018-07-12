@@ -23,27 +23,10 @@ namespace sim_ds {
         // MARK: Constructor
         
         DacVector() = default;
-        ~DacVector() = default;
-        
-        DacVector(const DacVector&) = delete;
-        DacVector& operator =(const DacVector&) = delete;
-        
-        DacVector(DacVector&& rhs) noexcept {
-            size_ = std::move(rhs.size_);
-            num_units_ = std::move(rhs.num_units_);
-            for (auto i = 0; i < sizeof(idType) - 1; i++)
-                bits_list_[i] = std::move(rhs.bits_list_[i]);
-            for (auto i = 0; i < sizeof(idType); i++)
-                units_[i] = std::move(rhs.units_[i]);
-            for (auto i = 0; i < kMaxSeparates; i++)
-                bits_sizes_[i] = std::move(rhs.bits_sizes_[i]);
-        }
-        DacVector& operator =(DacVector&& rhs) noexcept = default;
         
         DacVector(std::istream &is) {
             read(is);
         }
-        
         template<typename T>
         DacVector(const std::vector<T> &vector, size_t minCost = 1, size_t maxLevels = 8) {
             setFromVector(vector, Calc::optimizedBitsListForDac(vector, minCost, maxLevels));
@@ -67,6 +50,24 @@ namespace sim_ds {
             setFromVector(vec, sizes);
         }
         
+        ~DacVector() = default;
+        
+        DacVector(const DacVector&) = delete;
+        DacVector& operator =(const DacVector&) = delete;
+        
+        DacVector(DacVector&& rhs) noexcept {
+            size_ = std::move(rhs.size_);
+            num_units_ = std::move(rhs.num_units_);
+            for (auto i = 0; i < sizeof(idType) - 1; i++)
+                bits_list_[i] = std::move(rhs.bits_list_[i]);
+            for (auto i = 0; i < sizeof(idType); i++)
+                units_[i] = std::move(rhs.units_[i]);
+            for (auto i = 0; i < kMaxSeparates; i++)
+                bits_sizes_[i] = std::move(rhs.bits_sizes_[i]);
+        }
+        DacVector& operator =(DacVector&& rhs) noexcept = default;
+        
+    public:
         // MARK: Function
         
         static std::string name() {
@@ -79,7 +80,7 @@ namespace sim_ds {
                 bits_sizes_[i] = optimized[i];
             expand(optimized.size());
             for (auto i = 0; i < vector.size(); i++)
-                setValue(i, vector[i]);
+                set(i, vector[i]);
             build();
         }
         
@@ -100,19 +101,20 @@ namespace sim_ds {
         }
         
         size_t operator [](size_t index) const {
-            return getValue(index);
+            return get(index);
         }
         
-        size_t getValue(size_t index) const;
+        size_t get(size_t index) const;
         
-        void setValue(size_t index, size_t value);
+        void set(size_t index, size_t value);
         
         void showStatus(std::ostream &os) const;
         
         size_t sizeInBytes() const {
             auto size = sizeof(num_units_) + sizeof(size_);
-            for (auto i = 0; i < std::max(num_units_ - 1, size_t(1)); i++)
-                size += bits_list_[i].sizeInBytes();
+            if (num_units_ > 0)
+                for (auto i = 0; i == 0 || i + 1 < num_units_; i++)
+                    size += bits_list_[i].sizeInBytes();
             for (auto i = 0; i < num_units_; i++)
                 size += units_[i].sizeInBytes();
             size += sizeof(bits_sizes_);
@@ -122,8 +124,9 @@ namespace sim_ds {
         void write(std::ostream &os) const {
             write_val(size_, os);
             write_val(num_units_, os);
-            for (auto i = 0; i < std::max(num_units_ - 1, size_t(1)); i++)
-                bits_list_[i].write(os);
+            if (num_units_ > 0)
+                for (auto i = 0; i == 0 || i + 1 < num_units_; i++)
+                    bits_list_[i].write(os);
             for (auto i = 0; i < num_units_; i++)
                 units_[i].write(os);
             for (auto i = 0; i < num_units_; i++)
@@ -133,8 +136,9 @@ namespace sim_ds {
         void read(std::istream &is) {
             size_ = read_val<size_t>(is);
             num_units_ = read_val<size_t>(is);
-            for (auto i = 0; i < std::max(num_units_ - 1, size_t(1)); i++)
-                bits_list_[i].read(is);
+            if (num_units_ > 0)
+                for (auto i = 0; i == 0 || i + 1 < num_units_; i++)
+                    bits_list_[i].read(is);
             for (auto i = 0; i < num_units_; i++)
                 units_[i] = Vector(is);
             for (auto i = 0; i < num_units_; i++)
@@ -152,7 +156,7 @@ namespace sim_ds {
     
     // MARK: - inline function
     
-    inline size_t DacVector::getValue(size_t index) const {
+    inline size_t DacVector::get(size_t index) const {
         size_t value = units_[0][index];
         if (!bits_list_[0][index]) return value;
         auto shiftSize = bits_sizes_[0];
@@ -166,7 +170,7 @@ namespace sim_ds {
         return value;
     }
     
-    inline void DacVector::setValue(size_t index, size_t value) {
+    inline void DacVector::set(size_t index, size_t value) {
         size_ = std::max(size_, index + 1);
         
         auto size = Calc::sizeFitAsSizeList(value, bits_sizes_);
@@ -178,7 +182,7 @@ namespace sim_ds {
             unit.push_back(value & ((1U << curBitsSize) - 1));
             value >>= curBitsSize;
             index = unit.size() - 1;
-            if (depth == 0 || depth < num_units_ - 1)
+            if (depth == 0 || depth + 1 < num_units_)
                 bits_list_[depth].set(index, depth < size - 1);
         }
     }
@@ -191,7 +195,7 @@ namespace sim_ds {
         os << "size:   " << size << endl;
         os << "sizeBits/element:   " << float(size * 8) / size_ << endl;
         auto bitsSize = 0;
-        for (auto i = 0; i < std::max(num_units_ - 1, size_t(1)); i++)
+        for (auto i = 0; i == 0 || i + 1 < num_units_; i++)
             bitsSize += bits_list_[i].sizeInBytes();
         os << "size bits:   " << bitsSize << endl;
         auto flowSize = 0;
