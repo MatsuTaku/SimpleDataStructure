@@ -29,7 +29,7 @@ namespace sim_ds {
         }
         template<typename T>
         DacVector(const std::vector<T> &vector, size_t minCost = 1, size_t maxLevels = 8) {
-            setFromVector(vector, Calc::optimizedBitsListForDac(vector, minCost, maxLevels));
+            setFromVector(vector);
         }
         template<typename T>
         DacVector(const std::vector<T> &vector, const std::vector<size_t> &sizes) {
@@ -40,7 +40,7 @@ namespace sim_ds {
             for (auto i = 0; i < vector.size(); i++) {
                 vec[i] = vector[i];
             }
-            setFromVector(vec, Calc::optimizedBitsListForDac(vec, minCost, maxLevels));
+            setFromVector(vec);
         }
         DacVector(const Vector &vector, const std::vector<size_t> &sizes) {
             std::vector<size_t> vec(vector.size());
@@ -75,10 +75,27 @@ namespace sim_ds {
         }
         
         template<typename C>
-        void setFromVector(const C &vector, const std::vector<size_t> &optimized) {
+        void setFromVector(const C &vector, std::vector<size_t> optimized = {}) {
+            if (vector.empty())
+                return;
+            if (optimized.empty())
+                Calc::optimizedBitsListForDac(&optimized, vector);
             for (auto i = 0; i < optimized.size(); i++)
                 bits_sizes_[i] = optimized[i];
             expand(optimized.size());
+            {
+                std::vector<size_t> cf;
+                Calc::setCummulativeFrequency(&cf, vector);
+                for (auto i = 0, t = 0; i < optimized.size(); i++) {
+                    units_[i].reserve(cf[t]);
+                    t += optimized[i];
+                }
+                for (auto i = 0, t = 0; i < std::max(size_t(1), optimized.size() - 1); i++) {
+                    bits_list_[i].resize(cf[t]);
+                    t += optimized[i];
+                }
+            }
+            
             for (auto i = 0; i < vector.size(); i++)
                 set(i, vector[i]);
             build();

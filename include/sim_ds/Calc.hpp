@@ -9,6 +9,7 @@
 #define Calc_hpp
 
 #include <stdio.h>
+#include <malloc/malloc.h>
 
 namespace sim_ds {
     
@@ -59,44 +60,51 @@ namespace sim_ds {
             return counts;
         }
         
-        static std::vector<size_t> vectorMapOfSizeBits(const std::vector<size_t> &list) {
-            std::vector<size_t> map;
+        static size_t vectorMapOfSizeBits(std::vector<size_t>* map, const std::vector<size_t> &list, bool show = false) {
             auto maxSize = 0;
             for (auto v : list) {
                 auto size = sizeFitInBits(v);
                 if (size > maxSize) {
-                    map.resize(size, 0);
+                    map->resize(size, 0);
                     maxSize = size;
                 }
-                map[size - 1]++;
+                (*map)[size - 1]++;
             }
-            for (auto i = 0; i < map.size(); i++) {
-                std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
+            if (show) {
+                for (auto i = 0; i < map->size(); i++) {
+                    std::cout << "[" << i + 1 << "]: " << (*map)[i] << std::endl;
+                }
             }
-            return map;
+            
+            return map->size();
         }
         
-        static std::vector<size_t> cummulativeFrequenciesVector(const std::vector<size_t> &list) {
-            const auto map = vectorMapOfSizeBits(list);
+        static size_t setCummulativeFrequency(std::vector<size_t>* cf, const std::vector<size_t> &list) {
+            std::vector<size_t> map;
+            vectorMapOfSizeBits(&map, list);
             auto count = 0;
-            std::vector<size_t> cf(map.size());
+            cf->assign(map.size(), 0);
             for (auto i = map.size(); i > 0; i--) {
                 count += map[i - 1];
-                cf[i - 1] = count;
+                (*cf)[i - 1] = count;
             }
-            return cf;
+            return cf->size();
         }
         
         static size_t sizeOfDacFromParams(double l) {
-            auto a = std::ceil(l / 8);
-            auto b = 12 * std::ceil(l / 256) ;
-            return (a + b) * 8;
+            using std::ceil;
+            auto a = ceil(l / 8) * 8;
+            auto b = (4 * 8 + ceil(log2(l))) * ceil(l / 256) ;
+            return a + b;
         }
         
-        static std::vector<size_t> optimizedBitsListForDac(const std::vector<size_t> &list, size_t minCost = 1, size_t maxLevels = 8) {
-            const auto cf = cummulativeFrequenciesVector(list);
-            const auto m = cf.size() - 1;
-            std::vector<size_t> s(cf.size()), l(cf.size()), b(cf.size());
+        static size_t optimizedBitsListForDac(std::vector<size_t>* bits, const std::vector<size_t> &list, size_t minCost = 1, size_t maxLevels = 8) {
+            
+            std::vector<size_t> cf;
+            auto cfSize = setCummulativeFrequency(&cf, list);
+            
+            const auto m = cfSize - 1;
+            std::vector<size_t> s(cfSize), l(cfSize), b(cfSize);
             for (int t = m; t >= 0; --t) {
                 auto minSize = INFINITY;
                 auto minPos = m;
@@ -119,11 +127,15 @@ namespace sim_ds {
             }
             auto L = l[0];
             auto t = 0;
-            std::vector<size_t> bk(L);
+            auto &bk = *bits;
+            bk.reserve(8);
+            bk.resize(L);
             for (auto k = 0; k <= L; k++) {
                 bk[k] = b[t];
                 t = t + b[t];
             }
+            
+//            assert(malloc_zone_check(NULL));
             
             if (L > maxLevels) {
                 std::vector<bool> sepPos(cf.size() + 1, false);
@@ -160,7 +172,7 @@ namespace sim_ds {
                     }
                 }
             }
-            return bk;
+            return bk.size();
         }
         
         static size_t sizeOfSacFromPrams(double l, long long n) {
@@ -173,7 +185,8 @@ namespace sim_ds {
         }
         
         static std::vector<size_t> optimizedBitsListForSac(const std::vector<size_t> &list, size_t minCost = 1, size_t maxLevels = 8) {
-            const auto cf = cummulativeFrequenciesVector(list);
+            std::vector<size_t> cf;
+            setCummulativeFrequency(&cf, list);
             const auto m = cf.size() - 1;
             std::vector<size_t> s(cf.size()), gf(cf.size(), 0), gt(cf.size(), cf.size());
             const auto L = cf[0];

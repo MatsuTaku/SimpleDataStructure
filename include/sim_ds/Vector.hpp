@@ -21,6 +21,7 @@ namespace sim_ds {
     public:
         using id_type = uint64_t;
         static constexpr size_t kBitsSizeInElement = 8 * sizeof(id_type); // 64
+        
     public:
         // MARK: - Constructor
         
@@ -41,6 +42,8 @@ namespace sim_ds {
         
         template<typename T>
         Vector(const std::vector<T> &vector) : Vector(typeSizeOfVector(vector)) {
+            if (vector.empty())
+                return;
             resize(vector.size());
             for (auto i = 0; i < vector.size(); i++) {
                 set(i, vector[i]);
@@ -51,7 +54,6 @@ namespace sim_ds {
             size_ = rhs.size_;
             vector_ = rhs.vector_;
         }
-//        Vector& operator=(const Vector &rhs) noexcept = default;
         Vector& operator=(const Vector &rhs) noexcept {
             sizeBits_reference_ = rhs.sizeBits_reference_;
             mask_reference_ = rhs.mask_reference_;
@@ -62,47 +64,7 @@ namespace sim_ds {
             return *this;
         }
         Vector(Vector &&rhs) noexcept = default;
-//        Vector(Vector &&rhs) : Vector(std::move(rhs.sizeBits_reference_)) {
-//            size_ = std::move(rhs.size_);
-//            vector_ = std::move(rhs.vector_);
-//        }
         Vector& operator=(Vector &&rhs) noexcept = default;
-        
-        //        Vector(const Vector &rhs) : kBitsSizeOfTypes_(rhs.kBitsSizeOfTypes_), kMask_(rhs.kMask_) {
-        //            size_ = rhs.size_;
-        //            vector_ = rhs.vector_;
-        //        }
-        //        Vector& operator=(const Vector &rhs) noexcept {
-        //            // const members
-        //            size_t *ptr = const_cast<size_t*>(&this->kBitsSizeOfTypes_);
-        //            *ptr = rhs.kBitsSizeOfTypes_;
-        //            ptr = const_cast<size_t*>(&this->kMask_);
-        //            *ptr = rhs.kMask_;
-        //            // var members
-        //            size_ = rhs.size_;
-        //            vector_ = rhs.vector_;
-        //
-        //            return *this;
-        //        }
-        //
-        //        Vector(Vector &&rhs) : kBitsSizeOfTypes_(rhs.kBitsSizeOfTypes_), kMask_(rhs.kMask_) {
-        //            size_ = std::move(rhs.size_);
-        //            vector_ = std::move(rhs.vector_);
-        //        }
-        //        Vector& operator=(Vector &&rhs) noexcept {
-        //            // const members
-        //            size_t *ptr = const_cast<size_t*>(&this->kBitsSizeOfTypes_);
-        //            *ptr = std::move(rhs.kBitsSizeOfTypes_);
-        //            ptr = const_cast<size_t*>(&this->kMask_);
-        //            *ptr = std::move(rhs.kMask_);
-        //            // var members
-        //            size_ = std::move(rhs.size_);
-        //            vector_ = std::move(rhs.vector_);
-        //
-        //            return *this;
-        //        }
-
-//        ~Vector() = default;
 
         ~Vector() = default;
         
@@ -110,6 +72,8 @@ namespace sim_ds {
         
         template<typename T>
         size_t typeSizeOfVector(const std::vector<T> &vector) const {
+            if (vector.empty())
+                return 0;
             auto maxV = *std::max_element(vector.begin(), vector.end());
             return sim_ds::Calc::sizeFitInBits(maxV);
         }
@@ -143,8 +107,11 @@ namespace sim_ds {
         }
         
         void push_back(size_t value) {
-            resize(size_ + 1);
-            set(size_ - 1, value);
+            auto rel = rel_(size_);
+            if (rel == 0 || rel_(size_) + kBitsSizeOfTypes_ > kBitsSizeInElement)
+                vector_.push_back(0);
+            set(size_, value);
+            size_++;
         }
         
         void resize(size_t size) {
@@ -166,6 +133,12 @@ namespace sim_ds {
             vector_.resize(abs_(size));
             for (auto i = 0; i < size; i++)
                 set(i, value);
+        }
+        
+        void reserve(size_t size) {
+            float fs = size;
+            auto offset = std::ceil(fs * kBitsSizeOfTypes_ / kBitsSizeInElement);
+            vector_.reserve(offset);
         }
         
         // MARK: - method

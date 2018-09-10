@@ -53,7 +53,7 @@ namespace sim_ds {
             std::vector<size_t> vec(vector.size());
             for (auto i = 0; i < vector.size(); i++)
                 vec[i] = vector[i];
-            setFromVector(vector, Calc::optimizedBitsListForDac(vec, minCost, maxLevels));
+            setFromVector(vector);
         }
         template<typename C>
         SacVector(const C &vector, const std::vector<size_t> &sizes) {
@@ -67,7 +67,10 @@ namespace sim_ds {
         }
         
         template<typename C>
-        void setFromVector(const C &vector, const std::vector<size_t> &sizes) {
+        void setFromVector(const C &vector, const std::vector<size_t> &sizes = {}) {
+            if (sizes.empty())
+                Calc::optimizedBitsListForDac(&sizes, vector);
+            
             for (auto i = 0; i < sizes.size(); i++)
                 bits_sizes_[i] = sizes[i];
             expand(sizes.size());

@@ -85,7 +85,7 @@ namespace sim_ds {
         }
         
         void set(size_t index, bool bit) {
-            check_resize(index);
+            assert(index < size_);
             if (bit)
                 bits_[abs(index)] |= (1UL << rel(index));
             else 
@@ -102,19 +102,13 @@ namespace sim_ds {
         
         void buildSelect();
         
-        void check_resize(size_t index) {
-            if (index + 1 > size_)
-                size_ = index + 1;
-            if (abs(index) + 1 > bits_.size()) {
-                resize(index + 1);
-            }
-        }
-        
         void resize(size_t size) {
             if (size == 0)
                 bits_.resize(0);
-            else
-                bits_.resize(abs(size - 1) + 1);
+            else {
+                size_t abs = std::ceil(float(size) / kSBlockSize);
+                bits_.resize(abs);
+            }
             size_ = size;
         }
         

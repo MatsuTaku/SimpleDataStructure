@@ -331,7 +331,8 @@ namespace sim_ds {
         cout << "Median value: " << median << endl;
         cout << "---- size map ----" << endl;
         auto i = 0;
-        const auto &map = Calc::vectorMapOfSizeBits(lcpArr);
+        vector<size_t> map;
+        Calc::vectorMapOfSizeBits(&map, lcpArr);
         for (auto num : map)
             cout << "[" << i++ << "]: " << num << endl;
         cout << "----------------------------" << endl;
