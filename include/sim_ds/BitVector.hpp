@@ -93,6 +93,7 @@ namespace sim_ds {
         }
         
         void push_back(bool bit) {
+            resize(size_ + 1);
             set(size_, bit);
         }
         
@@ -103,12 +104,8 @@ namespace sim_ds {
         void buildSelect();
         
         void resize(size_t size) {
-            if (size == 0)
-                bits_.resize(0);
-            else {
-                size_t abs = std::ceil(float(size) / kSBlockSize);
-                bits_.resize(abs);
-            }
+            size_t abs = std::ceil(float(size) / kSBlockSize);
+            bits_.resize(abs);
             size_ = size;
         }
         
@@ -268,15 +265,15 @@ namespace sim_ds {
     inline void BitVector::buildSelect() {
         
         auto count = kNum1sPerTip;
-        select_tips_.push_back(0);
+        select_tips_.emplace_back(0);
         for (id_type i = 0; i < l_blocks_.size(); i++) {
             if (count < l_blocks_[i]) {
-                select_tips_.push_back(i - 1);
+                select_tips_.emplace_back(i - 1);
                 count += kNum1sPerTip;
             }
         }
         
-        select_tips_.push_back(l_blocks_.size() - 1);
+        select_tips_.emplace_back(l_blocks_.size() - 1);
     }
     
 }

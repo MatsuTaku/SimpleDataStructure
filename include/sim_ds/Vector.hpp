@@ -107,10 +107,15 @@ namespace sim_ds {
         }
         
         void push_back(size_t value) {
+            auto abs = abs_(size_);
             auto rel = rel_(size_);
-            if (rel == 0 || rel_(size_) + kBitsSizeOfTypes_ > kBitsSizeInElement)
-                vector_.push_back(0);
-            set(size_, value);
+            if (abs <= size_ - 1) {
+                vector_[abs] &= ~(kMask_ << rel);
+                vector_[abs] |= value << rel;
+            }
+            if (kBitsSizeOfTypes_ + rel > kBitsSizeInElement) {
+                vector_.emplace_back(value >> (kBitsSizeInElement - rel));
+            }
             size_++;
         }
         

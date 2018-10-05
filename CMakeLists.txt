@@ -29,19 +29,20 @@ else()
     message(STATUS "!!! BOOST NOT FOUND !!!")
 endif()
 
-# Build Public Interface Library
-add_library(sim_ds INTERFACE)
-target_sources(sim_ds INTERFACE ${HEADERS})
+# Build Public Library
+add_library(sim_ds STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
+#target_sources(sim_ds INTERFACE ${HEADERS})
 #set_target_properties(sim_ds PROPERTIES LINKER_LANGUAGE CXX)
 #include_directories(${SDS_INCLUDE_DIR})
-target_include_directories(sim_ds INTERFACE ${SDS_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
-target_link_libraries(sim_ds INTERFACE ${Boost_LIBRARIES})
+target_include_directories(sim_ds PUBLIC ${SDS_INCLUDE_DIR})
+target_include_directories(sim_ds PRIVATE ${Boost_INCLUDE_DIR})
+target_link_libraries(sim_ds PRIVATE ${Boost_LIBRARIES})
 
 
 # Build Private Static Library for Development on Xcode
-add_library(sim_ds_dev STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
-include_directories(${SDS_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
-target_link_libraries(sim_ds_dev ${Boost_LIBRARIES})
+#add_library(sim_ds_dev STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
+#include_directories(${SDS_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
+#target_link_libraries(sim_ds_dev ${Boost_LIBRARIES})
 
 
 if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
