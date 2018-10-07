@@ -13,17 +13,17 @@
 
 namespace sim_ds {
     
-    class Calc {
-    public:
-        static constexpr size_t sizeFitInBytes(uint64_t value) {
+    namespace calc {
+    
+        size_t sizeFitInBytes(uint64_t value) {
             return sizeFitInUnits(value, 8);
         }
         
-        static constexpr size_t sizeFitInBits(uint64_t value) {
+        size_t sizeFitInBits(uint64_t value) {
             return sizeFitInUnits(value, 1);
         }
         
-        static constexpr size_t sizeFitInUnits(uint64_t value, size_t unit) {
+        size_t sizeFitInUnits(uint64_t value, size_t unit) {
             size_t size = 1;
             while (value >>= unit) {
                 size++;
@@ -35,14 +35,14 @@ namespace sim_ds {
             return size;
         }
         
-        static size_t sizeFitAsSizeList(size_t value, size_t sizes[]) {
+        size_t sizeFitAsSizeList(size_t value, size_t sizes[]) {
             size_t size = 0;
             while (value >>= sizes[size++]);
             assert(size <= 8);
             return size;
         }
         
-        static std::vector<size_t> separateCountsInSizeOf(const std::vector<size_t> &list) {
+        std::vector<size_t> separateCountsInSizeOf(const std::vector<size_t> &list) {
             std::vector<size_t> counts(4);
             for (auto v : list) {
                 auto size = sizeFitInBytes(v);
@@ -51,7 +51,7 @@ namespace sim_ds {
             return counts;
         }
         
-        static std::vector<size_t> separateCountsInXorSizeOf(const std::vector<size_t> &list) {
+        std::vector<size_t> separateCountsInXorSizeOf(const std::vector<size_t> &list) {
             std::vector<size_t> counts(4);
             for (auto i = 0; i < list.size(); i++) {
                 auto size = sizeFitInBytes(list[i] ^ i);
@@ -60,7 +60,7 @@ namespace sim_ds {
             return counts;
         }
         
-        static size_t vectorMapOfSizeBits(std::vector<size_t>* map, const std::vector<size_t> &list, bool show = false) {
+        size_t vectorMapOfSizeBits(std::vector<size_t>* map, const std::vector<size_t> &list, bool show = false) {
             auto maxSize = 0;
             for (auto v : list) {
                 auto size = sizeFitInBits(v);
@@ -79,7 +79,7 @@ namespace sim_ds {
             return map->size();
         }
         
-        static size_t setCummulativeFrequency(std::vector<size_t>* cf, const std::vector<size_t> &list) {
+        size_t setCummulativeFrequency(std::vector<size_t>* cf, const std::vector<size_t> &list) {
             std::vector<size_t> map;
             vectorMapOfSizeBits(&map, list);
             auto count = 0;
@@ -91,14 +91,15 @@ namespace sim_ds {
             return cf->size();
         }
         
-        static size_t sizeOfDacFromParams(double l) {
+        size_t sizeOfDacFromParams(double l) {
             using std::ceil;
             auto a = ceil(l / 8) * 8;
             auto b = (4 * 8 + ceil(log2(l))) * ceil(l / 256) ;
             return a + b;
         }
         
-        static size_t optimizedBitsListForDac(std::vector<size_t>* bits, const std::vector<size_t> &list, size_t minCost = 1, size_t maxLevels = 8) {
+        template <typename T>
+        size_t optimizedBitsListForDac(std::vector<T>* bits, const std::vector<size_t> &list, size_t minCost = 1, size_t maxLevels = 8) {
             
             std::vector<size_t> cf;
             auto cfSize = setCummulativeFrequency(&cf, list);
@@ -173,51 +174,6 @@ namespace sim_ds {
                 }
             }
             return bk.size();
-        }
-        
-        static size_t sizeOfSacFromPrams(double l, long long n) {
-            long long ln = n > 2 ? std::ceil(std::log2(n)) : 1;
-            auto sb = std::ceil(l * ln / 8);
-            auto a = std::floor(64.0 / ln);
-            auto b = std::floor(256.0 / a);
-            auto sr = (8 + b) * std::ceil(l / (a * b));
-            return sb + sr;
-        }
-        
-        static std::vector<size_t> optimizedBitsListForSac(const std::vector<size_t> &list, size_t minCost = 1, size_t maxLevels = 8) {
-            std::vector<size_t> cf;
-            setCummulativeFrequency(&cf, list);
-            const auto m = cf.size() - 1;
-            std::vector<size_t> s(cf.size()), gf(cf.size(), 0), gt(cf.size(), cf.size());
-            const auto L = cf[0];
-            auto n = 1;
-            while (n < cf.size() && n < maxLevels) {
-                long long maxDiff = 0;
-                auto maxPos = m;
-                for (int t = m; t > 0; t--) {
-                    if (t - gf[t] < minCost || gt[t] - t < minCost) continue;
-                    long long curDiff = cf[t - 1] - cf[t];
-                    if (curDiff > maxDiff) {
-                        maxDiff = curDiff;
-                        maxPos = t;
-                    }
-                }
-                auto rankSizeInc = sizeOfSacFromPrams(L, n + 1) * n - sizeOfSacFromPrams(L, n) * (n - 1);
-                long long reductiveSize = (gt[maxPos] - maxPos) * (cf[gf[maxPos]] - cf[maxPos]) - rankSizeInc;
-                if (reductiveSize <= 0) break;
-                for (auto i = gf[maxPos]; i < maxPos; i++)
-                    gt[i] = maxPos;
-                for (auto i = maxPos; i < gt[maxPos]; i++)
-                    gf[i] = maxPos;
-                n++;
-            }
-            std::vector<size_t> bk(n);
-            auto t = 0;
-            for (auto k = 0; k < n; k++) {
-                bk[k] = gt[t] - t;
-                t = gt[t];
-            }
-            return bk;
         }
         
     };
