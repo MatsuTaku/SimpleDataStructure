@@ -9,7 +9,7 @@
 #define SuffixArray_hpp
 
 #include "basic.hpp"
-#include "Vector.hpp"
+#include "FitVector.hpp"
 #include "calc.hpp"
 
 namespace sim_ds {
@@ -61,14 +61,14 @@ namespace sim_ds {
         
         void read(std::istream &is) {
             str_ = read_string(is);
-            s_arr_ = Vector(is);
-            lcp_arr_ = Vector(is);
+            s_arr_ = FitVector(is);
+            lcp_arr_ = FitVector(is);
         }
         
     private:
         string str_;
-        Vector s_arr_;
-        Vector lcp_arr_;
+        FitVector s_arr_;
+        FitVector lcp_arr_;
         
         
         /* <0>: suffix array
@@ -134,7 +134,7 @@ namespace sim_ds {
         vector<size_t> sArr = sais_(strVec, 0xff);
         // Erase first element. suffix[0]: '\0'
         sArr.erase(sArr.begin());
-        s_arr_ = Vector(sArr);
+        s_arr_ = FitVector(sArr);
     }
     
     
@@ -313,7 +313,7 @@ namespace sim_ds {
             prevLCP = lcp;
         }
         
-        lcp_arr_ = Vector(lcpArr);
+        lcp_arr_ = FitVector(lcpArr);
         
         size_t maxL = 0;
         long long sum = 0;

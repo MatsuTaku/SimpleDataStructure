@@ -8,7 +8,7 @@
 #ifndef sim_ds_hpp
 #define sim_ds_hpp
 
-#include "sim_ds/Vector.hpp"
+#include "sim_ds/FitVector.hpp"
 #include "sim_ds/BitVector.hpp"
 #include "sim_ds/MultiBitVector.hpp"
 #include "sim_ds/WaveletTree.hpp"

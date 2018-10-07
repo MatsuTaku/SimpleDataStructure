@@ -17,30 +17,30 @@ namespace sim_ds {
     /*
      * Vector that fit to binary size of max-value of source vector integers.
      */
-    class Vector {
+    class FitVector {
     public:
         static constexpr size_t kBitsSizeInElement = 8 * sizeof(id_type); // 64
         
     public:
         // MARK: - Constructor
         
-        Vector(size_t typeSize = kBitsSizeInElement) : sizeBits_reference_(typeSize), mask_reference_((1U << typeSize) - 1) {}
+        FitVector(size_t typeSize = kBitsSizeInElement) : sizeBits_reference_(typeSize), mask_reference_((1U << typeSize) - 1) {}
         
-        Vector(size_t typeSize, size_t size) : Vector(typeSize) {
+        FitVector(size_t typeSize, size_t size) : FitVector(typeSize) {
             resize(size);
         }
         
-        Vector(size_t typeSize, size_t size, size_t value) : Vector(typeSize) {
+        FitVector(size_t typeSize, size_t size, size_t value) : FitVector(typeSize) {
             assign(size, value);
         }
         
-        Vector(std::istream &is) : Vector(read_val<size_t>(is)) {
+        FitVector(std::istream &is) : FitVector(read_val<size_t>(is)) {
             size_ = read_val<size_t>(is);
             vector_ = read_vec<id_type>(is);
         }
         
         template<typename T>
-        Vector(const std::vector<T> &vector) : Vector(typeSizeOfVector(vector)) {
+        FitVector(const std::vector<T> &vector) : FitVector(typeSizeOfVector(vector)) {
             if (vector.empty())
                 return;
             resize(vector.size());
@@ -49,11 +49,11 @@ namespace sim_ds {
             }
         }
         
-        Vector(const Vector &rhs) : Vector(rhs.sizeBits_reference_) {
+        FitVector(const FitVector &rhs) : FitVector(rhs.sizeBits_reference_) {
             size_ = rhs.size_;
             vector_ = rhs.vector_;
         }
-        Vector& operator=(const Vector &rhs) noexcept {
+        FitVector& operator=(const FitVector &rhs) noexcept {
             sizeBits_reference_ = rhs.sizeBits_reference_;
             mask_reference_ = rhs.mask_reference_;
 
@@ -62,10 +62,10 @@ namespace sim_ds {
 
             return *this;
         }
-        Vector(Vector &&rhs) noexcept = default;
-        Vector& operator=(Vector &&rhs) noexcept = default;
+        FitVector(FitVector &&rhs) noexcept = default;
+        FitVector& operator=(FitVector &&rhs) noexcept = default;
 
-        ~Vector() = default;
+        ~FitVector() = default;
         
         // Used at constructor
         

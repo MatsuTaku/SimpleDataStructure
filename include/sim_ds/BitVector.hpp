@@ -11,7 +11,7 @@
 #include "basic.hpp"
 #include "log.hpp"
 #include "bit_tools.hpp"
-#include "Vector.hpp"
+#include "FitVector.hpp"
 #include "calc.hpp"
 
 namespace sim_ds {
@@ -135,14 +135,14 @@ namespace sim_ds {
         void read(std::istream& is) {
             size_ = read_val<size_t>(is);
             bits_ = read_vec<id_type>(is);
-            l_blocks_ = Vector(is);
+            l_blocks_ = FitVector(is);
             s_block_units_ = read_vec<uint8_t>(is);
         }
         
     protected:
         size_t size_ = 0;
         std::vector<id_type> bits_;
-        Vector l_blocks_;
+        FitVector l_blocks_;
         std::vector<block_type> s_block_units_;
         std::vector<id_type> select_tips_;
         
@@ -252,7 +252,7 @@ namespace sim_ds {
     
     
     inline void BitVector::buildRank() {
-        l_blocks_ = Vector(calc::sizeFitInBits(size_), std::ceil(float(size_) / kLBlockSize));
+        l_blocks_ = FitVector(calc::sizeFitInBits(size_), std::ceil(float(size_) / kLBlockSize));
         s_block_units_.resize(std::ceil(float(size_) / kSBlockSize));
         
         auto count = 0;

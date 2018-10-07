@@ -10,7 +10,7 @@
 
 #include "basic.hpp"
 #include "BitVector.hpp"
-#include "Vector.hpp"
+#include "FitVector.hpp"
 #include "calc.hpp"
 
 namespace sim_ds {
@@ -93,7 +93,7 @@ namespace sim_ds {
         void expand(size_t size) {
             if (num_units_ >= size) return;
             for (auto i = num_units_; i < size; i++)
-                units_[i] = Vector(unit_sizes_[i]);
+                units_[i] = FitVector(unit_sizes_[i]);
             num_units_ = size;
         }
         
@@ -146,7 +146,7 @@ namespace sim_ds {
                 for (auto i = 0; i == 0 || i + 1 < num_units_; i++)
                     bits_list_[i].read(is);
             for (auto i = 0; i < num_units_; i++)
-                units_[i] = Vector(is);
+                units_[i] = FitVector(is);
             for (auto i = 0; i < num_units_; i++)
                 unit_sizes_[i] = read_val<size_t>(is);
         }
@@ -155,7 +155,7 @@ namespace sim_ds {
         size_t size_ = 0;
         size_t num_units_ = 0;
         BitVector bits_list_[kMaxSplits - 1];
-        Vector units_[kMaxSplits];
+        FitVector units_[kMaxSplits];
         size_t unit_sizes_[kMaxSplits] = {8, 8, 8, 8, 8, 8, 8, 8};
         
         void set_(size_t index, size_t value);
