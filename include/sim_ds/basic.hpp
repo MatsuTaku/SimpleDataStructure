@@ -29,6 +29,12 @@
 
 namespace sim_ds {
     
+#ifdef USE_X86
+    using id_type = uint32_t;
+#else
+    using id_type = uint64_t;
+#endif
+    
     class Stopwatch {
     public:
         Stopwatch() : start_(std::chrono::high_resolution_clock::now()) {}

@@ -1,21 +1,20 @@
 //
-//  Log.hpp
+//  log.hpp
 //  ArrayFSA
 //
 //  Created by 松本拓真 on 2018/02/21.
 //
 
-#ifndef Log_hpp
-#define Log_hpp
+#ifndef log_hpp
+#define log_hpp
 
 #include "basic.hpp"
 
 namespace sim_ds {
     
-    class Log {
-        Log() = delete;
-    public:
-        static void showAsBinary(size_t value, size_t size) {
+    namespace log {
+        
+        inline void showAsBinary(size_t value, size_t size = sizeof(id_type)) {
             using std::cout;
             using std::endl;
             for (int i = size * 8 - 1; i >= 0; i--) {
@@ -24,8 +23,8 @@ namespace sim_ds {
             cout << endl;
         }
         
-    };
+    } // namespace log
     
-}
+} // namespace sim_ds
 
-#endif /* Log_hpp */
+#endif /* log_hpp */

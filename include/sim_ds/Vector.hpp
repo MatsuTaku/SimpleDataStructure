@@ -10,7 +10,7 @@
 #define Vector_hpp
 
 #include "basic.hpp"
-#include "Calc.hpp"
+#include "calc.hpp"
 
 namespace sim_ds {
     
@@ -19,7 +19,6 @@ namespace sim_ds {
      */
     class Vector {
     public:
-        using id_type = uint64_t;
         static constexpr size_t kBitsSizeInElement = 8 * sizeof(id_type); // 64
         
     public:
@@ -37,7 +36,7 @@ namespace sim_ds {
         
         Vector(std::istream &is) : Vector(read_val<size_t>(is)) {
             size_ = read_val<size_t>(is);
-            vector_ = read_vec<uint64_t>(is);
+            vector_ = read_vec<id_type>(is);
         }
         
         template<typename T>
@@ -75,7 +74,7 @@ namespace sim_ds {
             if (vector.empty())
                 return 0;
             auto maxV = *std::max_element(vector.begin(), vector.end());
-            return sim_ds::Calc::sizeFitInBits(maxV);
+            return sim_ds::calc::sizeFitInBits(maxV);
         }
         
         // MARK: - getter
@@ -91,6 +90,10 @@ namespace sim_ds {
         
         size_t size() const {
             return size_;
+        }
+        
+        bool empty() const {
+            return size_ == 0;
         }
         
         // MARK: - setter
@@ -109,12 +112,15 @@ namespace sim_ds {
         void push_back(size_t value) {
             auto abs = abs_(size_);
             auto rel = rel_(size_);
-            if (abs <= size_ - 1) {
-                vector_[abs] &= ~(kMask_ << rel);
-                vector_[abs] |= value << rel;
-            }
-            if (kBitsSizeOfTypes_ + rel > kBitsSizeInElement) {
-                vector_.emplace_back(value >> (kBitsSizeInElement - rel));
+            if (rel == 0) {
+                vector_.emplace_back(value);
+            } else {
+                if (abs <= long(size_) - 1) {
+                    vector_[abs] |= value << rel;
+                }
+                if (kBitsSizeOfTypes_ + rel > kBitsSizeInElement) {
+                    vector_.emplace_back(value >> (kBitsSizeInElement - rel));
+                }
             }
             size_++;
         }
@@ -165,8 +171,8 @@ namespace sim_ds {
         size_t mask_reference_;
         
     protected:
-        const size_t &kBitsSizeOfTypes_ = sizeBits_reference_;
-        const size_t &kMask_ = mask_reference_;
+        const size_t& kBitsSizeOfTypes_ = sizeBits_reference_;
+        const size_t& kMask_ = mask_reference_;
         
     private:
         size_t size_ = 0;

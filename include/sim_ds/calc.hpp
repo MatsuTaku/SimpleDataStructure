@@ -1,12 +1,12 @@
 //
-//  Calc.hpp
+//  calc.hpp
 //  array_fsa
 //
 //  Created by 松本拓真 on 2017/12/10.
 //
 
-#ifndef Calc_hpp
-#define Calc_hpp
+#ifndef calc_hpp
+#define calc_hpp
 
 #include <stdio.h>
 #include <malloc/malloc.h>
@@ -14,103 +14,92 @@
 namespace sim_ds {
     
     namespace calc {
+        
+        /* Calculate minimal number of units of argument required for value expression. */
+        inline size_t sizeFitInUnits(unsigned long long value, const size_t unit) {
+            size_t size = 0;
+            while (value >> (++size * unit));
+            return size;
+        }
     
-        size_t sizeFitInBytes(uint64_t value) {
+        /* Calculate minimal number of bytes required for value expression. */
+        inline size_t sizeFitInBytes(unsigned long long value) {
             return sizeFitInUnits(value, 8);
         }
         
-        size_t sizeFitInBits(uint64_t value) {
+        /* Calculate minimal number of bits required for value expression. */
+        inline size_t sizeFitInBits(unsigned long long value) {
             return sizeFitInUnits(value, 1);
         }
         
-        size_t sizeFitInUnits(uint64_t value, size_t unit) {
-            size_t size = 1;
-            while (value >>= unit) {
-                size++;
-                if (size > 0x40 / unit) {
-                    std::cerr << (value >> (unit * size - 2)) << std::endl;
-                    abort();
-                }
-            }
-            return size;
-        }
-        
-        size_t sizeFitAsSizeList(size_t value, size_t sizes[]) {
+        template <typename CONTAINER>
+        inline size_t sizeFitAsSizeList(unsigned long long value, const CONTAINER sizes) {
             size_t size = 0;
             while (value >>= sizes[size++]);
             assert(size <= 8);
             return size;
         }
         
-        std::vector<size_t> separateCountsInSizeOf(const std::vector<size_t> &list) {
-            std::vector<size_t> counts(4);
-            for (auto v : list) {
-                auto size = sizeFitInBytes(v);
-                ++counts[size - 1];
-            }
-            return counts;
-        }
-        
-        std::vector<size_t> separateCountsInXorSizeOf(const std::vector<size_t> &list) {
-            std::vector<size_t> counts(4);
-            for (auto i = 0; i < list.size(); i++) {
-                auto size = sizeFitInBytes(list[i] ^ i);
-                ++counts[size - 1];
-            }
-            return counts;
-        }
-        
-        size_t vectorMapOfSizeBits(std::vector<size_t>* map, const std::vector<size_t> &list, bool show = false) {
+        template <class CONTAINER>
+        inline std::vector<size_t> vectorMapOfSizeBits(const CONTAINER& list, bool shouldShow = false) {
+            std::vector<size_t> map;
             auto maxSize = 0;
-            for (auto v : list) {
-                auto size = sizeFitInBits(v);
+            for (size_t i = 0; i < list.size(); i++) {
+                auto size = sizeFitInBits(list[i]);
                 if (size > maxSize) {
-                    map->resize(size, 0);
+                    map.resize(size, 0);
                     maxSize = size;
                 }
-                (*map)[size - 1]++;
-            }
-            if (show) {
-                for (auto i = 0; i < map->size(); i++) {
-                    std::cout << "[" << i + 1 << "]: " << (*map)[i] << std::endl;
-                }
+                map[size - 1]++;
             }
             
-            return map->size();
+            if (shouldShow) {
+                for (auto i = 0; i < map.size(); i++)
+                    std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
+            }
+            
+            return map;
         }
         
-        size_t setCummulativeFrequency(std::vector<size_t>* cf, const std::vector<size_t> &list) {
-            std::vector<size_t> map;
-            vectorMapOfSizeBits(&map, list);
+        template <class CONTAINER>
+        inline std::vector<size_t> cummulativeFrequency(const CONTAINER& list, bool shouldShow = false) {
+            std::vector<size_t> cf;
+            auto map = vectorMapOfSizeBits(list);
             auto count = 0;
-            cf->assign(map.size(), 0);
+            cf.assign(map.size(), 0);
             for (auto i = map.size(); i > 0; i--) {
                 count += map[i - 1];
-                (*cf)[i - 1] = count;
+                cf[i - 1] = count;
             }
-            return cf->size();
+            
+            if (shouldShow) {
+                std::cout << "Cummulative frequency of vector" << std::endl;
+                for (int i = 0; i < cf.size(); i++)
+                    std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
+            }
+            
+            return cf;
         }
         
-        size_t sizeOfDacFromParams(double l) {
+        inline size_t additionalSizeOfRank(const double l) {
             using std::ceil;
             auto a = ceil(l / 8) * 8;
             auto b = (4 * 8 + ceil(log2(l))) * ceil(l / 256) ;
             return a + b;
         }
         
-        template <typename T>
-        size_t optimizedBitsListForDac(std::vector<T>* bits, const std::vector<size_t> &list, size_t minCost = 1, size_t maxLevels = 8) {
+        template <class CONTAINER>
+        inline std::vector<size_t> splitPositionsOptimizedForSize(const CONTAINER& list, const size_t maxLevels = 8) {
+            auto cf = cummulativeFrequency(list);
             
-            std::vector<size_t> cf;
-            auto cfSize = setCummulativeFrequency(&cf, list);
-            
+            auto cfSize = cf.size();
             const auto m = cfSize - 1;
-            std::vector<size_t> s(cfSize), l(cfSize), b(cfSize);
+            std::vector<size_t> s(cfSize, 0), l(cfSize, 0), b(cfSize, 0);
             for (int t = m; t >= 0; --t) {
                 auto minSize = INFINITY;
                 auto minPos = m;
-                for (auto i = t + minCost; i <= m; i++) {
-                    auto currentSize = s[i] + cf[t] * (i - t) + sizeOfDacFromParams(cf[t]);
+                for (auto i = t + 1; i <= m; i++) {
+                    auto currentSize = s[i] + cf[t] * (i - t) + additionalSizeOfRank(cf[t]);
                     if (currentSize < minSize) {
                         minSize = currentSize;
                         minPos = i;
@@ -128,7 +117,7 @@ namespace sim_ds {
             }
             auto L = l[0];
             auto t = 0;
-            auto &bk = *bits;
+            std::vector<size_t> bk;
             bk.reserve(8);
             bk.resize(L);
             for (auto k = 0; k <= L; k++) {
@@ -136,9 +125,7 @@ namespace sim_ds {
                 t = t + b[t];
             }
             
-//            assert(malloc_zone_check(NULL));
-            
-            if (L > maxLevels) {
+            if (L > maxLevels) { // TODO: Skeptical algorithm
                 std::vector<bool> sepPos(cf.size() + 1, false);
                 auto p = 0;
                 for (auto v : bk) {
@@ -173,11 +160,12 @@ namespace sim_ds {
                     }
                 }
             }
-            return bk.size();
+            
+            return bk;
         }
         
-    };
+    } // namespace calc
     
-}
+} // namespace sim_ds
 
-#endif /* Calc_hpp */
+#endif /* calc_hpp */

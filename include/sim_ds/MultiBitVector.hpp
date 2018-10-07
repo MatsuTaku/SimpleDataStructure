@@ -9,8 +9,8 @@
 #define MultiBitVector_hpp
 
 #include "basic.hpp"
-#include "Calc.hpp"
-#include "Log.hpp"
+#include "calc.hpp"
+#include "log.hpp"
 #include "bit_tools.hpp"
 
 namespace sim_ds {
@@ -18,7 +18,6 @@ namespace sim_ds {
     template <unsigned int UNIT_SIZE>
     class MultiBitVector {
     public:
-        using id_type = uint64_t;
         static constexpr size_t kBitsUnitSize = UNIT_SIZE;
         static constexpr uint8_t kMaxNumTypes = 1U << kBitsUnitSize;
         static constexpr id_type kBitsMask = kMaxNumTypes - 1;

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 add_subdirectory(lib/googletest/googletest)
 
-file(GLOB TEST_SOURCES *_test.cpp)
+file(GLOB TEST_SOURCES src/*_test.cpp)
 foreach(TEST_SOURCE ${TEST_SOURCES})
   get_filename_component(TEST_SOURCE_NAME ${TEST_SOURCE} NAME_WE)
   add_executable(${TEST_SOURCE_NAME} ${TEST_SOURCE})

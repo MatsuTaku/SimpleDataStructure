@@ -41,7 +41,7 @@ target_link_libraries(sim_ds PRIVATE ${Boost_LIBRARIES})
 
 # Build Private Static Library for Development on Xcode
 #add_library(sim_ds_dev STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
-#include_directories(${SDS_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
+include_directories(${SDS_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
 #target_link_libraries(sim_ds_dev ${Boost_LIBRARIES})
 
 

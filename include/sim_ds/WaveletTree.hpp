@@ -10,7 +10,7 @@
 
 #include "basic.hpp"
 #include "BitVector.hpp"
-#include "Calc.hpp"
+#include "calc.hpp"
 
 namespace sim_ds {
     
@@ -23,10 +23,8 @@ namespace sim_ds {
         ~WaveletTree() = default;
         
         template <typename T>
-        WaveletTree(std::vector<T> &vec) {
+        WaveletTree(std::vector<T>& vec) {
             size_t maxChar = *std::max_element(vec.begin(), vec.end());
-//            for (auto i = 0; i < vec.size(); i++)
-//                maxChar = std::max(maxChar, size_t(vec[i]));
             expand(maxChar + 1);
             
             for (auto i = 0; i < vec.size(); i++)
@@ -138,7 +136,7 @@ namespace sim_ds {
         }
         
         size_t nodeDiff(size_t node, size_t diffHeight) {
-            auto nodeDepth = Calc::sizeFitInBits(node);
+            auto nodeDepth = calc::sizeFitInBits(node);
             auto ti = (1U << nodeDepth) - 1;
             auto fi = (1U << (nodeDepth - diffHeight)) - 1;
             return ti - fi;
@@ -149,7 +147,7 @@ namespace sim_ds {
                 return;
             leafs_ = chars;
 
-            auto height = Calc::sizeFitInBits(chars - 1);
+            auto height = calc::sizeFitInBits(chars - 1);
             if (height > height_) {
                 bv_list_.resize((1U << height) - 1);
 //                for (auto n = (1 << height_) - 1; n > 0; n--) {
