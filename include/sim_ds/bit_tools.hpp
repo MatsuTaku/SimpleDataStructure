@@ -9,14 +9,12 @@
 #define bit_tools_hpp
 
 #include <popcntintrin.h>
-#include <boost/function.hpp>
 
 namespace sim_ds::bit_tools {
     
     template <unsigned int TYPE_SIZE, unsigned int TYPE>
     inline constexpr unsigned long long popCount(uint64_t x) {
-        if constexpr (TYPE_SIZE == 1)
-        {
+        if constexpr (TYPE_SIZE == 1) {
             assert(TYPE < 0b10);
             if constexpr (TYPE == 0b0)
                 x = (~x & 0x5555555555555555) + ((~x >> 1) & 0x5555555555555555);
@@ -26,9 +24,8 @@ namespace sim_ds::bit_tools {
             x = (x & 0x0f0f0f0f0f0f0f0f) + ((x >> 4) & 0x0f0f0f0f0f0f0f0f); // 8:4
             x *= 0x0101010101010101;
             return x >> 56;
-        }
-        else if constexpr (TYPE_SIZE == 2)
-        {
+            
+        } else if constexpr (TYPE_SIZE == 2) {
             assert(TYPE < 0b100);
             if constexpr (TYPE == 0b00)
                 x = ((~x >> 1) & 0x5555555555555555) + (~x & 0x5555555555555555);
@@ -42,9 +39,8 @@ namespace sim_ds::bit_tools {
             x = (x & 0x0f0f0f0f0f0f0f0f) + ((x >> 4) & 0x0f0f0f0f0f0f0f0f); // 8:3
             x *= 0x0101010101010101;
             return x >> 56;
-        }
-        else if constexpr (TYPE_SIZE == 3)
-        {
+            
+        } else if constexpr (TYPE_SIZE == 3) {
             assert(TYPE < 0b1000);
             if constexpr (TYPE == 0b000)
                 x = (~x & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + ((~x >> 2) & 0x9249249249249249);
@@ -66,12 +62,13 @@ namespace sim_ds::bit_tools {
             x = (x & 0x1041041041041041) + ((x >> 3) & 0x1041041041041041); // 6:2
             x = (x * 0x0041041041041041 >> 54) + (x >> 60);
             return x & 0x3F;
+            
         } else {
             abort();
         }
     }
     
-    const boost::function<unsigned long long (uint64_t value)> popCount_l[3][8] = {
+    const std::function<unsigned long long (uint64_t value)> popCount_l[3][8] = {
         {
             popCount<1, 0b0>,
             popCount<1, 0b1>

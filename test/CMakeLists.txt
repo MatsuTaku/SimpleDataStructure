@@ -10,8 +10,8 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
   add_test(${TEST_SOURCE_NAME} ${TEST_SOURCE_NAME})
 endforeach()
 
-add_executable(sim_ds_test ${TEST_SOURCES})
-target_link_libraries(sim_ds_test gtest_main sim_ds)
-add_test(sim_ds_test sim_ds_test)
+#add_executable(sim_ds_test ${TEST_SOURCES})
+#target_link_libraries(sim_ds_test gtest_main sim_ds)
+#add_test(sim_ds_test sim_ds_test)
 
 

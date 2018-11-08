@@ -22,12 +22,20 @@ TEST(BitVectorTest, Convert) {
 }
 
 TEST(BitVectorTest, Rank) {
-    std::vector<bool> bits(0xFFF);
-    for (auto i = 0; i < bits.size(); i++)
-        bits[i] = i % 3 == 2;
+    const auto size = 0xFFF;
+    std::vector<bool> bits(size);
+    std::vector<size_t> ranks(size);
+    size_t count = 0;
+    for (auto i = 0; i < bits.size(); i++) {
+        ranks[i] = count;
+        if (rand() % 7 == 0) {
+            bits[i] = true;
+            count++;
+        }
+    }
     
     BitVector bv(bits, true);
     for (auto i = 0; i < bits.size(); i++)
-        EXPECT_EQ(i / 3, bv.rank(i));
+        EXPECT_EQ(bv.rank(i), ranks[i]);
     
 }

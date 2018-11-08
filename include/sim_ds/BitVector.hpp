@@ -16,15 +16,48 @@
 
 namespace sim_ds {
     
+    template<class _Cls>
+    class __bit_reference {
+    private:
+        using _Pointer = typename _Cls::pointer_type;
+        using _Mask = typename _Cls::word_type;
+        
+    public:
+        static constexpr size_t _bits_per_word = sizeof(_Mask) * 8;
+        __bit_reference(_Pointer p, _Mask m) : _pointer(p), _mask(m) {}
+        
+        constexpr operator bool() const {
+            return static_cast<bool>(*_pointer & _mask);
+        }
+        
+        __bit_reference& operator=(bool x) {
+            if (x)
+                *_pointer |= _mask;
+            else
+                *_pointer &= ~_mask;
+            return *this;
+        }
+        std::bitset<1> b;
+        
+    private:
+        _Pointer _pointer;
+        _Mask _mask;
+        
+    };
+    
+    
     class BitVector {
-    protected:
+    public:
+        using pointer_type = id_type*;
+        using word_type = id_type;
+        using reference = __bit_reference<BitVector>;
+        
         using block_type = uint8_t;
         static constexpr uint8_t kSBlockSize = sizeof(id_type) * 8; // 64
         static constexpr size_t kLBlockSize = 0x100;
         static constexpr uint8_t kBlocksInTip = kLBlockSize / kSBlockSize; // (256) / 64 = 4
         static constexpr size_t kNum1sPerTip = 0x200;
         
-    public:
         BitVector() = default;
         ~BitVector() = default;
         
@@ -32,7 +65,7 @@ namespace sim_ds {
         BitVector(const BITSET& bools, bool useRank, bool useSelect = false) {
             resize(bools.size());
             for (auto i = 0; i < bools.size(); i++)
-                set(i, bools[i]);
+                operator[](i) = bools[i];
             if (useRank)
                 build(useSelect);
         }
@@ -66,38 +99,28 @@ namespace sim_ds {
             return *this;
         }
         
-    public:
-        
-        constexpr bool operator[](size_t index) const {
-            return access(index);
+        bool operator[](size_t index) const {
+            return static_cast<bool>(bits_[abs(index)] & (1UL << rel(index)));
         }
         
-        constexpr bool access(size_t index) const {
-            return (bits_[abs(index)] & (1UL << rel(index))) != 0;
+        reference operator[](size_t index) {
+            return reference(&bits_[abs(index)], 1ULL << rel(index));
         }
         
-        constexpr unsigned long long rank(size_t index) const;
+        unsigned long long rank(size_t index) const;
         
-        constexpr unsigned long long rank0(size_t index) const;
+        unsigned long long rank0(size_t index) const;
         
-        constexpr unsigned long long select(size_t index) const;
+        unsigned long long select(size_t index) const;
         
         size_t size() const {
             return size_;
         }
         
-        void set(size_t index, bool bit) {
-            assert(index < size_);
-            if (bit)
-                bits_[abs(index)] |= (1UL << rel(index));
-            else 
-                bits_[abs(index)] &= ~(1UL << rel(index));
-        }
-        
         void push_back(bool bit) {
             auto size = size_;
             resize(size_ + 1);
-            set(size, bit);
+            operator[](size) = bit;
         }
         
         void build(bool useSelect);
@@ -139,7 +162,7 @@ namespace sim_ds {
             s_block_units_ = read_vec<uint8_t>(is);
         }
         
-    protected:
+    private:
         size_t size_ = 0;
         std::vector<id_type> bits_;
         FitVector l_blocks_;
@@ -169,18 +192,17 @@ namespace sim_ds {
     };
     
     
-    inline constexpr unsigned long long BitVector::rank(size_t index) const {
-        auto relI = rel(index);
-        return tipL(index) + tipS(index) + (relI == 0 ? 0 : bit_tools::popCount(bits_[abs(index)] & ((1UL << relI) - 1)));
+    unsigned long long BitVector::rank(size_t index) const {
+        return tipL(index) + tipS(index) + bit_tools::popCount(bits_[abs(index)] & ((1UL << rel(index)) - 1));
     }
     
     
-    inline constexpr unsigned long long BitVector::rank0(size_t index) const {
+    unsigned long long BitVector::rank0(size_t index) const {
         return index - rank(index);
     }
     
     
-    inline constexpr unsigned long long BitVector::select(size_t index) const {
+    unsigned long long BitVector::select(size_t index) const {
         id_type left = 0, right = l_blocks_.size();
         auto i = index;
         
@@ -241,7 +263,7 @@ namespace sim_ds {
     }
     
     
-    inline void BitVector::build(bool useSelect = false) {
+    void BitVector::build(bool useSelect = false) {
         if (bits_.empty()) return;
         
         buildRank();
@@ -251,7 +273,7 @@ namespace sim_ds {
     }
     
     
-    inline void BitVector::buildRank() {
+    void BitVector::buildRank() {
         l_blocks_ = FitVector(calc::sizeFitInBits(size_), std::ceil(float(size_) / kLBlockSize));
         s_block_units_.resize(std::ceil(float(size_) / kSBlockSize));
         
@@ -274,7 +296,7 @@ namespace sim_ds {
     }
     
     
-    inline void BitVector::buildSelect() {
+    void BitVector::buildSelect() {
         auto count = kNum1sPerTip;
         select_tips_.emplace_back(0);
         for (id_type i = 0; i < l_blocks_.size(); i++) {

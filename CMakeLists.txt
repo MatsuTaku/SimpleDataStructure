@@ -19,15 +19,16 @@ set(SDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB HEADERS ${SDS_INCUDE_DIR}/sim_ds.hpp ${SDS_INCLUDE_DIR}/sim_ds/*.hpp)
 
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost REQUIRED thread)
-if(Boost_FOUND)
-    message(STATUS "!!! BOOST FOUND !!!")
-else()
-    message(STATUS "!!! BOOST NOT FOUND !!!")
-endif()
+# Link Boost package
+#set(Boost_USE_STATIC_LIBS ON)
+#set(Boost_USE_MULTITHREADED ON)
+#set(Boost_USE_STATIC_RUNTIME OFF)
+#find_package(Boost REQUIRED thread)
+#if(Boost_FOUND)
+#    message(STATUS "!!! BOOST FOUND !!!")
+#else()
+#    message(STATUS "!!! BOOST NOT FOUND !!!")
+#endif()
 
 # Build Public Library
 add_library(sim_ds STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})

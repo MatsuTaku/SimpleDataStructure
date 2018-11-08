@@ -21,7 +21,6 @@ namespace sim_ds {
     public:
         static constexpr size_t kBitsSizeInElement = 8 * sizeof(id_type); // 64
         
-    public:
         // MARK: - Constructor
         
         FitVector(size_t typeSize = kBitsSizeInElement) : sizeBits_reference_(typeSize), mask_reference_((1U << typeSize) - 1) {}
@@ -77,7 +76,7 @@ namespace sim_ds {
             return sim_ds::calc::sizeFitInBits(maxV);
         }
         
-        // MARK: - getter
+        // MARK: Getter
         
         constexpr size_t operator[](size_t index) const {
             auto abs = abs_(index);
@@ -126,14 +125,12 @@ namespace sim_ds {
         }
         
         void resize(size_t size) {
-            if (size == 0)
+            if (size == 0) {
                 vector_.resize(0);
-            else {
+            } else {
                 auto abs = abs_(size - 1);
-                if (rel_(size - 1) + kBitsSizeOfTypes_ > kBitsSizeInElement)
-                    vector_.resize(abs + 2);
-                else
-                    vector_.resize(abs + 1);
+                bool crossBoundary = rel_(size - 1) + kBitsSizeOfTypes_ > kBitsSizeInElement;
+                vector_.resize(abs + (crossBoundary ? 2 : 1));
             }
             if (size < size_)
                 vector_.shrink_to_fit();

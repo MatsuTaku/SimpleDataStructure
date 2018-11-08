@@ -205,7 +205,7 @@ namespace sim_ds {
             value >>= curBitsSize;
             index = unit.size() - 1;
             if (depth == 0 || depth + 1 < num_units_)
-                bits_list_[depth].set(index, depth < size - 1);
+                bits_list_[depth][index] = depth < size - 1;
         }
     }
     
