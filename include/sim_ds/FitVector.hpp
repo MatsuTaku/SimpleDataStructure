@@ -14,16 +14,58 @@
 
 namespace sim_ds {
     
+    template<class _Seq>
+    class __bits_reference {
+    private:
+        using __pointer_type = typename _Seq::__pointer_type;
+        using __mask_type = typename _Seq::__mask_type;
+        
+    public:
+        static constexpr size_t _bits_per_word = sizeof(id_type) * 8;
+        
+        __bits_reference(__pointer_type pointer, size_t offset, __mask_type mask) : __pointer_(pointer), __offset_(offset), __mask_(mask) {}
+        
+        operator id_type() const {
+            if (((__mask_ >> 1) + 1) << __offset_) {
+                return (*__pointer_ >> __offset_) & __mask_;
+            } else {
+                return ((*__pointer_ >> __offset_) | (*(__pointer_ + 1) << (_bits_per_word - __offset_))) & __mask_;
+            }
+        }
+        
+        __bits_reference& operator=(id_type value) {
+            *__pointer_ = (*__pointer_ & ~(__mask_ << __offset_)) | (value << __offset_);
+            if (__mask_ + __offset_ > _bits_per_word) {
+                auto roffset = _bits_per_word - __offset_;
+                *(__pointer_ + 1) = (*(__pointer_ + 1) & ~(__mask_ >> roffset)) | value >> roffset;
+            }
+            return *this;
+        }
+        
+    private:
+        __pointer_type __pointer_;
+        size_t __offset_;
+        __mask_type __mask_;
+        
+    };
+    
+    
     /*
      * Vector that fit to binary size of max-value of source vector integers.
      */
     class FitVector {
+    private:
+        friend class __bits_reference<FitVector>;
+        using __pointer_type = id_type*;
+        using __mask_type = id_type;
+        
     public:
-        static constexpr size_t kBitsSizeInElement = 8 * sizeof(id_type); // 64
+        using reference = __bits_reference<FitVector>;
+        static constexpr size_t _bits_per_word = 8 * sizeof(id_type); // 64
         
         // MARK: - Constructor
         
-        FitVector(size_t typeSize = kBitsSizeInElement) : sizeBits_reference_(typeSize), mask_reference_((1U << typeSize) - 1) {}
+        FitVector(size_t typeSize = _bits_per_word) : _bits_per_unit_(typeSize), _mask_((1U << typeSize) - 1) {}
         
         FitVector(size_t typeSize, size_t size) : FitVector(typeSize) {
             resize(size);
@@ -33,7 +75,7 @@ namespace sim_ds {
             assign(size, value);
         }
         
-        FitVector(std::istream &is) : FitVector(read_val<size_t>(is)) {
+        FitVector(std::istream& is) : FitVector(read_val<size_t>(is)) {
             size_ = read_val<size_t>(is);
             vector_ = read_vec<id_type>(is);
         }
@@ -44,25 +86,15 @@ namespace sim_ds {
                 return;
             resize(vector.size());
             for (auto i = 0; i < vector.size(); i++) {
-                set(i, vector[i]);
+                operator[](i) = vector[i];
             }
         }
         
-        FitVector(const FitVector &rhs) : FitVector(rhs.sizeBits_reference_) {
-            size_ = rhs.size_;
-            vector_ = rhs.vector_;
-        }
-        FitVector& operator=(const FitVector &rhs) noexcept {
-            sizeBits_reference_ = rhs.sizeBits_reference_;
-            mask_reference_ = rhs.mask_reference_;
-
-            size_ = rhs.size_;
-            vector_ = rhs.vector_;
-
-            return *this;
-        }
-        FitVector(FitVector &&rhs) noexcept = default;
-        FitVector& operator=(FitVector &&rhs) noexcept = default;
+        FitVector(const FitVector&) = default;
+        FitVector& operator=(const FitVector&) = default;
+        
+        FitVector(FitVector&&) noexcept = default;
+        FitVector& operator=(FitVector&&) noexcept = default;
 
         ~FitVector() = default;
         
@@ -76,16 +108,22 @@ namespace sim_ds {
             return sim_ds::calc::sizeFitInBits(maxV);
         }
         
-        // MARK: Getter
+        // MARK: operator
         
-        constexpr size_t operator[](size_t index) const {
+        id_type operator[](size_t index) const {
             auto abs = abs_(index);
             auto rel = rel_(index);
-            if (kBitsSizeInElement >= rel + kBitsSizeOfTypes_)
-                return (vector_[abs] >> rel) & kMask_;
+            if (_bits_per_word >= rel + _bits_per_unit_)
+                return (vector_[abs] >> rel) & _mask_;
             else
-                return ((vector_[abs] >> rel) | (vector_[abs + 1] << (kBitsSizeInElement - rel))) & kMask_;
+                return ((vector_[abs] >> rel) | (vector_[abs + 1] << (_bits_per_word - rel))) & _mask_;
         }
+        
+        reference operator[](size_t index) {
+            return reference(&vector_[abs_(index)], rel_(index), _mask_);
+        }
+        
+        // MARK: Getter
         
         size_t size() const {
             return size_;
@@ -97,17 +135,6 @@ namespace sim_ds {
         
         // MARK: - setter
         
-        void set(size_t index, size_t value) {
-            auto abs = abs_(index);
-            auto rel = rel_(index);
-            vector_[abs] &= ~(kMask_ << rel);
-            vector_[abs] |= value << rel;
-            if (kBitsSizeOfTypes_ + rel > kBitsSizeInElement) {
-                vector_[abs + 1] &= ~(kMask_ >> (kBitsSizeInElement - rel));
-                vector_[abs + 1] |= value >> (kBitsSizeInElement - rel);
-            }
-        }
-        
         void push_back(size_t value) {
             auto abs = abs_(size_);
             auto rel = rel_(size_);
@@ -117,8 +144,8 @@ namespace sim_ds {
                 if (abs <= long(size_) - 1) {
                     vector_[abs] |= value << rel;
                 }
-                if (kBitsSizeOfTypes_ + rel > kBitsSizeInElement) {
-                    vector_.emplace_back(value >> (kBitsSizeInElement - rel));
+                if (_bits_per_unit_ + rel > _bits_per_word) {
+                    vector_.emplace_back(value >> (_bits_per_word - rel));
                 }
             }
             size_++;
@@ -129,7 +156,7 @@ namespace sim_ds {
                 vector_.resize(0);
             } else {
                 auto abs = abs_(size - 1);
-                bool crossBoundary = rel_(size - 1) + kBitsSizeOfTypes_ > kBitsSizeInElement;
+                bool crossBoundary = rel_(size - 1) + _bits_per_unit_ > _bits_per_word;
                 vector_.resize(abs + (crossBoundary ? 2 : 1));
             }
             if (size < size_)
@@ -139,50 +166,46 @@ namespace sim_ds {
         
         void assign(size_t size, size_t value) {
             vector_.resize(abs_(size));
-            for (auto i = 0; i < size; i++)
-                set(i, value);
+            for (auto i = 0; i < size; i++) {
+                operator[](i) = value;
+            }
         }
         
         void reserve(size_t size) {
             float fs = size;
-            auto offset = std::ceil(fs * kBitsSizeOfTypes_ / kBitsSizeInElement);
+            auto offset = std::ceil(fs * _bits_per_unit_ / _bits_per_word);
             vector_.reserve(offset);
         }
         
-        // MARK: - method
+        // MARK: method
         
         size_t sizeInBytes() const {
-            auto size = sizeof(sizeBits_reference_) + sizeof(size_);
+            auto size = sizeof(_bits_per_unit_) + sizeof(size_);
             size += size_vec(vector_);
             return size;
         }
         
         void write(std::ostream &os) const {
-            write_val(sizeBits_reference_, os);
+            write_val(_bits_per_unit_, os);
             write_val(size_, os);
             write_vec(vector_, os);
         }
         
     private:
-        size_t sizeBits_reference_;
-        size_t mask_reference_;
+        // * Initialized only in constructor
+        size_t _bits_per_unit_;
+        id_type _mask_;
+        // *
         
-    protected:
-        const size_t& kBitsSizeOfTypes_ = sizeBits_reference_;
-        const size_t& kMask_ = mask_reference_;
-        
-    private:
         size_t size_ = 0;
         std::vector<id_type> vector_;
         
-        // MARK: - private function
-        
-        constexpr size_t abs_(size_t index) const {
-            return index * kBitsSizeOfTypes_ / kBitsSizeInElement;
+        size_t abs_(size_t index) const {
+            return index * _bits_per_unit_ / _bits_per_word;
         }
         
-        constexpr size_t rel_(size_t index) const {
-            return index * kBitsSizeOfTypes_ % kBitsSizeInElement;
+        size_t rel_(size_t index) const {
+            return index * _bits_per_unit_ % _bits_per_word;
         }
         
     };

@@ -21,12 +21,13 @@ TEST(FitVectorTest, ConvertVector) {
 }
 
 TEST(FitVectorTest, Move) {
-    auto vec = FitVector(16, 0xFFF, 0xF0F0);
+    auto value = 0x1a5a5;
+    auto vec = FitVector(17, 0xFFF, value);
     for (auto i = 0; i < 0xFFF; i++)
-        EXPECT_EQ(vec[i], 0xF0F0);
+        EXPECT_EQ(vec[i], value);
     
     auto vec2 = std::move(vec);
     for (auto i = 0; i < 0xFFF; i++)
-        EXPECT_EQ(vec2[i], 0xF0F0);
+        EXPECT_EQ(vec2[i], value);
     
 }
