@@ -23,10 +23,10 @@ namespace sim_ds {
     public:
         static constexpr size_t _bits_per_word = sizeof(id_type) * 8;
         
-        __bits_reference(__pointer_type pointer, size_t offset, __mask_type mask) : __pointer_(pointer), __offset_(offset), __mask_(mask) {}
+        __bits_reference(__pointer_type pointer, size_t offset, size_t bitsPerUnit) : __pointer_(pointer), __offset_(offset), __bits_per_unit_(bitsPerUnit), __mask_((1ULL << bitsPerUnit) - 1) {}
         
-        operator id_type() const {
-            if (((__mask_ >> 1) + 1) << __offset_) {
+        constexpr operator id_type() const {
+            if (__bits_per_unit_ + __offset_ <= _bits_per_word) {
                 return (*__pointer_ >> __offset_) & __mask_;
             } else {
                 return ((*__pointer_ >> __offset_) | (*(__pointer_ + 1) << (_bits_per_word - __offset_))) & __mask_;
@@ -35,7 +35,7 @@ namespace sim_ds {
         
         __bits_reference& operator=(id_type value) {
             *__pointer_ = (*__pointer_ & ~(__mask_ << __offset_)) | (value << __offset_);
-            if (__mask_ + __offset_ > _bits_per_word) {
+            if (__bits_per_unit_ + __offset_ > _bits_per_word) {
                 auto roffset = _bits_per_word - __offset_;
                 *(__pointer_ + 1) = (*(__pointer_ + 1) & ~(__mask_ >> roffset)) | value >> roffset;
             }
@@ -45,6 +45,7 @@ namespace sim_ds {
     private:
         __pointer_type __pointer_;
         size_t __offset_;
+        size_t __bits_per_unit_;
         __mask_type __mask_;
         
     };
@@ -65,13 +66,13 @@ namespace sim_ds {
         
         // MARK: - Constructor
         
-        FitVector(size_t typeSize = _bits_per_word) : _bits_per_unit_(typeSize), _mask_((1U << typeSize) - 1) {}
+        FitVector(size_t wordBits = _bits_per_word) : _bits_per_unit_(wordBits), _mask_((1U << wordBits) - 1) {}
         
-        FitVector(size_t typeSize, size_t size) : FitVector(typeSize) {
+        FitVector(size_t wordBits, size_t size) : FitVector(wordBits) {
             resize(size);
         }
         
-        FitVector(size_t typeSize, size_t size, size_t value) : FitVector(typeSize) {
+        FitVector(size_t wordBits, size_t size, size_t value) : FitVector(wordBits) {
             assign(size, value);
         }
         
@@ -90,14 +91,6 @@ namespace sim_ds {
             }
         }
         
-        FitVector(const FitVector&) = default;
-        FitVector& operator=(const FitVector&) = default;
-        
-        FitVector(FitVector&&) noexcept = default;
-        FitVector& operator=(FitVector&&) noexcept = default;
-
-        ~FitVector() = default;
-        
         // Used at constructor
         
         template<typename T>
@@ -108,7 +101,7 @@ namespace sim_ds {
             return sim_ds::calc::sizeFitInBits(maxV);
         }
         
-        // MARK: operator
+        // MARK: Operator
         
         id_type operator[](size_t index) const {
             auto abs = abs_(index);
@@ -120,7 +113,7 @@ namespace sim_ds {
         }
         
         reference operator[](size_t index) {
-            return reference(&vector_[abs_(index)], rel_(index), _mask_);
+            return reference(&vector_[abs_(index)], rel_(index), _bits_per_unit_);
         }
         
         // MARK: Getter
@@ -190,6 +183,14 @@ namespace sim_ds {
             write_val(size_, os);
             write_vec(vector_, os);
         }
+        
+        ~FitVector() = default;
+        
+        FitVector(const FitVector&) = default;
+        FitVector& operator=(const FitVector&) = default;
+        
+        FitVector(FitVector&&) noexcept = default;
+        FitVector& operator=(FitVector&&) noexcept = default;
         
     private:
         // * Initialized only in constructor
