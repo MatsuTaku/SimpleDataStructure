@@ -104,6 +104,7 @@ namespace sim_ds {
         // MARK: Operator
         
         id_type operator[](size_t index) const {
+            assert(index < size_);
             auto abs = abs_(index);
             auto rel = rel_(index);
             if (_bits_per_word >= rel + _bits_per_unit_)
@@ -113,6 +114,7 @@ namespace sim_ds {
         }
         
         reference operator[](size_t index) {
+            assert(index < size_);
             return reference(&vector_[abs_(index)], rel_(index), _bits_per_unit_);
         }
         
@@ -158,7 +160,7 @@ namespace sim_ds {
         }
         
         void assign(size_t size, size_t value) {
-            vector_.resize(abs_(size));
+            resize(size);
             for (auto i = 0; i < size; i++) {
                 operator[](i) = value;
             }

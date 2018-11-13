@@ -89,7 +89,7 @@ namespace sim_ds {
         }
         
         template <class CONTAINER>
-        inline std::vector<size_t> splitPositionsOptimizedForSize(const CONTAINER& list, const size_t maxLevels = 8) {
+        inline std::vector<size_t> splitPositionsOptimizedForDac(const CONTAINER& list, const size_t maxLevels = 8) {
             auto cf = cummulativeFrequency(list);
             
             auto cfSize = cf.size();

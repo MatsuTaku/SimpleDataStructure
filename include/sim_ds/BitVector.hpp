@@ -103,10 +103,12 @@ namespace sim_ds {
         }
         
         bool operator[](size_t index) const {
+            assert(index < size_);
             return static_cast<bool>(bits_[abs_(index)] & (1UL << rel_(index)));
         }
         
         reference operator[](size_t index) {
+            assert(index < size_);
             return reference(&bits_[abs_(index)], 1ULL << rel_(index));
         }
         
