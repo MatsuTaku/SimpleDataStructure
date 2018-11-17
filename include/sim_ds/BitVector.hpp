@@ -45,23 +45,27 @@ namespace sim_ds {
     
     
     class BitVector {
+    public:
+        using reference = __bit_reference<BitVector>;
+        
     private:
         friend class __bit_reference<BitVector>;
         using __pointer_type = id_type*;
         using __word_type = id_type;
+        using __s_block_type = uint8_t;
+        
+        static constexpr uint8_t __small_block_bits_ = sizeof(id_type) * 8; // 64
+        static constexpr size_t __large_block_bits_ = 0x100;
+        static constexpr uint8_t __num_s_per_l_ = __large_block_bits_ / __small_block_bits_; // (256) / 64 = 4
+        static constexpr size_t __bits_per_select_tips_ = 0x200;
+        
+        size_t size_ = 0;
+        std::vector<__word_type> bits_;
+        FitVector l_blocks_;
+        std::vector<__s_block_type> s_blocks_;
+        FitVector select_tips_;
         
     public:
-        using reference = __bit_reference<BitVector>;
-        
-        using block_type = uint8_t;
-        static constexpr uint8_t kSBlockSize = sizeof(id_type) * 8; // 64
-        static constexpr size_t kLBlockSize = 0x100;
-        static constexpr uint8_t kBlocksInTip = kLBlockSize / kSBlockSize; // (256) / 64 = 4
-        static constexpr size_t kNum1sPerTip = 0x200;
-        
-        BitVector() = default;
-        ~BitVector() = default;
-        
         template <class BITSET>
         BitVector(const BITSET& bools, bool useRank, bool useSelect = false) {
             resize(bools.size());
@@ -71,35 +75,9 @@ namespace sim_ds {
                 build(useSelect);
         }
         
-        BitVector(const BitVector& rhs) noexcept  {
-            size_ = rhs.size_;
-            bits_ = rhs.bits_;
-            l_blocks_ = rhs.l_blocks_;
-            s_block_units_ = rhs.s_block_units_;
-        }
-        
-        BitVector& operator=(const BitVector& rhs) noexcept {
-            size_ = rhs.size_;
-            bits_ = rhs.bits_;
-            l_blocks_ = rhs.l_blocks_;
-            s_block_units_ = rhs.s_block_units_;
-            
-            return *this;
-        }
-        
-        BitVector(BitVector&& rhs) noexcept {
-            size_ = std::move(rhs.size_);
-            bits_ = std::move(rhs.bits_);
-            l_blocks_ = std::move(rhs.l_blocks_);
-            s_block_units_ = std::move(rhs.s_block_units_);
-        }
-        
-        BitVector& operator=(BitVector&& rhs) noexcept {
-            size_ = std::move(rhs.size_);
-            bits_ = std::move(rhs.bits_);
-            l_blocks_ = std::move(rhs.l_blocks_);
-            s_block_units_ = std::move(rhs.s_block_units_);
-            return *this;
+        reference operator[](size_t index) {
+            assert(index < size_);
+            return reference(&bits_[abs_(index)], 1ULL << rel_(index));
         }
         
         bool operator[](size_t index) const {
@@ -107,9 +85,20 @@ namespace sim_ds {
             return static_cast<bool>(bits_[abs_(index)] & (1UL << rel_(index)));
         }
         
-        reference operator[](size_t index) {
-            assert(index < size_);
-            return reference(&bits_[abs_(index)], 1ULL << rel_(index));
+        reference front() {
+            return operator[](0);
+        }
+        
+        bool front() const {
+            return operator[](0);
+        }
+        
+        reference back() {
+            return operator[](size() - 1);
+        }
+        
+        bool back() const {
+            return operator[](size() - 1);
         }
         
         unsigned long long rank(size_t index) const {
@@ -127,25 +116,30 @@ namespace sim_ds {
         }
         
         void push_back(bool bit) {
-            auto size = size_;
-            resize(size_ + 1);
-            operator[](size) = bit;
+            resize(size() + 1);
+            back() = bit;
         }
-        
-        void build(bool useSelect);
         
         void buildRank();
         
         void buildSelect();
         
+        void build(bool useSelect = false) {
+            if (bits_.empty())
+                return;
+            buildRank();
+            if (useSelect)
+                buildSelect();
+        }
+        
         void resize(size_t size) {
-            size_t abs = std::ceil(float(size) / kSBlockSize);
+            size_t abs = std::ceil(float(size) / __small_block_bits_);
             bits_.resize(abs);
             size_ = size;
         }
         
         void reserve(size_t size) {
-            size_t abs = std::ceil(float(size) / kSBlockSize);
+            size_t abs = std::ceil(float(size) / __small_block_bits_);
             bits_.reserve(abs);
         }
         
@@ -155,39 +149,66 @@ namespace sim_ds {
         }
         
         size_t sizeInBytes() const {
-            return sizeof(size_t) + size_vec(bits_) + l_blocks_.sizeInBytes() + size_vec(s_block_units_);
+            return sizeof(size_t) + size_vec(bits_) + l_blocks_.sizeInBytes() + size_vec(s_blocks_);
         }
         
         void write(std::ostream& os) const {
             write_val(size_, os);
             write_vec(bits_, os);
             l_blocks_.write(os);
-            write_vec(s_block_units_, os);
+            write_vec(s_blocks_, os);
         }
         void read(std::istream& is) {
             size_ = read_val<size_t>(is);
             bits_ = read_vec<id_type>(is);
             l_blocks_ = FitVector(is);
-            s_block_units_ = read_vec<uint8_t>(is);
+            s_blocks_ = read_vec<uint8_t>(is);
+        }
+        
+        BitVector() = default;
+        ~BitVector() = default;
+        
+        BitVector(const BitVector& rhs) noexcept  {
+            size_ = rhs.size_;
+            bits_ = rhs.bits_;
+            l_blocks_ = rhs.l_blocks_;
+            s_blocks_ = rhs.s_blocks_;
+        }
+        BitVector& operator=(const BitVector& rhs) noexcept {
+            size_ = rhs.size_;
+            bits_ = rhs.bits_;
+            l_blocks_ = rhs.l_blocks_;
+            s_blocks_ = rhs.s_blocks_;
+            
+            return *this;
+        }
+        
+        BitVector(BitVector&& rhs) noexcept {
+            size_ = std::move(rhs.size_);
+            bits_ = std::move(rhs.bits_);
+            l_blocks_ = std::move(rhs.l_blocks_);
+            s_blocks_ = std::move(rhs.s_blocks_);
+        }
+        BitVector& operator=(BitVector&& rhs) noexcept {
+            size_ = std::move(rhs.size_);
+            bits_ = std::move(rhs.bits_);
+            l_blocks_ = std::move(rhs.l_blocks_);
+            s_blocks_ = std::move(rhs.s_blocks_);
+            return *this;
         }
         
     private:
-        size_t size_ = 0;
-        std::vector<id_type> bits_;
-        FitVector l_blocks_;
-        std::vector<block_type> s_block_units_;
-        std::vector<id_type> select_tips_;
         
         constexpr size_t block_(size_t index) const {
-            return index / kLBlockSize;
+            return index / __large_block_bits_;
         }
         
         constexpr size_t abs_(size_t index) const {
-            return index / kSBlockSize;
+            return index / __small_block_bits_;
         }
         
         constexpr size_t rel_(size_t index) const {
-            return index % kSBlockSize;
+            return index % __small_block_bits_;
         }
         
         size_t tipL_(size_t index) const {
@@ -195,11 +216,10 @@ namespace sim_ds {
         }
         
         size_t tipS_(size_t index) const {
-            return s_block_units_[abs_(index)];
+            return s_blocks_[abs_(index)];
         }
         
     };
-    
     
     
     unsigned long long BitVector::select(size_t index) const {
@@ -207,7 +227,7 @@ namespace sim_ds {
         auto i = index;
         
         if (select_tips_.size() != 0) {
-            auto selectTipId = i / kNum1sPerTip;
+            auto selectTipId = i / __bits_per_select_tips_;
             left = select_tips_[selectTipId];
             right = select_tips_[selectTipId + 1] + 1;
         }
@@ -225,67 +245,52 @@ namespace sim_ds {
         i -= l_blocks_[left];
         
         uint32_t offset = 1;
-        for (; offset < kBlocksInTip; offset++) {
-            if (i <= s_block_units_[left * kBlocksInTip + offset]) {
+        for (; offset < __num_s_per_l_; offset++) {
+            if (i <= s_blocks_[left * __num_s_per_l_ + offset]) {
                 break;
             }
         }
-        i -= s_block_units_[left * kBlocksInTip + --offset];
+        i -= s_blocks_[left * __num_s_per_l_ + --offset];
     
-        auto ret = (left * kLBlockSize) + (offset * kSBlockSize);
-        auto bits = bits_[ret / 0x20];
+        auto ret = (left * __large_block_bits_) + (offset * __small_block_bits_);
+        auto bits = bits_[ret / __small_block_bits_];
         
-        {
-            auto count = bit_tools::popCount(bits % 0x10000);
+        auto compress = [&bits, &ret, &i](const id_type block) {
+            auto count = bit_tools::popCount(bits % block);
             auto shiftBlock = 0;
-            while ((0x10000 - 1) >> (8 * ++shiftBlock));
+            while ((block - 1) >> (8 * ++shiftBlock));
             shiftBlock *= 8;
             if (count < i) {
                 bits >>= shiftBlock;
                 ret += shiftBlock;
                 i -= count;
             }
-        }
-        {
-            auto count = bit_tools::popCount(bits % 0x100);
-            auto shiftBlock = 0;
-            while ((0x100 - 1) >> (8 * ++shiftBlock));
-            shiftBlock *= 8;
-            if (count < i) {
-                bits >>= shiftBlock;
-                ret += shiftBlock;
-                i -= count;
-            }
-        }
+        };
+        
+#ifndef USE_X86
+        compress(0x100000000);
+#endif
+        compress(0x10000);
+        compress(0x100);
         
         ret += bit_tools::kSelectTable[i][bits % 0x100];
         return ret - 1;
     }
     
     
-    void BitVector::build(bool useSelect = false) {
-        if (bits_.empty()) return;
-        
-        buildRank();
-        
-        if (useSelect) buildSelect();
-        
-    }
-    
-    
     void BitVector::buildRank() {
-        l_blocks_ = FitVector(calc::sizeFitsInBits(size_), std::ceil(float(size_) / kLBlockSize));
-        s_block_units_.resize(std::ceil(float(size_) / kSBlockSize));
+        l_blocks_ = FitVector(calc::sizeFitsInBits(size_), std::ceil(float(size_) / __large_block_bits_));
+        s_blocks_.resize(std::ceil(float(size_) / __small_block_bits_));
         
         auto count = 0;
         for (auto i = 0; i < l_blocks_.size(); i++) {
             l_blocks_[i] = count;
             
-            for (auto offset = 0; offset < kBlocksInTip; offset++) {
-                auto index = i * kBlocksInTip + offset;
-                if (index > s_block_units_.size() - 1)
+            for (auto offset = 0; offset < __num_s_per_l_; offset++) {
+                auto index = i * __num_s_per_l_ + offset;
+                if (index > s_blocks_.size() - 1)
                     break;
-                s_block_units_[index] = count - l_blocks_[i];
+                s_blocks_[index] = count - l_blocks_[i];
                 if (index < bits_.size()) {
                     count += bit_tools::popCount(bits_[index]);
                 }
@@ -297,16 +302,17 @@ namespace sim_ds {
     
     
     void BitVector::buildSelect() {
-        auto count = kNum1sPerTip;
-        select_tips_.emplace_back(0);
+        select_tips_ = FitVector(calc::sizeFitsInBits(l_blocks_.size()));
+        auto count = __bits_per_select_tips_;
+        select_tips_.push_back(0);
         for (id_type i = 0; i < l_blocks_.size(); i++) {
             if (count < l_blocks_[i]) {
-                select_tips_.emplace_back(i - 1);
-                count += kNum1sPerTip;
+                select_tips_.push_back(i - 1);
+                count += __bits_per_select_tips_;
             }
         }
         
-        select_tips_.emplace_back(l_blocks_.size() - 1);
+        select_tips_.push_back(l_blocks_.size() - 1);
     }
     
 }
