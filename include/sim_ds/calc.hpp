@@ -16,24 +16,29 @@ namespace sim_ds {
     namespace calc {
         
         /* Calculate minimal number of units of argument required for value expression. */
-        inline size_t sizeFitInUnits(unsigned long long value, const size_t unit) {
+        inline size_t sizeFitsInUnits(unsigned long long value, const size_t unit) {
             size_t size = 0;
             while (value >> (++size * unit));
             return size;
         }
+        
+        template<size_t _Bits>
+        inline size_t sizeFitsOf(unsigned long long value) {
+            return sizeFitsInUnits(value, _Bits);
+        }
     
         /* Calculate minimal number of bytes required for value expression. */
-        inline size_t sizeFitInBytes(unsigned long long value) {
-            return sizeFitInUnits(value, 8);
+        inline size_t sizeFitsInBytes(unsigned long long value) {
+            return sizeFitsOf<8>(value);
         }
         
         /* Calculate minimal number of bits required for value expression. */
-        inline size_t sizeFitInBits(unsigned long long value) {
-            return sizeFitInUnits(value, 1);
+        inline size_t sizeFitsInBits(unsigned long long value) {
+            return sizeFitsOf<1>(value);
         }
         
         template <typename CONTAINER>
-        inline size_t sizeFitAsSizeList(unsigned long long value, const CONTAINER sizes) {
+        inline size_t sizeFitsAsSizeList(unsigned long long value, const CONTAINER sizes) {
             size_t size = 0;
             while (value >>= sizes[size++]);
             assert(size <= 8);
@@ -45,7 +50,7 @@ namespace sim_ds {
             std::vector<size_t> map;
             auto maxSize = 0;
             for (size_t i = 0; i < list.size(); i++) {
-                auto size = sizeFitInBits(list[i]);
+                auto size = sizeFitsInBits(list[i]);
                 if (size > maxSize) {
                     map.resize(size, 0);
                     maxSize = size;

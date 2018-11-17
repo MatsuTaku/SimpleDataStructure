@@ -98,7 +98,7 @@ namespace sim_ds {
             if (vector.empty())
                 return 0;
             auto maxV = *std::max_element(vector.begin(), vector.end());
-            return sim_ds::calc::sizeFitInBits(maxV);
+            return calc::sizeFitsInBits(maxV);
         }
         
         // MARK: Operator

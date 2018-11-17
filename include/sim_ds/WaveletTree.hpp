@@ -136,7 +136,7 @@ namespace sim_ds {
         }
         
         size_t nodeDiff(size_t node, size_t diffHeight) {
-            auto nodeDepth = calc::sizeFitInBits(node);
+            auto nodeDepth = calc::sizeFitsInBits(node);
             auto ti = (1U << nodeDepth) - 1;
             auto fi = (1U << (nodeDepth - diffHeight)) - 1;
             return ti - fi;
@@ -147,7 +147,7 @@ namespace sim_ds {
                 return;
             leafs_ = chars;
 
-            auto height = calc::sizeFitInBits(chars - 1);
+            auto height = calc::sizeFitsInBits(chars - 1);
             if (height > height_) {
                 bv_list_.resize((1U << height) - 1);
 //                for (auto n = (1 << height_) - 1; n > 0; n--) {

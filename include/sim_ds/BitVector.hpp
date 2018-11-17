@@ -25,7 +25,7 @@ namespace sim_ds {
     public:
         __bit_reference(__pointer_type p, __mask_type m) : __pointer_(p), __mask_(m) {}
         
-        constexpr operator bool() const {
+        operator bool() const {
             return static_cast<bool>(*__pointer_ & __mask_);
         }
         
@@ -274,7 +274,7 @@ namespace sim_ds {
     
     
     void BitVector::buildRank() {
-        l_blocks_ = FitVector(calc::sizeFitInBits(size_), std::ceil(float(size_) / kLBlockSize));
+        l_blocks_ = FitVector(calc::sizeFitsInBits(size_), std::ceil(float(size_) / kLBlockSize));
         s_block_units_.resize(std::ceil(float(size_) / kSBlockSize));
         
         auto count = 0;

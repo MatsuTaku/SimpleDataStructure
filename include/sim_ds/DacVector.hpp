@@ -84,7 +84,7 @@ namespace sim_ds {
         
         void push_back(id_type value) {
             auto index = size();
-            auto size = calc::sizeFitAsSizeList(value, layer_unit_sizes_);
+            auto size = calc::sizeFitsAsSizeList(value, layer_unit_sizes_);
             if (size > num_layers_)
                 expand_(size);
             for (auto depth = 0; depth < size; depth++) {
