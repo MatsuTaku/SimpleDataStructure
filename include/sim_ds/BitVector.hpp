@@ -25,7 +25,7 @@ namespace sim_ds {
     public:
         __bit_reference(__pointer_type p, __mask_type m) : __pointer_(p), __mask_(m) {}
         
-        operator bool() const {
+        constexpr operator bool() const {
             return static_cast<bool>(*__pointer_ & __mask_);
         }
         
@@ -66,8 +66,8 @@ namespace sim_ds {
         FitVector select_tips_;
         
     public:
-        template <class BITSET>
-        BitVector(const BITSET& bools, bool useRank, bool useSelect = false) {
+        template <class _BitSet>
+        BitVector(const _BitSet& bools, bool useRank, bool useSelect = false) {
             resize(bools.size());
             for (auto i = 0; i < bools.size(); i++)
                 operator[](i) = bools[i];
@@ -101,15 +101,15 @@ namespace sim_ds {
             return operator[](size() - 1);
         }
         
-        unsigned long long rank(size_t index) const {
+        size_t rank(size_t index) const {
             return tipL_(index) + tipS_(index) + bit_tools::popCount(bits_[abs_(index)] & ((1UL << rel_(index)) - 1));
         }
         
-        unsigned long long rank0(size_t index) const {
+        size_t rank0(size_t index) const {
             return index - rank(index);
         }
         
-        unsigned long long select(size_t index) const;
+        size_t select(size_t index) const;
         
         size_t size() const {
             return size_;
@@ -158,43 +158,12 @@ namespace sim_ds {
             l_blocks_.write(os);
             write_vec(s_blocks_, os);
         }
+        
         void read(std::istream& is) {
             size_ = read_val<size_t>(is);
             bits_ = read_vec<id_type>(is);
             l_blocks_ = FitVector(is);
             s_blocks_ = read_vec<uint8_t>(is);
-        }
-        
-        BitVector() = default;
-        ~BitVector() = default;
-        
-        BitVector(const BitVector& rhs) noexcept  {
-            size_ = rhs.size_;
-            bits_ = rhs.bits_;
-            l_blocks_ = rhs.l_blocks_;
-            s_blocks_ = rhs.s_blocks_;
-        }
-        BitVector& operator=(const BitVector& rhs) noexcept {
-            size_ = rhs.size_;
-            bits_ = rhs.bits_;
-            l_blocks_ = rhs.l_blocks_;
-            s_blocks_ = rhs.s_blocks_;
-            
-            return *this;
-        }
-        
-        BitVector(BitVector&& rhs) noexcept {
-            size_ = std::move(rhs.size_);
-            bits_ = std::move(rhs.bits_);
-            l_blocks_ = std::move(rhs.l_blocks_);
-            s_blocks_ = std::move(rhs.s_blocks_);
-        }
-        BitVector& operator=(BitVector&& rhs) noexcept {
-            size_ = std::move(rhs.size_);
-            bits_ = std::move(rhs.bits_);
-            l_blocks_ = std::move(rhs.l_blocks_);
-            s_blocks_ = std::move(rhs.s_blocks_);
-            return *this;
         }
         
     private:
@@ -219,10 +188,43 @@ namespace sim_ds {
             return s_blocks_[abs_(index)];
         }
         
+    public:
+        
+        BitVector() = default;
+        ~BitVector() = default;
+        
+        BitVector(const BitVector& rhs) noexcept  {
+            size_ = rhs.size_;
+            bits_ = rhs.bits_;
+            l_blocks_ = rhs.l_blocks_;
+            s_blocks_ = rhs.s_blocks_;
+        }
+        BitVector& operator=(const BitVector& rhs) noexcept {
+            size_ = rhs.size_;
+            bits_ = rhs.bits_;
+            l_blocks_ = rhs.l_blocks_;
+            s_blocks_ = rhs.s_blocks_;
+            return *this;
+        }
+        
+        BitVector(BitVector&& rhs) noexcept {
+            size_ = std::move(rhs.size_);
+            bits_ = std::move(rhs.bits_);
+            l_blocks_ = std::move(rhs.l_blocks_);
+            s_blocks_ = std::move(rhs.s_blocks_);
+        }
+        BitVector& operator=(BitVector&& rhs) noexcept {
+            size_ = std::move(rhs.size_);
+            bits_ = std::move(rhs.bits_);
+            l_blocks_ = std::move(rhs.l_blocks_);
+            s_blocks_ = std::move(rhs.s_blocks_);
+            return *this;
+        }
+        
     };
     
     
-    unsigned long long BitVector::select(size_t index) const {
+    size_t BitVector::select(size_t index) const {
         id_type left = 0, right = l_blocks_.size();
         auto i = index;
         
@@ -257,9 +259,7 @@ namespace sim_ds {
         
         auto compress = [&bits, &ret, &i](const id_type block) {
             auto count = bit_tools::popCount(bits % block);
-            auto shiftBlock = 0;
-            while ((block - 1) >> (8 * ++shiftBlock));
-            shiftBlock *= 8;
+            auto shiftBlock = calc::sizeFitsInBytes(block - 1) * 8;
             if (count < i) {
                 bits >>= shiftBlock;
                 ret += shiftBlock;

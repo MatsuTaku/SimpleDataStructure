@@ -186,14 +186,6 @@ namespace sim_ds {
             write_vec(vector_, os);
         }
         
-        ~FitVector() = default;
-        
-        FitVector(const FitVector&) = default;
-        FitVector& operator=(const FitVector&) = default;
-        
-        FitVector(FitVector&&) noexcept = default;
-        FitVector& operator=(FitVector&&) noexcept = default;
-        
     private:
         // * Initialized only in constructor
         size_t _bits_per_unit_;
@@ -210,6 +202,16 @@ namespace sim_ds {
         size_t rel_(size_t index) const {
             return index * _bits_per_unit_ % _bits_per_word;
         }
+        
+    public:
+        
+        ~FitVector() = default;
+        
+        FitVector(const FitVector&) = default;
+        FitVector& operator=(const FitVector&) = default;
+        
+        FitVector(FitVector&&) noexcept = default;
+        FitVector& operator=(FitVector&&) noexcept = default;
         
     };
     

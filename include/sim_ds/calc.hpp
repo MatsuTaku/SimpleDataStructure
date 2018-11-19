@@ -16,24 +16,24 @@ namespace sim_ds {
     namespace calc {
         
         /* Calculate minimal number of units of argument required for value expression. */
-        inline size_t sizeFitsInUnits(unsigned long long value, const size_t unit) {
+        inline constexpr size_t sizeFitsInUnits(unsigned long long value, const size_t unit) {
             size_t size = 0;
             while (value >> (++size * unit));
             return size;
         }
         
         template<size_t _Bits>
-        inline size_t sizeFitsOf(unsigned long long value) {
+        inline constexpr size_t sizeFitsOf(unsigned long long value) {
             return sizeFitsInUnits(value, _Bits);
         }
     
         /* Calculate minimal number of bytes required for value expression. */
-        inline size_t sizeFitsInBytes(unsigned long long value) {
+        inline constexpr size_t sizeFitsInBytes(unsigned long long value) {
             return sizeFitsOf<8>(value);
         }
         
         /* Calculate minimal number of bits required for value expression. */
-        inline size_t sizeFitsInBits(unsigned long long value) {
+        inline constexpr size_t sizeFitsInBits(unsigned long long value) {
             return sizeFitsOf<1>(value);
         }
         
