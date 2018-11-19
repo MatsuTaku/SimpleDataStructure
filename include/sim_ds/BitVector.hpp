@@ -280,7 +280,7 @@ namespace sim_ds {
     
     void BitVector::buildRank() {
         l_blocks_ = FitVector(calc::sizeFitsInBits(size_), std::ceil(float(size_) / __large_block_bits_));
-        s_blocks_.resize(std::ceil(float(size_) / __small_block_bits_));
+        s_blocks_.resize(std::ceil(float(size_) / __small_block_bits_) + 1);
         
         auto count = 0;
         for (auto i = 0; i < l_blocks_.size(); i++) {

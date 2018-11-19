@@ -83,11 +83,10 @@ namespace sim_ds {
         }
         
         void push_back(id_type value) {
-            auto index = size();
             auto size = calc::sizeFitsAsSizeList(value, layer_unit_sizes_);
             if (size > num_layers_)
                 expand_(size);
-            for (auto depth = 0; depth < size; depth++) {
+            for (auto depth = 0, index = 0; depth < size; depth++) {
                 auto& unit = layers_[depth];
                 auto curBitsSize = layer_unit_sizes_[depth];
                 unit.push_back(value & ((1ULL << curBitsSize) - 1));
