@@ -50,7 +50,7 @@ namespace sim_ds {
                 
                 auto bit = cbv[index];
                 value |= bit << (height_ - 1 - depth);
-                index = !bit ? cbv.rank0(index) : cbv.rank(index);
+                index = !bit ? cbv.rank_0(index) : cbv.rank_1(index);
                 
                 id = (id << 1) | bit;
             }
@@ -65,7 +65,7 @@ namespace sim_ds {
                 auto &cbv = bv_list_[id - 1];
                 
                 auto bit = cbv[index];
-                index = !bit ? cbv.rank0(index) : cbv.rank(index);
+                index = !bit ? cbv.rank_0(index) : cbv.rank_1(index);
                 
                 id = (id << 1) | bit;
             }
@@ -80,7 +80,7 @@ namespace sim_ds {
                 
                 auto bit = (c >> (height_ - 1 - depth)) & 1;
                 assert(bit == cbv[index]);
-                index = !bit ? cbv.rank0(index) : cbv.rank(index);
+                index = !bit ? cbv.rank_0(index) : cbv.rank_1(index);
                 
                 id = (id << 1) | bit;
             }
@@ -95,7 +95,7 @@ namespace sim_ds {
                 
                 auto bit = cbv[index];
                 value |= bit << (height_ - 1 - depth);
-                index = !bit ? cbv.rank0(index) : cbv.rank(index);
+                index = !bit ? cbv.rank_0(index) : cbv.rank_1(index);
                 
                 id = (id << 1) | bit;
             }

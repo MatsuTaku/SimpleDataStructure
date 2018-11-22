@@ -11,7 +11,8 @@
 using namespace sim_ds;
 
 TEST(FitVectorTest, ConvertVector) {
-    const auto size = 16;
+    const auto size = 0xFFFFFF;
+    
     std::vector<size_t> source(size);
     for (auto i = 1; i <= source.size(); i++)
         source[i] = 0x71c71c71c71c71c7 & ((1U << (i * 4)) - 1);
@@ -21,13 +22,15 @@ TEST(FitVectorTest, ConvertVector) {
 }
 
 TEST(FitVectorTest, Move) {
+    const size_t size = 0xFFFFFF;
+    
     auto value = 0x1a5a5;
-    auto vec = FitVector(17, 0xFFF, value);
-    for (auto i = 0; i < 0xFFF; i++)
+    auto vec = FitVector(17, size, value);
+    for (auto i = 0; i < size; i++)
         EXPECT_EQ(vec[i], value);
     
     auto vec2 = std::move(vec);
-    for (auto i = 0; i < 0xFFF; i++)
+    for (auto i = 0; i < size; i++)
         EXPECT_EQ(vec2[i], value);
     
 }

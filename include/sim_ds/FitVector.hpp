@@ -15,39 +15,71 @@
 
 namespace sim_ds {
     
-    template<class _Seq>
-    class __bits_reference {
-    private:
-        using __pointer_type = typename _Seq::__pointer_type;
-        using __mask_type = typename _Seq::__mask_type;
+    template<class SequenceType>
+    class BitsReference {
+        using pointer = typename SequenceType::pointer;
+        using entity_type = typename SequenceType::entity_type;
+        using mask_type = typename SequenceType::storage_type;
+        
+        friend typename SequenceType::self;
+        
+        static constexpr size_t kBitsPerWord = sizeof(id_type) * 8;
         
     public:
-        static constexpr size_t _bits_per_word = sizeof(id_type) * 8;
-        
-        __bits_reference(__pointer_type pointer, size_t offset, size_t bitsPerUnit) : __pointer_(pointer), __offset_(offset), __bits_per_unit_(bitsPerUnit), __mask_(bit_tools::maskOfBits(bitsPerUnit)) {}
-        
-        constexpr operator id_type() const {
-            if (__bits_per_unit_ + __offset_ <= _bits_per_word) {
-                return (*__pointer_ >> __offset_) & __mask_;
+        constexpr operator entity_type() const {
+            if (bits_per_unit_ + offset_ <= kBitsPerWord) {
+                return (*pointer_ >> offset_) & mask_;
             } else {
-                return ((*__pointer_ >> __offset_) | (*(__pointer_ + 1) << (_bits_per_word - __offset_))) & __mask_;
+                return ((*pointer_ >> offset_) | (*(pointer_ + 1) << (kBitsPerWord - offset_))) & mask_;
             }
         }
         
-        __bits_reference& operator=(id_type value) {
-            *__pointer_ = (*__pointer_ & ~(__mask_ << __offset_)) | (value << __offset_);
-            if (__bits_per_unit_ + __offset_ > _bits_per_word) {
-                auto roffset = _bits_per_word - __offset_;
-                *(__pointer_ + 1) = (*(__pointer_ + 1) & ~(__mask_ >> roffset)) | value >> roffset;
+        BitsReference& operator=(entity_type value) {
+            *pointer_ = (*pointer_ & ~(mask_ << offset_)) | (value << offset_);
+            if (bits_per_unit_ + offset_ > kBitsPerWord) {
+                auto roffset = kBitsPerWord - offset_;
+                *(pointer_ + 1) = (*(pointer_ + 1) & ~(mask_ >> roffset)) | value >> roffset;
             }
             return *this;
         }
         
     private:
-        __pointer_type __pointer_;
-        size_t __offset_;
-        size_t __bits_per_unit_;
-        __mask_type __mask_;
+        constexpr BitsReference(pointer pointer, size_t offset, size_t bitsPerUnit) noexcept : pointer_(pointer), offset_(offset), bits_per_unit_(bitsPerUnit), mask_(bit_tools::maskOfBits(bitsPerUnit)) {}
+        
+        pointer pointer_;
+        size_t offset_;
+        size_t bits_per_unit_;
+        mask_type mask_;
+        
+    };
+    
+    
+    template<class SequenceType>
+    class BitsConstReference {
+        using pointer = typename SequenceType::const_pointer;
+        using entity_type = typename SequenceType::entity_type;
+        using mask_type = typename SequenceType::storage_type;
+        
+        friend typename SequenceType::self;
+        
+        static constexpr size_t kBitsPerWord = sizeof(id_type) * 8;
+        
+    public:
+        constexpr operator entity_type() const {
+            if (bits_per_unit_ + offset_ <= kBitsPerWord) {
+                return (*pointer_ >> offset_) & mask_;
+            } else {
+                return ((*pointer_ >> offset_) | (*(pointer_ + 1) << (kBitsPerWord - offset_))) & mask_;
+            }
+        }
+        
+    private:
+        constexpr BitsConstReference(pointer pointer, size_t offset, size_t bitsPerUnit) noexcept : pointer_(pointer), offset_(offset), bits_per_unit_(bitsPerUnit), mask_(bit_tools::maskOfBits(bitsPerUnit)) {}
+        
+        pointer pointer_;
+        size_t offset_;
+        size_t bits_per_unit_;
+        mask_type mask_;
         
     };
     
@@ -56,18 +88,32 @@ namespace sim_ds {
      * Vector that fit to binary size of max-value of source vector integers.
      */
     class FitVector {
-    private:
-        friend class __bits_reference<FitVector>;
-        using __pointer_type = id_type*;
-        using __mask_type = id_type;
+        using self = FitVector;
+        using entity_type = id_type;
+        using storage_type = id_type;
+        using pointer = storage_type*;
+        using const_pointer = const storage_type*;
+        
+        // * Initialized only in constructor
+        size_t bits_per_unit_;
+        id_type mask_;
+        // *
+        
+        size_t size_ = 0;
+        std::vector<id_type> vector_;
+        
+        friend class BitsReference<FitVector>;
+        friend class BitsConstReference<FitVector>;
+        
+        using reference = BitsReference<FitVector>;
+        using const_reference = BitsConstReference<FitVector>;
+        
+        static constexpr size_t kBitsPerWord = 8 * sizeof(id_type); // 64
         
     public:
-        using reference = __bits_reference<FitVector>;
-        static constexpr size_t _bits_per_word = 8 * sizeof(id_type); // 64
+        // MARK: Constructor
         
-        // MARK: - Constructor
-        
-        FitVector(size_t wordBits = _bits_per_word) : _bits_per_unit_(wordBits), _mask_(bit_tools::maskOfBits(wordBits)) {}
+        FitVector(size_t wordBits = kBitsPerWord) : bits_per_unit_(wordBits), mask_(bit_tools::maskOfBits(wordBits)) {}
         
         FitVector(size_t wordBits, size_t size) : FitVector(wordBits) {
             resize(size);
@@ -104,19 +150,30 @@ namespace sim_ds {
         
         // MARK: Operator
         
-        id_type operator[](size_t index) const {
-            assert(index < size_);
-            auto abs = abs_(index);
-            auto rel = rel_(index);
-            if (_bits_per_word >= rel + _bits_per_unit_)
-                return (vector_[abs] >> rel) & _mask_;
-            else
-                return ((vector_[abs] >> rel) | (vector_[abs + 1] << (_bits_per_word - rel))) & _mask_;
+        reference operator[](size_t index) {
+            assert(index < size());
+            return reference(&vector_[abs_(index)], rel_(index), bits_per_unit_);
         }
         
-        reference operator[](size_t index) {
-            assert(index < size_);
-            return reference(&vector_[abs_(index)], rel_(index), _bits_per_unit_);
+        const_reference operator[](size_t index) const {
+            assert(index < size());
+            return const_reference(&vector_[abs_(index)], rel_(index), bits_per_unit_);
+        }
+        
+        reference front() {
+            return operator[](0);
+        }
+        
+        const_reference front() const {
+            return operator[](0);
+        }
+        
+        reference back() {
+            return operator[](size() - 1);
+        }
+        
+        const_reference back() const {
+            return operator[](size() - 1);
         }
         
         // MARK: Getter
@@ -129,7 +186,7 @@ namespace sim_ds {
             return size_ == 0;
         }
         
-        // MARK: - setter
+        // MARK: setter
         
         void push_back(size_t value) {
             auto abs = abs_(size_);
@@ -140,8 +197,8 @@ namespace sim_ds {
                 if (abs <= long(size_) - 1) {
                     vector_[abs] |= value << rel;
                 }
-                if (_bits_per_unit_ + rel > _bits_per_word) {
-                    vector_.emplace_back(value >> (_bits_per_word - rel));
+                if (bits_per_unit_ + rel > kBitsPerWord) {
+                    vector_.emplace_back(value >> (kBitsPerWord - rel));
                 }
             }
             size_++;
@@ -152,7 +209,7 @@ namespace sim_ds {
                 vector_.resize(0);
             } else {
                 auto abs = abs_(size - 1);
-                bool crossBoundary = rel_(size - 1) + _bits_per_unit_ > _bits_per_word;
+                bool crossBoundary = rel_(size - 1) + bits_per_unit_ > kBitsPerWord;
                 vector_.resize(abs + (crossBoundary ? 2 : 1));
             }
             if (size < size_)
@@ -169,39 +226,32 @@ namespace sim_ds {
         
         void reserve(size_t size) {
             float fs = size;
-            auto offset = std::ceil(fs * _bits_per_unit_ / _bits_per_word);
+            auto offset = std::ceil(fs * bits_per_unit_ / kBitsPerWord);
             vector_.reserve(offset);
         }
         
         // MARK: method
         
         size_t sizeInBytes() const {
-            auto size = sizeof(_bits_per_unit_) + sizeof(size_);
+            auto size = sizeof(bits_per_unit_) + sizeof(size_);
             size += size_vec(vector_);
             return size;
         }
         
         void write(std::ostream &os) const {
-            write_val(_bits_per_unit_, os);
+            write_val(bits_per_unit_, os);
             write_val(size_, os);
             write_vec(vector_, os);
         }
         
     private:
-        // * Initialized only in constructor
-        size_t _bits_per_unit_;
-        id_type _mask_;
-        // *
-        
-        size_t size_ = 0;
-        std::vector<id_type> vector_;
         
         size_t abs_(size_t index) const {
-            return index * _bits_per_unit_ / _bits_per_word;
+            return index * bits_per_unit_ / kBitsPerWord;
         }
         
         size_t rel_(size_t index) const {
-            return index * _bits_per_unit_ % _bits_per_word;
+            return index * bits_per_unit_ % kBitsPerWord;
         }
         
     public:
