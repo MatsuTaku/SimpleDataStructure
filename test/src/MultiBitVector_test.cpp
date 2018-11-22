@@ -5,8 +5,8 @@
 //  Created by 松本拓真 on 2018/05/15.
 //
 
-#include "sim_ds/MultiBitVector.hpp"
 #include "gtest/gtest.h"
+#include "sim_ds/MultiBitVector.hpp"
 
 #include <random>
 

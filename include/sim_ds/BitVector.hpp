@@ -102,7 +102,7 @@ namespace sim_ds {
         }
         
         size_t rank(size_t index) const {
-            return tipL_(index) + tipS_(index) + bit_tools::popCount(bits_[abs_(index)] & ((1UL << rel_(index)) - 1));
+            return tipL_(index) + tipS_(index) + bit_tools::popCount(bits_[abs_(index)] & bit_tools::maskOfBits(rel_(index)));
         }
         
         size_t rank0(size_t index) const {
@@ -273,7 +273,7 @@ namespace sim_ds {
         compress(0x10000);
         compress(0x100);
         
-        ret += bit_tools::kSelectTable[i][bits % 0x100];
+        ret += bit_tools::selectTable(bits % 0x100, i);
         return ret - 1;
     }
     

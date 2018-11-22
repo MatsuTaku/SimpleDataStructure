@@ -137,8 +137,8 @@ namespace sim_ds {
         
         size_t nodeDiff(size_t node, size_t diffHeight) {
             auto nodeDepth = calc::sizeFitsInBits(node);
-            auto ti = (1U << nodeDepth) - 1;
-            auto fi = (1U << (nodeDepth - diffHeight)) - 1;
+            auto ti = bit_tools::maskOfBits(nodeDepth);
+            auto fi = bit_tools::maskOfBits(nodeDepth - diffHeight);
             return ti - fi;
         }
         

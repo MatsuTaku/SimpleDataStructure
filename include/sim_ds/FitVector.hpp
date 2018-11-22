@@ -10,6 +10,7 @@
 #define Vector_hpp
 
 #include "basic.hpp"
+#include "bit_tools.hpp"
 #include "calc.hpp"
 
 namespace sim_ds {
@@ -23,7 +24,7 @@ namespace sim_ds {
     public:
         static constexpr size_t _bits_per_word = sizeof(id_type) * 8;
         
-        __bits_reference(__pointer_type pointer, size_t offset, size_t bitsPerUnit) : __pointer_(pointer), __offset_(offset), __bits_per_unit_(bitsPerUnit), __mask_((1ULL << bitsPerUnit) - 1) {}
+        __bits_reference(__pointer_type pointer, size_t offset, size_t bitsPerUnit) : __pointer_(pointer), __offset_(offset), __bits_per_unit_(bitsPerUnit), __mask_(bit_tools::maskOfBits(bitsPerUnit)) {}
         
         constexpr operator id_type() const {
             if (__bits_per_unit_ + __offset_ <= _bits_per_word) {
@@ -66,7 +67,7 @@ namespace sim_ds {
         
         // MARK: - Constructor
         
-        FitVector(size_t wordBits = _bits_per_word) : _bits_per_unit_(wordBits), _mask_((1U << wordBits) - 1) {}
+        FitVector(size_t wordBits = _bits_per_word) : _bits_per_unit_(wordBits), _mask_(bit_tools::maskOfBits(wordBits)) {}
         
         FitVector(size_t wordBits, size_t size) : FitVector(wordBits) {
             resize(size);

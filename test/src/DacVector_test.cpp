@@ -5,13 +5,13 @@
 //  Created by 松本拓真 on 2018/05/14.
 //
 
-#include "sim_ds/DacVector.hpp"
 #include "gtest/gtest.h"
+#include "sim_ds/DacVector.hpp"
 
 #include <random>
 
 TEST(DACsTest, ConvertVector) {
-    const auto size = 0x10000;
+    const auto size = 0x100000;
     std::vector<size_t> src(size);
     std::random_device rnd;
     for (auto i = 0; i < size; i++) {

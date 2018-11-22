@@ -5,8 +5,8 @@
 //  Created by 松本拓真 on 2018/06/12.
 //
 
-#include "sim_ds/BitVector.hpp"
 #include "gtest/gtest.h"
+#include "sim_ds/BitVector.hpp"
 
 using namespace sim_ds;
 

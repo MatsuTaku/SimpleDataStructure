@@ -121,7 +121,7 @@ namespace sim_ds {
         auto type = (*this)[index];
         assert(type > 0);
         const auto &tip = rank_tips_[type - 1][block_(index)];
-        return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + popCount_(type, bits_[abs_(index)] & ((1LU << rel_(index)) - 1));
+        return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + popCount_(type, bits_[abs_(index)] & bit_tools::maskOfBits(rel_(index)));
     }
     
     template <unsigned int S>

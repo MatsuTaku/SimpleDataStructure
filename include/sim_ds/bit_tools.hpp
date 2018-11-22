@@ -8,9 +8,33 @@
 #ifndef bit_tools_hpp
 #define bit_tools_hpp
 
+#include "basic.hpp"
 #include <popcntintrin.h>
 
+#define BITS_64 64
+#define BITS_32 32
+
 namespace sim_ds::bit_tools {
+    
+#ifndef USE_X86
+    constexpr size_t _bits_of_id_type = BITS_64;
+    constexpr id_type _mask_fill = 0xFFFFFFFFFFFFFFFF;
+#else
+    constexpr size_t _bits_of_id_type = BITS_32;
+    constexpr id_type _mask_fill = 0xFFFFFFFF;
+#endif
+    
+    inline constexpr id_type maskOfBits(size_t bits) {
+        assert(bits <= _bits_of_id_type);
+        if (bits == 0) {
+            return 0;
+        } else {
+            return _mask_fill >> (_bits_of_id_type - bits);
+        }
+    }
+    
+    template<size_t _Bits>
+    constexpr id_type bits_mask = maskOfBits(_Bits);
     
     template <unsigned int TYPE_SIZE, unsigned int TYPE>
     inline constexpr unsigned long long popCount(uint64_t x) {
@@ -68,7 +92,7 @@ namespace sim_ds::bit_tools {
         }
     }
     
-    const std::function<unsigned long long (uint64_t value)> popCount_l[3][8] = {
+    const std::function<unsigned long long (uint64_t value)> _pop_cnt_table[3][8] = {
         {
             popCount<1, 0b0>,
             popCount<1, 0b1>
@@ -93,16 +117,15 @@ namespace sim_ds::bit_tools {
     
     template <unsigned int TYPE_SIZE>
     inline constexpr unsigned long long popCount(size_t type, uint64_t x) {
-        return popCount_l[TYPE_SIZE - 1][type](x);
+        return _pop_cnt_table[TYPE_SIZE - 1][type](x);
     }
     
-    inline constexpr unsigned long long popCount(uint64_t x) {
+    inline unsigned long long popCount(uint64_t x) {
         return popCount<1, 1>(x);
     }
     
     // inspired by marisa-trie
-    // Use for select
-    constexpr uint8_t kSelectTable[9][256] = {
+    constexpr uint8_t _select_table[9][256] = {
         {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -266,6 +289,12 @@ namespace sim_ds::bit_tools {
             8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
         }
     };
+    
+    // Use for select
+    constexpr uint8_t selectTable(size_t word, size_t offset) {
+        return _select_table[offset][word];
+    }
+    
     
 }
 

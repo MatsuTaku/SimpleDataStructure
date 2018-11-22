@@ -5,8 +5,8 @@
 //  Created by 松本拓真 on 2018/05/14.
 //
 
-#include "sim_ds/FitVector.hpp"
 #include "gtest/gtest.h"
+#include "sim_ds/FitVector.hpp"
 
 using namespace sim_ds;
 

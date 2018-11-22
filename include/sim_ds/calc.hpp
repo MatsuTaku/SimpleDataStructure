@@ -18,7 +18,7 @@ namespace sim_ds {
         /* Calculate minimal number of units of argument required for value expression. */
         inline constexpr size_t sizeFitsInUnits(unsigned long long value, const size_t unit) {
             size_t size = 0;
-            while (value >> (++size * unit));
+            while (static_cast<bool>(value >> (++size * unit)));
             return size;
         }
         
@@ -40,8 +40,7 @@ namespace sim_ds {
         template <typename CONTAINER>
         inline size_t sizeFitsAsSizeList(unsigned long long value, const CONTAINER sizes) {
             size_t size = 0;
-            while (value >>= sizes[size++]);
-            assert(size <= 8);
+            while (static_cast<bool>(value >>= sizes[size++]));
             return size;
         }
         

@@ -89,7 +89,7 @@ namespace sim_ds {
             for (auto depth = 0, index = 0; depth < size; depth++) {
                 auto& unit = layers_[depth];
                 auto curBitsSize = layer_unit_sizes_[depth];
-                unit.push_back(value & ((1ULL << curBitsSize) - 1));
+                unit.push_back(value & bit_tools::maskOfBits(curBitsSize));
                 value >>= curBitsSize;
                 index = unit.size() - 1;
                 if (depth == 0 || depth + 1 < num_layers_)
