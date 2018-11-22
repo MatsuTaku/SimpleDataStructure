@@ -19,7 +19,7 @@ namespace sim_ds {
     class MultiBitVector {
     public:
         static constexpr size_t kBitsUnitSize = UNIT_SIZE;
-        static constexpr uint8_t kMaxNumTypes = 1U << kBitsUnitSize;
+        static constexpr uint8_t kMaxNumTypes = 1ULL << kBitsUnitSize;
         static constexpr id_type kBitsMask = kMaxNumTypes - 1;
         static constexpr size_t kBlockSize = 0x100 * kBitsUnitSize;
         static constexpr size_t kBitsInType = 0x40 - (0x40 % kBitsUnitSize);

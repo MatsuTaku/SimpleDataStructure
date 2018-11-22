@@ -77,12 +77,12 @@ namespace sim_ds {
         
         reference operator[](size_t index) {
             assert(index < size_);
-            return reference(&bits_[abs_(index)], 1ULL << rel_(index));
+            return reference(&bits_[abs_(index)], bit_tools::maskOfOffset(rel_(index)));
         }
         
         bool operator[](size_t index) const {
             assert(index < size_);
-            return static_cast<bool>(bits_[abs_(index)] & (1UL << rel_(index)));
+            return static_cast<bool>(bits_[abs_(index)] & bit_tools::maskOfOffset(rel_(index)));
         }
         
         reference front() {

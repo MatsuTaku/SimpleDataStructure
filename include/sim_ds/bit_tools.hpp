@@ -36,6 +36,18 @@ namespace sim_ds::bit_tools {
     template<size_t _Bits>
     constexpr id_type bits_mask = maskOfBits(_Bits);
     
+    inline constexpr id_type maskOfOffset(size_t offset) {
+        assert(offset < _bits_of_id_type);
+#ifndef USE_X86
+        return 1ULL << offset;
+#else
+        return 1UL << offset;
+#endif
+    }
+    
+    template<size_t _Off>
+    id_type offset_mask = maskOfOffset(_Off);
+    
     template <unsigned int TYPE_SIZE, unsigned int TYPE>
     inline constexpr unsigned long long popCount(uint64_t x) {
         if constexpr (TYPE_SIZE == 1) {
