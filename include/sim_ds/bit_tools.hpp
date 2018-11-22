@@ -46,7 +46,7 @@ namespace sim_ds::bit_tools {
     }
     
     template<size_t _Off>
-    id_type offset_mask = maskOfOffset(_Off);
+    constexpr id_type offset_mask = maskOfOffset(_Off);
     
     template <unsigned int TYPE_SIZE, unsigned int TYPE>
     inline constexpr unsigned long long popCount(uint64_t x) {
