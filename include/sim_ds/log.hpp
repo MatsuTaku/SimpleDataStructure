@@ -12,18 +12,18 @@
 
 namespace sim_ds {
     
-    namespace log {
-        
-        inline void showAsBinary(size_t value, size_t size = sizeof(id_type)) {
-            using std::cout;
-            using std::endl;
-            for (int i = size * 8 - 1; i >= 0; i--) {
-                cout << (value >> i & 1);
-            }
-            cout << endl;
-        }
-        
-    } // namespace log
+namespace log {
+    
+inline void showAsBinary(size_t value, size_t size = sizeof(id_type)) {
+    using std::cout;
+    using std::endl;
+    for (int i = size * 8 - 1; i >= 0; i--) {
+        cout << (value >> i & 1);
+    }
+    cout << endl;
+}
+    
+} // namespace log
     
 } // namespace sim_ds
 

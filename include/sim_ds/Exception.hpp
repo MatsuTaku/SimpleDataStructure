@@ -12,18 +12,18 @@
 
 namespace sim_ds {
     
-    class DataNotFoundException : std::exception {
-    public:
-        DataNotFoundException(const std::string &data_name) : data_name_(data_name) {}
-        std::string data_name_;
-    };
+class DataNotFoundException : std::exception {
+public:
+    DataNotFoundException(const std::string &data_name) : data_name_(data_name) {}
+    std::string data_name_;
+};
+
+class DoesntHaveMemberException : std::exception {
+public:
+    DoesntHaveMemberException(const std::string &text) : text(text) {}
+    std::string text;
+};
     
-    class DoesntHaveMemberException : std::exception {
-    public:
-        DoesntHaveMemberException(const std::string &text) : text(text) {}
-        std::string text;
-    };
-    
-}
+} // namespace sim_ds
 
 #endif /* Exception_hpp */
