@@ -16,40 +16,40 @@ namespace sim_ds {
 namespace calc {
     
 /* Calculate minimal number of units of argument required for value expression. */
-inline constexpr size_t sizeFitsInUnits(unsigned long long value, const size_t unit) {
+inline constexpr size_t size_fits_in_units(unsigned long long value, const size_t unit) {
     size_t size = 0;
-    while (static_cast<bool>(value >> (++size * unit)));
+    while (static_cast<bool>(value >> (++size * unit))) continue;
     return size;
 }
 
 template<size_t _Bits>
-inline constexpr size_t sizeFitsOf(unsigned long long value) {
-    return sizeFitsInUnits(value, _Bits);
+inline constexpr size_t size_fits(unsigned long long value) {
+    return size_fits_in_units(value, _Bits);
 }
 
 /* Calculate minimal number of bytes required for value expression. */
-inline constexpr size_t sizeFitsInBytes(unsigned long long value) {
-    return sizeFitsOf<8>(value);
+inline constexpr size_t size_fits_in_bytes(unsigned long long value) {
+    return size_fits<8>(value);
 }
 
 /* Calculate minimal number of bits required for value expression. */
-inline constexpr size_t sizeFitsInBits(unsigned long long value) {
-    return sizeFitsOf<1>(value);
+inline constexpr size_t size_fits_in_bits(unsigned long long value) {
+    return size_fits<1>(value);
 }
 
 template <typename CONTAINER>
-inline size_t sizeFitsAsSizeList(unsigned long long value, const CONTAINER sizes) {
+inline size_t size_fits_as_list(unsigned long long value, const CONTAINER sizes) {
     size_t size = 0;
-    while (static_cast<bool>(value >>= sizes[size++]));
+    while (static_cast<bool>(value >>= sizes[size++])) continue;
     return size;
 }
 
 template <class CONTAINER>
-inline std::vector<size_t> vectorMapOfSizeBits(const CONTAINER& list, bool shouldShow = false) {
+inline std::vector<size_t> bit_size_frequency_list(const CONTAINER& list, bool shouldShow = false) {
     std::vector<size_t> map;
     auto maxSize = 0;
     for (size_t i = 0; i < list.size(); i++) {
-        auto size = sizeFitsInBits(list[i]);
+        auto size = size_fits_in_bits(list[i]);
         if (size > maxSize) {
             map.resize(size, 0);
             maxSize = size;
@@ -66,9 +66,9 @@ inline std::vector<size_t> vectorMapOfSizeBits(const CONTAINER& list, bool shoul
 }
 
 template <class CONTAINER>
-inline std::vector<size_t> cummulativeFrequency(const CONTAINER& list, bool shouldShow = false) {
+inline std::vector<size_t> cummulative_frequency_list(const CONTAINER& list, bool shouldShow = false) {
     std::vector<size_t> cf;
-    auto map = vectorMapOfSizeBits(list);
+    auto map = bit_size_frequency_list(list);
     auto count = 0;
     cf.assign(map.size(), 0);
     for (auto i = map.size(); i > 0; i--) {
@@ -85,7 +85,7 @@ inline std::vector<size_t> cummulativeFrequency(const CONTAINER& list, bool shou
     return cf;
 }
 
-inline size_t additionalSizeOfRank(const double l) {
+inline size_t additional_size_of_rank(const double l) {
     using std::ceil;
     auto a = ceil(l / 8) * 8;
     auto b = (4 * 8 + ceil(log2(l))) * ceil(l / 256) ;
@@ -93,8 +93,8 @@ inline size_t additionalSizeOfRank(const double l) {
 }
 
 template <class CONTAINER>
-inline std::vector<size_t> splitPositionsOptimizedForDac(const CONTAINER& list, const size_t maxLevels = 8) {
-    auto cf = cummulativeFrequency(list);
+inline std::vector<size_t> split_positions_optimized_for_dac(const CONTAINER& list, const size_t maxLevels = 8) {
+    auto cf = cummulative_frequency_list(list);
     
     auto cfSize = cf.size();
     const auto m = cfSize - 1;
@@ -103,7 +103,7 @@ inline std::vector<size_t> splitPositionsOptimizedForDac(const CONTAINER& list, 
         auto minSize = INFINITY;
         auto minPos = m;
         for (auto i = t + 1; i <= m; i++) {
-            auto currentSize = s[i] + cf[t] * (i - t) + additionalSizeOfRank(cf[t]);
+            auto currentSize = s[i] + cf[t] * (i - t) + additional_size_of_rank(cf[t]);
             if (currentSize < minSize) {
                 minSize = currentSize;
                 minPos = i;

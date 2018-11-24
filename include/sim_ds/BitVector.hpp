@@ -15,13 +15,13 @@
 #include "calc.hpp"
 
 namespace sim_ds {
-    
-template<class SequenceType>
+
+template <class BitSequence>
 class BitReference {
-    using pointer = typename SequenceType::pointer;
-    using mask_type = typename SequenceType::storage_type;
+    using Pointer = typename BitSequence::Pointer;
+    using Mask = typename BitSequence::storage_type;
     
-    friend typename SequenceType::self;
+    friend typename BitSequence::Self;
     
 public:
     constexpr operator bool() const {
@@ -37,20 +37,20 @@ public:
     }
     
 private:
-    constexpr BitReference(pointer p, mask_type m) noexcept : pointer_(p), mask_(m) {}
+    constexpr BitReference(Pointer p, Mask m) noexcept : pointer_(p), mask_(m) {}
     
-    pointer pointer_;
-    mask_type mask_;
+    Pointer pointer_;
+    Mask mask_;
     
 };
 
 
-template<class SequenceType>
+template <class BitSequence>
 class BitConstReference {
-    using pointer = typename SequenceType::const_pointer;
-    using mask_type = typename SequenceType::storage_type;
+    using Pointer = typename BitSequence::ConstPointer;
+    using Mask = typename BitSequence::storage_type;
     
-    friend typename SequenceType::self;
+    friend typename BitSequence::Self;
     
 public:
     constexpr operator bool() const {
@@ -58,19 +58,19 @@ public:
     }
     
 private:
-    constexpr BitConstReference(pointer p, mask_type m) noexcept : pointer_(p), mask_(m) {}
+    constexpr BitConstReference(Pointer p, Mask m) noexcept : pointer_(p), mask_(m) {}
     
-    pointer pointer_;
-    mask_type mask_;
+    Pointer pointer_;
+    Mask mask_;
     
 };
 
 
 class BitVector {
-    using self = BitVector;
+    using Self = BitVector;
     using storage_type = id_type;
-    using pointer = storage_type*;
-    using const_pointer = const storage_type*;
+    using Pointer = storage_type*;
+    using ConstPointer = const storage_type*;
     
     using s_block_type = uint8_t;
     
@@ -88,8 +88,8 @@ class BitVector {
     friend class BitReference<BitVector>;
     friend class BitConstReference<BitVector>;
     
-    using reference = BitReference<BitVector>;
-    using const_reference = BitConstReference<BitVector>;
+    using Reference = BitReference<BitVector>;
+    using ConstReference = BitConstReference<BitVector>;
     
 public:
     template <class _BitSet>
@@ -98,37 +98,37 @@ public:
         for (auto i = 0; i < bools.size(); i++)
             operator[](i) = bools[i];
         if (useRank)
-            build(useSelect);
+            Build(useSelect);
     }
     
-    reference operator[](size_t index) {
+    Reference operator[](size_t index) {
         assert(index < size_);
-        return reference(&bits_[abs_(index)], bit_tools::maskOfOffset(rel_(index)));
+        return Reference(&bits_[abs_(index)], bit_tools::OffsetMask(rel_(index)));
     }
     
-    const_reference operator[](size_t index) const {
+    ConstReference operator[](size_t index) const {
         assert(index < size_);
-        return const_reference(&(bits_[abs_(index)]), bit_tools::maskOfOffset(rel_(index)));
+        return ConstReference(&(bits_[abs_(index)]), bit_tools::OffsetMask(rel_(index)));
     }
     
-    reference front() {
+    Reference front() {
         return operator[](0);
     }
     
-    const_reference front() const {
+    ConstReference front() const {
         return operator[](0);
     }
     
-    reference back() {
+    Reference back() {
         return operator[](size() - 1);
     }
     
-    const_reference back() const {
+    ConstReference back() const {
         return operator[](size() - 1);
     }
     
     size_t rank(size_t index) const {
-        return tipL_(index) + tipS_(index) + bit_tools::popCount(bits_[abs_(index)] & bit_tools::maskOfBits(rel_(index)));
+        return tip_l_(index) + tip_s_(index) + bit_tools::PopCount(bits_[abs_(index)] & bit_tools::BitsMask(rel_(index)));
     }
     
     size_t rank_1(size_t index) const {
@@ -150,16 +150,16 @@ public:
         back() = bit;
     }
     
-    void buildRank();
+    void BuildRank();
     
-    void buildSelect();
+    void BuildSelect();
     
-    void build(bool useSelect = false) {
+    void Build(bool useSelect = false) {
         if (bits_.empty())
             return;
-        buildRank();
+        BuildRank();
         if (useSelect)
-            buildSelect();
+            BuildSelect();
     }
     
     void resize(size_t size) {
@@ -173,24 +173,24 @@ public:
         bits_.reserve(abs);
     }
     
-    size_t sizeInBytes() const {
+    size_t size_in_bytes() const {
         auto size = sizeof(size_t);
         size +=  size_vec(bits_);
-        size += l_blocks_.sizeInBytes();
+        size += l_blocks_.size_in_bytes();
         size += size_vec(s_blocks_);
-        size += select_tips_.sizeInBytes();
+        size += select_tips_.size_in_bytes();
         return size;
     }
     
-    void write(std::ostream& os) const {
+    void Write(std::ostream& os) const {
         write_val(size_, os);
         write_vec(bits_, os);
-        l_blocks_.write(os);
+        l_blocks_.Write(os);
         write_vec(s_blocks_, os);
-        select_tips_.write(os);
+        select_tips_.Write(os);
     }
     
-    void read(std::istream& is) {
+    void Read(std::istream& is) {
         size_ = read_val<size_t>(is);
         bits_ = read_vec<storage_type>(is);
         l_blocks_ = FitVector(is);
@@ -212,11 +212,11 @@ private:
         return index % kSmallBlockBits;
     }
     
-    size_t tipL_(size_t index) const {
+    size_t tip_l_(size_t index) const {
         return l_blocks_[block_(index)];
     }
     
-    size_t tipS_(size_t index) const {
+    size_t tip_s_(size_t index) const {
         return s_blocks_[abs_(index)];
     }
     
@@ -290,8 +290,8 @@ size_t BitVector::select(size_t index) const {
     auto bits = bits_[ret / kSmallBlockBits];
     
     auto compress = [&bits, &ret, &i](const id_type block) {
-        auto count = bit_tools::popCount(bits % block);
-        auto shiftBlock = calc::sizeFitsInBytes(block - 1) * 8;
+        auto count = bit_tools::PopCount(bits % block);
+        auto shiftBlock = calc::size_fits_in_bytes(block - 1) * 8;
         if (count < i) {
             bits >>= shiftBlock;
             ret += shiftBlock;
@@ -305,13 +305,13 @@ size_t BitVector::select(size_t index) const {
     compress(0x10000);
     compress(0x100);
     
-    ret += bit_tools::selectTable(bits % 0x100, i);
+    ret += bit_tools::SelectTable(bits % 0x100, i);
     return ret - 1;
 }
 
 
-void BitVector::buildRank() {
-    l_blocks_ = FitVector(calc::sizeFitsInBits(size_), std::ceil(float(size_) / kLargeBlockBits));
+void BitVector::BuildRank() {
+    l_blocks_ = FitVector(calc::size_fits_in_bits(size_), std::ceil(float(size_) / kLargeBlockBits));
     s_blocks_.resize(std::ceil(float(size_) / kSmallBlockBits) + 1);
     
     auto count = 0;
@@ -324,7 +324,7 @@ void BitVector::buildRank() {
                 break;
             s_blocks_[index] = count - l_blocks_[i];
             if (index < bits_.size()) {
-                count += bit_tools::popCount(bits_[index]);
+                count += bit_tools::PopCount(bits_[index]);
             }
         }
         
@@ -333,8 +333,8 @@ void BitVector::buildRank() {
 }
 
 
-void BitVector::buildSelect() {
-    select_tips_ = FitVector(calc::sizeFitsInBits(l_blocks_.size()));
+void BitVector::BuildSelect() {
+    select_tips_ = FitVector(calc::size_fits_in_bits(l_blocks_.size()));
     auto count = kBitsPerSelectTips;
     select_tips_.push_back(0);
     for (id_type i = 0; i < l_blocks_.size(); i++) {

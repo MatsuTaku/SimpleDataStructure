@@ -17,27 +17,27 @@
 namespace sim_ds::bit_tools {
     
 #ifndef USE_X86
-constexpr size_t _bits_of_id_type = BITS_64;
-constexpr id_type _mask_fill = 0xFFFFFFFFFFFFFFFF;
+constexpr size_t kBitsOfIdType = BITS_64;
+constexpr id_type kMaskFill = 0xFFFFFFFFFFFFFFFF;
 #else
-constexpr size_t _bits_of_id_type = BITS_32;
-constexpr id_type _mask_fill = 0xFFFFFFFF;
+constexpr size_t kBitsOfIdType = BITS_32;
+constexpr id_type kMaskFill = 0xFFFFFFFF;
 #endif
 
-inline constexpr id_type maskOfBits(size_t bits) {
-    assert(bits <= _bits_of_id_type);
+inline constexpr id_type BitsMask(size_t bits) {
+    assert(bits <= kBitsOfIdType);
     if (bits == 0) {
         return 0;
     } else {
-        return _mask_fill >> (_bits_of_id_type - bits);
+        return kMaskFill >> (kBitsOfIdType - bits);
     }
 }
 
 template<size_t _Bits>
-constexpr id_type bits_mask = maskOfBits(_Bits);
+constexpr id_type bits_mask = BitsMask(_Bits);
 
-inline constexpr id_type maskOfOffset(size_t offset) {
-    assert(offset < _bits_of_id_type);
+inline constexpr id_type OffsetMask(size_t offset) {
+    assert(offset < kBitsOfIdType);
 #ifndef USE_X86
     return 1ULL << offset;
 #else
@@ -46,10 +46,10 @@ inline constexpr id_type maskOfOffset(size_t offset) {
 }
 
 template<size_t _Off>
-constexpr id_type offset_mask = maskOfOffset(_Off);
+constexpr id_type offset_mask = OffsetMask(_Off);
 
 template <unsigned int TYPE_SIZE, unsigned int TYPE>
-inline constexpr unsigned long long popCount(uint64_t x) {
+inline constexpr unsigned long long PopCount(uint64_t x) {
     if constexpr (TYPE_SIZE == 1) {
         assert(TYPE < 0b10);
         if constexpr (TYPE == 0b0)
@@ -104,40 +104,40 @@ inline constexpr unsigned long long popCount(uint64_t x) {
     }
 }
 
-const std::function<unsigned long long (uint64_t value)> _pop_cnt_table[3][8] = {
+const std::function<unsigned long long (uint64_t value)> kPopCntTable[3][8] = {
     {
-        popCount<1, 0b0>,
-        popCount<1, 0b1>
+        PopCount<1, 0b0>,
+        PopCount<1, 0b1>
     },
     {
-        popCount<2, 0b00>,
-        popCount<2, 0b01>,
-        popCount<2, 0b10>,
-        popCount<2, 0b11>
+        PopCount<2, 0b00>,
+        PopCount<2, 0b01>,
+        PopCount<2, 0b10>,
+        PopCount<2, 0b11>
     },
     {
-        popCount<3, 0b000>,
-        popCount<3, 0b001>,
-        popCount<3, 0b010>,
-        popCount<3, 0b011>,
-        popCount<3, 0b100>,
-        popCount<3, 0b101>,
-        popCount<3, 0b110>,
-        popCount<3, 0b111>
+        PopCount<3, 0b000>,
+        PopCount<3, 0b001>,
+        PopCount<3, 0b010>,
+        PopCount<3, 0b011>,
+        PopCount<3, 0b100>,
+        PopCount<3, 0b101>,
+        PopCount<3, 0b110>,
+        PopCount<3, 0b111>
     }
 };
 
 template <unsigned int TYPE_SIZE>
-inline constexpr unsigned long long popCount(size_t type, uint64_t x) {
-    return _pop_cnt_table[TYPE_SIZE - 1][type](x);
+inline constexpr unsigned long long PopCount(size_t type, uint64_t x) {
+    return kPopCntTable[TYPE_SIZE - 1][type](x);
 }
 
-inline unsigned long long popCount(uint64_t x) {
-    return popCount<1, 1>(x);
+inline unsigned long long PopCount(uint64_t x) {
+    return PopCount<1, 1>(x);
 }
 
 // inspired by marisa-trie
-constexpr uint8_t _select_table[9][256] = {
+constexpr uint8_t kSelectTable[9][256] = {
     {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -303,8 +303,8 @@ constexpr uint8_t _select_table[9][256] = {
 };
 
 // Use for select
-constexpr uint8_t selectTable(size_t word, size_t offset) {
-    return _select_table[offset][word];
+constexpr uint8_t SelectTable(size_t word, size_t offset) {
+    return kSelectTable[offset][word];
 }
     
     

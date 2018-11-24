@@ -15,10 +15,9 @@
 
 namespace sim_ds {
     
-template <unsigned int UNIT_SIZE>
+template <unsigned int UnitSize>
 class MultiBitVector {
-public:
-    static constexpr size_t kBitsUnitSize = UNIT_SIZE;
+    static constexpr size_t kBitsUnitSize = UnitSize;
     static constexpr uint8_t kMaxNumTypes = 1ULL << kBitsUnitSize;
     static constexpr id_type kBitsMask = kMaxNumTypes - 1;
     static constexpr size_t kBlockSize = 0x100 * kBitsUnitSize;
@@ -27,10 +26,16 @@ public:
     static constexpr uint8_t kBitSize = 0x40;
     static constexpr uint8_t kBlocksInTipSize = kBlockSize / kBitSize;
     
-    MultiBitVector() = default;
-    ~MultiBitVector() = default;
+    std::vector<id_type> bits_;
+    struct RankTip {
+        id_type L1;
+        uint8_t L2[kBlocksInTipSize];
+    };
+    std::vector<RankTip> rank_tips_[kMaxNumTypes];
     
-    // MARK: - getter
+public:
+    
+    // MARK: Getter
     
     constexpr uint8_t operator[](size_t index) const {
         return bits_[abs_(index)] >> rel_(index) & kBitsMask;
@@ -38,11 +43,11 @@ public:
     
     constexpr unsigned long long rank(size_t index) const;
     
-    // MARK: - setter
+    // MARK: Setter
     
     void set(size_t index, uint8_t value) {
         assert(value <= kBitsMask);
-        checkResize(index);
+        ResizeCheck(index);
         auto ri = rel_(index);
         auto &obj = bits_[abs_(index)];
         obj = (obj & ~(kBitsMask << ri)) | (id_type(value) << ri);
@@ -50,7 +55,7 @@ public:
     
     void build();
     
-    void checkResize(size_t index) {
+    void ResizeCheck(size_t index) {
         if (abs_(index) < bits_.size()) return;
         resize(index);
     }
@@ -61,26 +66,29 @@ public:
     
     // MARK: - ByteData
     
-    size_t sizeInBytes() const {
+    size_t size_in_bytes() const {
         auto size = size_vec(bits_);
         for (auto &tips : rank_tips_)
             size += size_vec(tips);
         return size;
     }
     
-    void write(std::ostream &os) const {
+    void Write(std::ostream &os) const {
         write_vec(bits_, os);
         for (auto &tips : rank_tips_)
             write_vec(tips, os);
     }
     
-    void read(std::istream &is) {
+    void Read(std::istream &is) {
         bits_ = read_vec<id_type>(is);
         for (auto &tips : rank_tips_)
             tips = read_vec<RankTip>(is);
     }
     
     // MARK: - Copy guard
+    
+    MultiBitVector() = default;
+    ~MultiBitVector() = default;
     
     MultiBitVector(const MultiBitVector&) = delete;
     MultiBitVector& operator=(const MultiBitVector&) = delete;
@@ -89,12 +97,6 @@ public:
     MultiBitVector& operator=(MultiBitVector&&) noexcept = default;
     
 private:
-    std::vector<id_type> bits_;
-    struct RankTip {
-        id_type L1;
-        uint8_t L2[kBlocksInTipSize];
-    };
-    std::vector<RankTip> rank_tips_[kMaxNumTypes];
     
     // MARK: - private methods
     
@@ -110,8 +112,8 @@ private:
         return index * kBitsUnitSize % kBitsInType;
     }
     
-    constexpr uint8_t popCount_(uint8_t bits, id_type value) const {
-        return bit_tools::popCount<kBitsUnitSize>(bits, value);
+    constexpr uint8_t pop_count_(uint8_t bits, id_type value) const {
+        return bit_tools::PopCount<kBitsUnitSize>(bits, value);
     }
     
 };
@@ -121,7 +123,7 @@ inline constexpr unsigned long long MultiBitVector<S>::rank(size_t index) const 
     auto type = (*this)[index];
     assert(type > 0);
     const auto &tip = rank_tips_[type - 1][block_(index)];
-    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + popCount_(type, bits_[abs_(index)] & bit_tools::maskOfBits(rel_(index)));
+    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + pop_count_(type, bits_[abs_(index)] & bit_tools::BitsMask(rel_(index)));
 }
 
 template <unsigned int S>
@@ -146,7 +148,7 @@ inline void MultiBitVector<S>::build() {
                 tip.L2[offset] = count - tip.L1;
                 auto index = i * kBlocksInTipSize + offset;
                 if (index < bits_.size()) {
-                    count += popCount_(type, bits_[index]);
+                    count += pop_count_(type, bits_[index]);
                 }
             }
         }

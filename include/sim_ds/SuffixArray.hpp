@@ -12,6 +12,8 @@
 #include "FitVector.hpp"
 #include "calc.hpp"
 
+#include <limits>
+
 namespace sim_ds {
     
 using std::vector;
@@ -20,20 +22,20 @@ using std::string_view;
 
 class SuffixArray {
 public:
-    static constexpr size_t INF = -1;
+    static constexpr size_t kInf = std::numeric_limits<size_t>::max();
     
 public:
     SuffixArray() = default;
     SuffixArray(const string &str) {
-        build(str);
+        Build(str);
     }
     
-    void build(const string &str) {
-        buildSA_(str);
-        buildLCP_();
+    void Build(const string &str) {
+        BuildSA_(str);
+        BuildLCP_();
     }
     
-    uint8_t charOf(size_t index) const {
+    uint8_t char_at(size_t index) const {
         return str_[index];
     }
     
@@ -45,21 +47,21 @@ public:
         return suffix(index, str_.size() - index);
     }
     
-    void writeSA(std::ostream &os) const {
-        s_arr_.write(os);
+    void WriteSA(std::ostream &os) const {
+        s_arr_.Write(os);
     }
     
-    void writeLCP(std::ostream &os) const {
-        lcp_arr_.write(os);
+    void WriteLCP(std::ostream &os) const {
+        lcp_arr_.Write(os);
     }
     
-    void write(std::ostream &os) const {
+    void Write(std::ostream &os) const {
         write_string(str_, os);
-        s_arr_.write(os);
-        lcp_arr_.write(os);
+        s_arr_.Write(os);
+        lcp_arr_.Write(os);
     }
     
-    void read(std::istream &is) {
+    void Read(std::istream &is) {
         str_ = read_string(is);
         s_arr_ = FitVector(is);
         lcp_arr_ = FitVector(is);
@@ -101,44 +103,44 @@ private:
         }
     };
     
-    void buildSA_(const string &str);
+    void BuildSA_(const string &str);
     
-    void saisStr_(vector<size_t> &saisS, const string &str) const;
+    void SaisStr_(vector<size_t> &saisS, const string &str) const;
     
-    void makeBuckets_(vector<Bucket> &buckets, const vector<size_t> &str, size_t maxValue) const;
+    void MakeBuckets_(vector<Bucket> &buckets, const vector<size_t> &str, size_t maxValue) const;
     
-    vector<bool> classified_(const vector<size_t> &str) const;
+    vector<bool> Classified_(const vector<size_t> &str) const;
     
-    vector<size_t> findLMSs_(const vector<bool> &slTypes) const;
+    vector<size_t> FindLMSs_(const vector<bool> &slTypes) const;
     
-    bool equalLMSs_(const vector<size_t> &str, const vector<bool> &slTypes, size_t li, size_t ri) const;
+    bool EqualLMSs_(const vector<size_t> &str, const vector<bool> &slTypes, size_t li, size_t ri) const;
     
-    size_t putBucket_(vector<Bucket> *buckets, vector<size_t> *sArr, bool slType, size_t firstC, size_t id) const;
+    size_t PutBucket_(vector<Bucket> *buckets, vector<size_t> *sArr, bool slType, size_t firstC, size_t id) const;
     
-    vector<size_t> sais_(const vector<size_t> &str, size_t maxValue) const;
+    vector<size_t> Sais_(const vector<size_t> &str, size_t maxValue) const;
     
-    InducedRV inducedSort_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds) const;
+    InducedRV InducedSort_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds) const;
     
-    vector<size_t> induce_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds, const vector<size_t> *lmssArr = nullptr) const;
+    vector<size_t> Induce_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds, const vector<size_t> *lmssArr = nullptr) const;
     
-    void buildLCP_();
+    void BuildLCP_();
     
-    size_t compareLCP_(size_t li, size_t ri, size_t lcp) const;
+    size_t CompareLCP_(size_t li, size_t ri, size_t lcp) const;
     
 };
 
-void SuffixArray::buildSA_(const string &str) {
+void SuffixArray::BuildSA_(const string &str) {
     str_ = str;
     vector<size_t> strVec;
-    saisStr_(strVec, str);
-    vector<size_t> sArr = sais_(strVec, 0xff);
+    SaisStr_(strVec, str);
+    vector<size_t> sArr = Sais_(strVec, 0xff);
     // Erase first element. suffix[0]: '\0'
     sArr.erase(sArr.begin());
     s_arr_ = FitVector(sArr);
 }
 
 
-void SuffixArray::saisStr_(vector<size_t> &saisS, const string &str) const {
+void SuffixArray::SaisStr_(vector<size_t> &saisS, const string &str) const {
     saisS.resize(str.size());
     for (auto i = 0; i < str.size(); i++)
         saisS[i] = size_t(str[i]);
@@ -146,7 +148,7 @@ void SuffixArray::saisStr_(vector<size_t> &saisS, const string &str) const {
 }
 
 
-void SuffixArray::makeBuckets_(vector<Bucket> &buckets, const vector<size_t> &str, size_t maxValue) const {
+void SuffixArray::MakeBuckets_(vector<Bucket> &buckets, const vector<size_t> &str, size_t maxValue) const {
     buckets.resize(maxValue + 1);
     for (auto s : str) {
         buckets[s].count++;
@@ -160,7 +162,7 @@ void SuffixArray::makeBuckets_(vector<Bucket> &buckets, const vector<size_t> &st
     }
 }
 
-inline vector<bool> SuffixArray::classified_(const vector<size_t> &str) const {
+inline vector<bool> SuffixArray::Classified_(const vector<size_t> &str) const {
     vector<bool> slTypes(str.size());
     slTypes[slTypes.size() - 1] = true;
     for (auto i = str.size() - 1; i > 0; i--) {
@@ -169,7 +171,7 @@ inline vector<bool> SuffixArray::classified_(const vector<size_t> &str) const {
     return slTypes;
 }
 
-inline vector<size_t> SuffixArray::findLMSs_(const vector<bool> &slTypes) const {
+inline vector<size_t> SuffixArray::FindLMSs_(const vector<bool> &slTypes) const {
     vector<size_t> lmss;
     for (auto i = 1; i < slTypes.size(); i++) {
         if (!slTypes[i - 1] && slTypes[i])
@@ -178,7 +180,7 @@ inline vector<size_t> SuffixArray::findLMSs_(const vector<bool> &slTypes) const 
     return lmss;
 }
 
-inline bool SuffixArray::equalLMSs_(const vector<size_t> &str, const vector<bool> &slTypes, size_t li, size_t ri) const {
+inline bool SuffixArray::EqualLMSs_(const vector<size_t> &str, const vector<bool> &slTypes, size_t li, size_t ri) const {
     bool leftL = false;
     bool curType = true;
     do {
@@ -191,7 +193,7 @@ inline bool SuffixArray::equalLMSs_(const vector<size_t> &str, const vector<bool
     return true;
 }
 
-inline size_t SuffixArray::putBucket_(vector<Bucket> *buckets, vector<size_t> *sArr, bool slType, size_t firstC, size_t id) const {
+inline size_t SuffixArray::PutBucket_(vector<Bucket> *buckets, vector<size_t> *sArr, bool slType, size_t firstC, size_t id) const {
     Bucket &bucket = (*buckets)[firstC];
     if (bucket.full()) abort();
     size_t pos;
@@ -207,11 +209,11 @@ inline size_t SuffixArray::putBucket_(vector<Bucket> *buckets, vector<size_t> *s
     return pos;
 }
 
-inline vector<size_t> SuffixArray::sais_(const vector<size_t> &str, size_t maxValue) const {
+inline vector<size_t> SuffixArray::Sais_(const vector<size_t> &str, size_t maxValue) const {
     using std::move;
-    const vector<bool> slTypes = classified_(str);
-    const vector<size_t> lmsIds = findLMSs_(slTypes);
-    const InducedRV inducedSorted = inducedSort_(maxValue, str, slTypes, lmsIds);
+    const vector<bool> slTypes = Classified_(str);
+    const vector<size_t> lmsIds = FindLMSs_(slTypes);
+    const InducedRV inducedSorted = InducedSort_(maxValue, str, slTypes, lmsIds);
     using std::get;
     const vector<size_t> sArr = std::move(get<0>(inducedSorted));
     size_t countShared = get<2>(inducedSorted);
@@ -219,21 +221,21 @@ inline vector<size_t> SuffixArray::sais_(const vector<size_t> &str, size_t maxVa
         return sArr;
     } else {
         const vector<size_t> subStr = std::move(get<1>(inducedSorted));
-        const vector<size_t> subSais = sais_(subStr, lmsIds.size() - 1 - countShared);
-        const vector<size_t> rSais = induce_(maxValue, str, slTypes, lmsIds, &subSais);
+        const vector<size_t> subSais = Sais_(subStr, lmsIds.size() - 1 - countShared);
+        const vector<size_t> rSais = Induce_(maxValue, str, slTypes, lmsIds, &subSais);
         return rSais;
     }
 }
 
-inline typename SuffixArray::InducedRV SuffixArray::inducedSort_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds) const {
-    const vector<size_t> &induced = induce_(maxValue, str, slTypes, lmsIds);
-    vector<size_t> subAsStr(str.size(), INF);
+inline typename SuffixArray::InducedRV SuffixArray::InducedSort_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds) const {
+    const vector<size_t> &induced = Induce_(maxValue, str, slTypes, lmsIds);
+    vector<size_t> subAsStr(str.size(), kInf);
     size_t charNumber = 0;
     auto lastLmsId = 0;
     for (auto id : induced) {
         if (id == 0) continue;
         if (!slTypes[id - 1] && slTypes[id]) {
-            if (lastLmsId > 0 && !equalLMSs_(str, slTypes, lastLmsId, id)) {
+            if (lastLmsId > 0 && !EqualLMSs_(str, slTypes, lastLmsId, id)) {
                 charNumber++;
             }
             subAsStr[id] = charNumber;
@@ -243,7 +245,7 @@ inline typename SuffixArray::InducedRV SuffixArray::inducedSort_(size_t maxValue
     vector<size_t> subStr(lmsIds.size());
     auto i = 0;
     for (auto subC : subAsStr) {
-        if (subC == INF) continue;
+        if (subC == kInf) continue;
         subStr[i++] = subC;
         subC++;
     }
@@ -251,39 +253,39 @@ inline typename SuffixArray::InducedRV SuffixArray::inducedSort_(size_t maxValue
     return InducedRV(induced, subStr, countShared);
 }
 
-inline vector<size_t> SuffixArray::induce_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds, const vector<size_t> *lmssArr) const {
-    vector<size_t> sArr(str.size(), INF);
+inline vector<size_t> SuffixArray::Induce_(size_t maxValue, const vector<size_t> &str, const vector<bool> &slTypes, const vector<size_t> &lmsIds, const vector<size_t> *lmssArr) const {
+    vector<size_t> sArr(str.size(), kInf);
     vector<Bucket> buckets;
-    makeBuckets_(buckets, str, maxValue);
+    MakeBuckets_(buckets, str, maxValue);
     // Step1: insert LMSs in bucket
     vector<size_t> insertedLMSPoses(lmsIds.size());
     if (lmssArr == nullptr) {
         for (int i = lmsIds.size() - 1; i >= 0; i--) {
             auto id = lmsIds[i];
-            auto pos = putBucket_(&buckets, &sArr, true, str[id], id);
+            auto pos = PutBucket_(&buckets, &sArr, true, str[id], id);
             insertedLMSPoses[i] = pos;
         }
     } else {
         for (auto it = lmssArr->rbegin(); it != lmssArr->rend(); it++) {
             auto i = *it;
             auto id = lmsIds[i];
-            auto pos = putBucket_(&buckets, &sArr, true, str[id], id);
+            auto pos = PutBucket_(&buckets, &sArr, true, str[id], id);
             insertedLMSPoses[i] = pos;
         }
     }
     // Step2: insert Ls
     for (auto i = 0; i < sArr.size(); i++) {
         auto id = (sArr)[i];
-        if (id == INF || id == 0) continue;
+        if (id == kInf || id == 0) continue;
         auto nextId = id - 1;
         if (slTypes[nextId]) continue;
-        putBucket_(&buckets, &sArr, false, str[nextId], nextId);
+        PutBucket_(&buckets, &sArr, false, str[nextId], nextId);
     }
     // Step3-a: remove LMSs in bucket
     for (auto pos : insertedLMSPoses) {
         // Don't remove [0]: '\0'
         if (pos == 0) continue;
-        sArr[pos] = INF;
+        sArr[pos] = kInf;
     }
     for (auto &b : buckets) {
         b.initSPos();
@@ -291,15 +293,15 @@ inline vector<size_t> SuffixArray::induce_(size_t maxValue, const vector<size_t>
     // Step3-b: insert Ss
     for (auto i = sArr.size(); i > 0; i--) {
         auto id = (sArr)[i - 1];
-        if (id == INF || id == 0) continue;
+        if (id == kInf || id == 0) continue;
         auto nextId = id - 1;
         if (!slTypes[nextId]) continue;
-        putBucket_(&buckets, &sArr, true, str[nextId], nextId);
+        PutBucket_(&buckets, &sArr, true, str[nextId], nextId);
     }
     return sArr;
 }
 
-inline void SuffixArray::buildLCP_() {
+inline void SuffixArray::BuildLCP_() {
     vector<size_t> posInArr(s_arr_.size());
     for (auto i = 0; i < s_arr_.size(); i++) {
         posInArr[s_arr_[i]] = i;
@@ -308,7 +310,7 @@ inline void SuffixArray::buildLCP_() {
     auto prevLCP = 0;
     for (auto i = 0; i < posInArr.size(); i++) {
         auto pos = posInArr[i];
-        auto lcp = (pos == posInArr.size() - 1) ? 0 : compareLCP_(i, s_arr_[pos + 1], prevLCP > 1 ? prevLCP - 1 : 0);
+        auto lcp = (pos == posInArr.size() - 1) ? 0 : CompareLCP_(i, s_arr_[pos + 1], prevLCP > 1 ? prevLCP - 1 : 0);
         lcpArr[pos] = lcp;
         prevLCP = lcp;
     }
@@ -332,13 +334,13 @@ inline void SuffixArray::buildLCP_() {
     cout << "Median value: " << median << endl;
     cout << "---- size map ----" << endl;
     auto i = 0;
-    auto map = calc::vectorMapOfSizeBits(lcpArr);
+    auto map = calc::bit_size_frequency_list(lcpArr);
     for (auto num : map)
         cout << "[" << i++ << "]: " << num << endl;
     cout << "----------------------------" << endl;
 }
 
-inline size_t SuffixArray::compareLCP_(size_t li, size_t ri, size_t lcp) const {
+inline size_t SuffixArray::CompareLCP_(size_t li, size_t ri, size_t lcp) const {
     auto matches = lcp;
     li += lcp;
     ri += lcp;

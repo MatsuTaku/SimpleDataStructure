@@ -15,19 +15,19 @@
 
 namespace sim_ds {
     
-template<class SequenceType>
+template<class Sequence>
 class BitsReference {
-    using pointer = typename SequenceType::pointer;
-    using entity_type = typename SequenceType::entity_type;
-    using mask_type = typename SequenceType::storage_type;
+    using Pointer = typename Sequence::Pointer;
+    using entity_type = typename Sequence::entity_type;
+    using Mask = typename Sequence::storage_type;
     
-    friend typename SequenceType::self;
+    friend typename Sequence::Self;
     
     static constexpr size_t kBitsPerWord = sizeof(id_type) * 8;
     
 public:
     constexpr operator entity_type() const {
-        if (bits_per_unit_ + offset_ <= kBitsPerWord) {
+        if (bits_per_element_ + offset_ <= kBitsPerWord) {
             return (*pointer_ >> offset_) & mask_;
         } else {
             return ((*pointer_ >> offset_) | (*(pointer_ + 1) << (kBitsPerWord - offset_))) & mask_;
@@ -36,7 +36,7 @@ public:
     
     BitsReference& operator=(entity_type value) {
         *pointer_ = (*pointer_ & ~(mask_ << offset_)) | (value << offset_);
-        if (bits_per_unit_ + offset_ > kBitsPerWord) {
+        if (bits_per_element_ + offset_ > kBitsPerWord) {
             auto roffset = kBitsPerWord - offset_;
             *(pointer_ + 1) = (*(pointer_ + 1) & ~(mask_ >> roffset)) | value >> roffset;
         }
@@ -44,29 +44,29 @@ public:
     }
     
 private:
-    constexpr BitsReference(pointer pointer, size_t offset, size_t bitsPerUnit) noexcept : pointer_(pointer), offset_(offset), bits_per_unit_(bitsPerUnit), mask_(bit_tools::maskOfBits(bitsPerUnit)) {}
+    constexpr BitsReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::BitsMask(bits_per_element)) {}
     
-    pointer pointer_;
+    Pointer pointer_;
     size_t offset_;
-    size_t bits_per_unit_;
-    mask_type mask_;
+    size_t bits_per_element_;
+    Mask mask_;
     
 };
 
 
-template<class SequenceType>
+template<class Sequence>
 class BitsConstReference {
-    using pointer = typename SequenceType::const_pointer;
-    using entity_type = typename SequenceType::entity_type;
-    using mask_type = typename SequenceType::storage_type;
+    using Pointer = typename Sequence::ConstPointer;
+    using entity_type = typename Sequence::entity_type;
+    using Mask = typename Sequence::storage_type;
     
-    friend typename SequenceType::self;
+    friend typename Sequence::Self;
     
     static constexpr size_t kBitsPerWord = sizeof(id_type) * 8;
     
 public:
     constexpr operator entity_type() const {
-        if (bits_per_unit_ + offset_ <= kBitsPerWord) {
+        if (bits_per_element_ + offset_ <= kBitsPerWord) {
             return (*pointer_ >> offset_) & mask_;
         } else {
             return ((*pointer_ >> offset_) | (*(pointer_ + 1) << (kBitsPerWord - offset_))) & mask_;
@@ -74,12 +74,12 @@ public:
     }
     
 private:
-    constexpr BitsConstReference(pointer pointer, size_t offset, size_t bitsPerUnit) noexcept : pointer_(pointer), offset_(offset), bits_per_unit_(bitsPerUnit), mask_(bit_tools::maskOfBits(bitsPerUnit)) {}
+    constexpr BitsConstReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::BitsMask(bits_per_element)) {}
     
-    pointer pointer_;
+    Pointer pointer_;
     size_t offset_;
-    size_t bits_per_unit_;
-    mask_type mask_;
+    size_t bits_per_element_;
+    Mask mask_;
     
 };
 
@@ -88,32 +88,32 @@ private:
  * Vector that fit to binary size of max-value of source vector integers.
  */
 class FitVector {
-    using self = FitVector;
+    using Self = FitVector;
     using entity_type = id_type;
     using storage_type = id_type;
-    using pointer = storage_type*;
-    using const_pointer = const storage_type*;
+    using Pointer = storage_type*;
+    using ConstPointer = const storage_type*;
     
     // * Initialized only in constructor
-    size_t bits_per_unit_;
-    id_type mask_;
+    size_t bits_per_element_;
+    storage_type mask_;
     // *
     
     size_t size_ = 0;
-    std::vector<id_type> vector_;
+    std::vector<storage_type> vector_;
     
     friend class BitsReference<FitVector>;
     friend class BitsConstReference<FitVector>;
     
-    using reference = BitsReference<FitVector>;
-    using const_reference = BitsConstReference<FitVector>;
+    using Reference = BitsReference<FitVector>;
+    using ConstReference = BitsConstReference<FitVector>;
     
     static constexpr size_t kBitsPerWord = 8 * sizeof(id_type); // 64
     
 public:
     // MARK: Constructor
     
-    FitVector(size_t wordBits = kBitsPerWord) : bits_per_unit_(wordBits), mask_(bit_tools::maskOfBits(wordBits)) {}
+    FitVector(size_t wordBits = kBitsPerWord) : bits_per_element_(wordBits), mask_(bit_tools::BitsMask(wordBits)) {}
     
     FitVector(size_t wordBits, size_t size) : FitVector(wordBits) {
         resize(size);
@@ -129,7 +129,7 @@ public:
     }
     
     template<typename T>
-    FitVector(const std::vector<T> &vector) : FitVector(typeSizeOfVector(vector)) {
+    FitVector(const std::vector<T>& vector) : FitVector(optimal_size_of_element(vector)) {
         if (vector.empty())
             return;
         resize(vector.size());
@@ -141,38 +141,38 @@ public:
     // Used at constructor
     
     template<typename T>
-    size_t typeSizeOfVector(const std::vector<T> &vector) const {
+    size_t optimal_size_of_element(const std::vector<T>& vector) const {
         if (vector.empty())
             return 0;
-        auto maxV = *std::max_element(vector.begin(), vector.end());
-        return calc::sizeFitsInBits(maxV);
+        auto max_e = *std::max_element(vector.begin(), vector.end());
+        return calc::size_fits_in_bits(max_e);
     }
     
     // MARK: Operator
     
-    reference operator[](size_t index) {
+    Reference operator[](size_t index) {
         assert(index < size());
-        return reference(&vector_[abs_(index)], rel_(index), bits_per_unit_);
+        return Reference(&vector_[abs_(index)], rel_(index), bits_per_element_);
     }
     
-    const_reference operator[](size_t index) const {
+    ConstReference operator[](size_t index) const {
         assert(index < size());
-        return const_reference(&vector_[abs_(index)], rel_(index), bits_per_unit_);
+        return ConstReference(&vector_[abs_(index)], rel_(index), bits_per_element_);
     }
     
-    reference front() {
+    Reference front() {
         return operator[](0);
     }
     
-    const_reference front() const {
+    ConstReference front() const {
         return operator[](0);
     }
     
-    reference back() {
+    Reference back() {
         return operator[](size() - 1);
     }
     
-    const_reference back() const {
+    ConstReference back() const {
         return operator[](size() - 1);
     }
     
@@ -195,7 +195,7 @@ public:
     }
     
     void resize(size_t size) {
-        auto newSize = ceil(float(size) * bits_per_unit_ / kBitsPerWord);
+        auto newSize = ceil(float(size) * bits_per_element_ / kBitsPerWord);
         vector_.resize(newSize);
         size_ = size;
     }
@@ -209,20 +209,20 @@ public:
     
     void reserve(size_t size) {
         float fs = size;
-        auto offset = std::ceil(fs * bits_per_unit_ / kBitsPerWord);
+        auto offset = std::ceil(fs * bits_per_element_ / kBitsPerWord);
         vector_.reserve(offset);
     }
     
     // MARK: method
     
-    size_t sizeInBytes() const {
-        auto size = sizeof(bits_per_unit_) + sizeof(size_);
+    size_t size_in_bytes() const {
+        auto size = sizeof(bits_per_element_) + sizeof(size_);
         size += size_vec(vector_);
         return size;
     }
     
-    void write(std::ostream &os) const {
-        write_val(bits_per_unit_, os);
+    void Write(std::ostream &os) const {
+        write_val(bits_per_element_, os);
         write_val(size_, os);
         write_vec(vector_, os);
     }
@@ -230,11 +230,11 @@ public:
 private:
     
     size_t abs_(size_t index) const {
-        return index * bits_per_unit_ / kBitsPerWord;
+        return index * bits_per_element_ / kBitsPerWord;
     }
     
     size_t rel_(size_t index) const {
-        return index * bits_per_unit_ % kBitsPerWord;
+        return index * bits_per_element_ % kBitsPerWord;
     }
     
 public:
