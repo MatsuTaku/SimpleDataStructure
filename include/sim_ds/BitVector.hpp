@@ -173,13 +173,13 @@ public:
         bits_.reserve(abs);
     }
     
-    void swapBits(BitVector &rhs) {
-        std::swap(size_, rhs.size_);
-        bits_.swap(rhs.bits_);
-    }
-    
     size_t sizeInBytes() const {
-        return sizeof(size_t) + size_vec(bits_) + l_blocks_.sizeInBytes() + size_vec(s_blocks_);
+        auto size = sizeof(size_t);
+        size +=  size_vec(bits_);
+        size += l_blocks_.sizeInBytes();
+        size += size_vec(s_blocks_);
+        size += select_tips_.sizeInBytes();
+        return size;
     }
     
     void write(std::ostream& os) const {
@@ -187,13 +187,15 @@ public:
         write_vec(bits_, os);
         l_blocks_.write(os);
         write_vec(s_blocks_, os);
+        select_tips_.write(os);
     }
     
     void read(std::istream& is) {
         size_ = read_val<size_t>(is);
-        bits_ = read_vec<id_type>(is);
+        bits_ = read_vec<storage_type>(is);
         l_blocks_ = FitVector(is);
-        s_blocks_ = read_vec<uint8_t>(is);
+        s_blocks_ = read_vec<s_block_type>(is);
+        select_tips_ = FitVector(is);
     }
     
 private:

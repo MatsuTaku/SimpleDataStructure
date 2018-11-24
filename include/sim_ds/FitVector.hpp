@@ -189,31 +189,14 @@ public:
     // MARK: setter
     
     void push_back(size_t value) {
-        auto abs = abs_(size_);
-        auto rel = rel_(size_);
-        if (rel == 0) {
-            vector_.emplace_back(value);
-        } else {
-            if (abs <= long(size_) - 1) {
-                vector_[abs] |= value << rel;
-            }
-            if (bits_per_unit_ + rel > kBitsPerWord) {
-                vector_.emplace_back(value >> (kBitsPerWord - rel));
-            }
-        }
-        size_++;
+        auto backI = size();
+        resize(size() + 1);
+        operator[](backI) = value;
     }
     
     void resize(size_t size) {
-        if (size == 0) {
-            vector_.resize(0);
-        } else {
-            auto abs = abs_(size - 1);
-            bool crossBoundary = rel_(size - 1) + bits_per_unit_ > kBitsPerWord;
-            vector_.resize(abs + (crossBoundary ? 2 : 1));
-        }
-        if (size < size_)
-            vector_.shrink_to_fit();
+        auto newSize = ceil(float(size) * bits_per_unit_ / kBitsPerWord);
+        vector_.resize(newSize);
         size_ = size;
     }
     
