@@ -44,7 +44,7 @@ public:
     }
     
 private:
-    constexpr BitsReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::BitsMask(bits_per_element)) {}
+    constexpr BitsReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
     
     Pointer pointer_;
     size_t offset_;
@@ -74,7 +74,7 @@ public:
     }
     
 private:
-    constexpr BitsConstReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::BitsMask(bits_per_element)) {}
+    constexpr BitsConstReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
     
     Pointer pointer_;
     size_t offset_;
@@ -113,7 +113,7 @@ class FitVector {
 public:
     // MARK: Constructor
     
-    FitVector(size_t wordBits = kBitsPerWord) : bits_per_element_(wordBits), mask_(bit_tools::BitsMask(wordBits)) {}
+    FitVector(size_t wordBits = kBitsPerWord) : bits_per_element_(wordBits), mask_(bit_tools::WidthMask(wordBits)) {}
     
     FitVector(size_t wordBits, size_t size) : FitVector(wordBits) {
         resize(size);
@@ -145,7 +145,7 @@ public:
         if (vector.empty())
             return 0;
         auto max_e = *std::max_element(vector.begin(), vector.end());
-        return calc::size_fits_in_bits(max_e);
+        return calc::SizeFitsInBits(max_e);
     }
     
     // MARK: Operator
@@ -176,23 +176,7 @@ public:
         return operator[](size() - 1);
     }
     
-    // MARK: Getter
-    
-    size_t size() const {
-        return size_;
-    }
-    
-    bool empty() const {
-        return size_ == 0;
-    }
-    
     // MARK: setter
-    
-    void push_back(size_t value) {
-        auto backI = size();
-        resize(size() + 1);
-        operator[](backI) = value;
-    }
     
     void resize(size_t size) {
         auto newSize = ceil(float(size) * bits_per_element_ / kBitsPerWord);
@@ -209,8 +193,24 @@ public:
     
     void reserve(size_t size) {
         float fs = size;
-        auto offset = std::ceil(fs * bits_per_element_ / kBitsPerWord);
+        auto offset = ceil(fs * bits_per_element_ / kBitsPerWord);
         vector_.reserve(offset);
+    }
+    
+    void push_back(size_t value) {
+        auto backI = size();
+        resize(size() + 1);
+        operator[](backI) = value;
+    }
+    
+    // MARK: Getter
+    
+    size_t size() const {
+        return size_;
+    }
+    
+    bool empty() const {
+        return size() == 0;
     }
     
     // MARK: method

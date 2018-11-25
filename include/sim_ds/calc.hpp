@@ -16,7 +16,7 @@ namespace sim_ds {
 namespace calc {
     
 /* Calculate minimal number of units of argument required for value expression. */
-inline constexpr size_t size_fits_in_units(unsigned long long value, const size_t unit) {
+inline constexpr size_t SizeFitsInUnits(unsigned long long value, const size_t unit) {
     size_t size = 0;
     while (static_cast<bool>(value >> (++size * unit))) continue;
     return size;
@@ -24,21 +24,21 @@ inline constexpr size_t size_fits_in_units(unsigned long long value, const size_
 
 template<size_t _Bits>
 inline constexpr size_t size_fits(unsigned long long value) {
-    return size_fits_in_units(value, _Bits);
+    return SizeFitsInUnits(value, _Bits);
 }
 
 /* Calculate minimal number of bytes required for value expression. */
-inline constexpr size_t size_fits_in_bytes(unsigned long long value) {
+inline constexpr size_t SizeFitsInBytes(unsigned long long value) {
     return size_fits<8>(value);
 }
 
 /* Calculate minimal number of bits required for value expression. */
-inline constexpr size_t size_fits_in_bits(unsigned long long value) {
+inline constexpr size_t SizeFitsInBits(unsigned long long value) {
     return size_fits<1>(value);
 }
 
 template <typename CONTAINER>
-inline size_t size_fits_as_list(unsigned long long value, const CONTAINER sizes) {
+inline size_t SizeFitsAsList(unsigned long long value, const CONTAINER sizes) {
     size_t size = 0;
     while (static_cast<bool>(value >>= sizes[size++])) continue;
     return size;
@@ -49,7 +49,7 @@ inline std::vector<size_t> bit_size_frequency_list(const CONTAINER& list, bool s
     std::vector<size_t> map;
     auto maxSize = 0;
     for (size_t i = 0; i < list.size(); i++) {
-        auto size = size_fits_in_bits(list[i]);
+        auto size = SizeFitsInBits(list[i]);
         if (size > maxSize) {
             map.resize(size, 0);
             maxSize = size;

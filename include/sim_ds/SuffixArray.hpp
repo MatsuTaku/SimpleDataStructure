@@ -55,16 +55,16 @@ public:
         lcp_arr_.Write(os);
     }
     
-    void Write(std::ostream &os) const {
-        write_string(str_, os);
-        s_arr_.Write(os);
-        lcp_arr_.Write(os);
-    }
-    
     void Read(std::istream &is) {
         str_ = read_string(is);
         s_arr_ = FitVector(is);
         lcp_arr_ = FitVector(is);
+    }
+    
+    void Write(std::ostream &os) const {
+        write_string(str_, os);
+        s_arr_.Write(os);
+        lcp_arr_.Write(os);
     }
     
 private:

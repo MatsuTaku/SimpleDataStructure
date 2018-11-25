@@ -24,7 +24,7 @@ constexpr size_t kBitsOfIdType = BITS_32;
 constexpr id_type kMaskFill = 0xFFFFFFFF;
 #endif
 
-inline constexpr id_type BitsMask(size_t bits) {
+inline constexpr id_type WidthMask(size_t bits) {
     assert(bits <= kBitsOfIdType);
     if (bits == 0) {
         return 0;
@@ -34,7 +34,7 @@ inline constexpr id_type BitsMask(size_t bits) {
 }
 
 template<size_t _Bits>
-constexpr id_type bits_mask = BitsMask(_Bits);
+constexpr id_type width_mask = WidthMask(_Bits);
 
 inline constexpr id_type OffsetMask(size_t offset) {
     assert(offset < kBitsOfIdType);

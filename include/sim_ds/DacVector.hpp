@@ -83,13 +83,13 @@ public:
     }
     
     void push_back(id_type value) {
-        auto size = calc::size_fits_as_list(value, layer_unit_sizes_);
+        auto size = calc::SizeFitsAsList(value, layer_unit_sizes_);
         if (size > num_layers_)
             Expand_(size);
         for (auto depth = 0, index = 0; depth < size; depth++) {
             auto& unit = layers_[depth];
             auto curBitsSize = layer_unit_sizes_[depth];
-            unit.push_back(value & bit_tools::BitsMask(curBitsSize));
+            unit.push_back(value & bit_tools::WidthMask(curBitsSize));
             value >>= curBitsSize;
             index = unit.size() - 1;
             if (depth == 0 || depth + 1 < num_layers_)
@@ -134,8 +134,6 @@ public:
         return depth;
     }
     
-    void ShowStatus(std::ostream& os) const;
-    
     size_t size_in_bytes() const {
         auto size = sizeof(num_layers_);
         size += sizeof(*layer_unit_sizes_) * num_layers_;
@@ -148,16 +146,7 @@ public:
         return size;
     }
     
-    void Write(std::ostream& os) const {
-        write_val(num_layers_, os);
-        for (auto i = 0; i < num_layers_; i++)
-            write_val(layer_unit_sizes_[i], os);
-        for (auto i = 0; i < num_layers_; i++)
-            layers_[i].Write(os);
-        if (num_layers_ > 0)
-            for (auto i = 0; i == 0 || i + 1 < num_layers_; i++)
-                paths_[i].Write(os);
-    }
+    void ShowStatus(std::ostream& os) const;
     
     void Read(std::istream& is) {
         num_layers_ = read_val<size_t>(is);
@@ -168,6 +157,17 @@ public:
         if (num_layers_ > 0)
             for (auto i = 0; i == 0 || i + 1 < num_layers_; i++)
                 paths_[i].Read(is);
+    }
+    
+    void Write(std::ostream& os) const {
+        write_val(num_layers_, os);
+        for (auto i = 0; i < num_layers_; i++)
+            write_val(layer_unit_sizes_[i], os);
+        for (auto i = 0; i < num_layers_; i++)
+            layers_[i].Write(os);
+        if (num_layers_ > 0)
+            for (auto i = 0; i == 0 || i + 1 < num_layers_; i++)
+                paths_[i].Write(os);
     }
     
 private:
@@ -186,19 +186,11 @@ public:
     DacVector() = default;
     ~DacVector() = default;
     
-    DacVector(const DacVector&) = delete;
-    DacVector& operator =(const DacVector&) = delete;
+    DacVector(const DacVector&) = default;
+    DacVector& operator=(const DacVector&) = default;
     
-    DacVector(DacVector&& rhs) noexcept {
-        num_layers_ = std::move(rhs.num_layers_);
-        for (auto i = 0; i < kMaxSplits - 1; i++)
-            paths_[i] = std::move(rhs.paths_[i]);
-        for (auto i = 0; i < kMaxSplits; i++)
-            layers_[i] = std::move(rhs.layers_[i]);
-        for (auto i = 0; i < kMaxSplits; i++)
-            layer_unit_sizes_[i] = std::move(rhs.layer_unit_sizes_[i]);
-    }
-    DacVector& operator =(DacVector&& rhs) noexcept = default;
+    DacVector(DacVector&& rhs) noexcept = default;
+    DacVector& operator=(DacVector&& rhs) noexcept = default;
     
 };
 

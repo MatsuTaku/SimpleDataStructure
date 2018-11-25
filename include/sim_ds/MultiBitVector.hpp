@@ -73,16 +73,16 @@ public:
         return size;
     }
     
-    void Write(std::ostream &os) const {
-        write_vec(bits_, os);
-        for (auto &tips : rank_tips_)
-            write_vec(tips, os);
-    }
-    
     void Read(std::istream &is) {
         bits_ = read_vec<id_type>(is);
         for (auto &tips : rank_tips_)
             tips = read_vec<RankTip>(is);
+    }
+    
+    void Write(std::ostream &os) const {
+        write_vec(bits_, os);
+        for (auto &tips : rank_tips_)
+            write_vec(tips, os);
     }
     
     // MARK: - Copy guard
@@ -123,7 +123,7 @@ inline constexpr unsigned long long MultiBitVector<S>::rank(size_t index) const 
     auto type = (*this)[index];
     assert(type > 0);
     const auto &tip = rank_tips_[type - 1][block_(index)];
-    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + pop_count_(type, bits_[abs_(index)] & bit_tools::BitsMask(rel_(index)));
+    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + pop_count_(type, bits_[abs_(index)] & bit_tools::WidthMask(rel_(index)));
 }
 
 template <unsigned int S>

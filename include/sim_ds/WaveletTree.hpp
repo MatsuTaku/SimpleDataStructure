@@ -136,9 +136,9 @@ public:
     }
     
     size_t nodeDiff(size_t node, size_t diffHeight) {
-        auto nodeDepth = calc::size_fits_in_bits(node);
-        auto ti = bit_tools::BitsMask(nodeDepth);
-        auto fi = bit_tools::BitsMask(nodeDepth - diffHeight);
+        auto nodeDepth = calc::SizeFitsInBits(node);
+        auto ti = bit_tools::WidthMask(nodeDepth);
+        auto fi = bit_tools::WidthMask(nodeDepth - diffHeight);
         return ti - fi;
     }
     
@@ -147,7 +147,7 @@ public:
             return;
         leafs_ = chars;
 
-        auto height = calc::size_fits_in_bits(chars - 1);
+        auto height = calc::SizeFitsInBits(chars - 1);
         if (height > height_) {
             bv_list_.resize((1U << height) - 1);
 //                for (auto n = (1 << height_) - 1; n > 0; n--) {
@@ -171,27 +171,27 @@ public:
             l.Build();
     }
     
-    size_t sizeInBytes() const {
+    size_t size_in_bytes() const {
         auto size = sizeof(size_t) * 3;
         for (auto &l : bv_list_)
             size += l.size_in_bytes();
         return size;
     }
     
-    void write(std::ostream &os) const {
-        write_val(height_, os);
-        write_val(leafs_, os);
-        write_val(size_, os);
-        for (auto &l : bv_list_)
-            l.Write(os);
-    }
-    
-    void read(std::istream &is) {
+    void Read(std::istream &is) {
         height_ = read_val<size_t>(is);
         leafs_ = read_val<size_t>(is);
         size_ = read_val<size_t>(is);
         for (auto &l : bv_list_)
             l.Read(is);
+    }
+    
+    void Write(std::ostream &os) const {
+        write_val(height_, os);
+        write_val(leafs_, os);
+        write_val(size_, os);
+        for (auto &l : bv_list_)
+            l.Write(os);
     }
     
 private:
