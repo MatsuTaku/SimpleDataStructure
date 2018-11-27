@@ -21,7 +21,11 @@ using std::string;
 using std::string_view;
 
 class SuffixArray {
-public:
+    
+    string str_;
+    FitVector s_arr_;
+    FitVector lcp_arr_;
+    
     static constexpr size_t kInf = std::numeric_limits<size_t>::max();
     
 public:
@@ -68,11 +72,6 @@ public:
     }
     
 private:
-    string str_;
-    FitVector s_arr_;
-    FitVector lcp_arr_;
-    
-    
     /* <0>: suffix array
      * <1>: subStr
      * <2>: count shared - size_t value. ((count(lmss) - 1) - max_val(subStr)). if 0, it is unique.

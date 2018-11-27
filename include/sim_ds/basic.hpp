@@ -15,8 +15,8 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdlib>
+#include <cstdint>
 #include <cmath>
 #include <memory>
 #include <sstream>
@@ -28,7 +28,7 @@
 #include <queue>
 
 namespace sim_ds {
-    
+
 #ifdef USE_X86
 using id_type = uint32_t;
 #else
@@ -56,21 +56,7 @@ private:
     std::chrono::high_resolution_clock::time_point start_;
 };
 
-template<typename T>
-inline void write_val(const T& val, std::ostream& os) {
-    os.write(reinterpret_cast<const char*>(&val), sizeof(val));
-}
-
-template<typename T>
-inline void write_vec(const std::vector<T> &vec, std::ostream &os) {
-    write_val(vec.size(), os);
-    os.write(reinterpret_cast<const char*>(&vec[0]), sizeof(T) * vec.size());
-}
-
-inline void write_string(const std::string &str, std::ostream &os) {
-    write_val(str.size(), os);
-    os.write(reinterpret_cast<const char*>(&str[0]), sizeof(char) * str.size());
-}
+// MARK: Read
 
 template<typename T>
 inline T read_val(std::istream& is) {
@@ -94,11 +80,29 @@ inline std::string read_string(std::istream& is) {
     return str; // expect move
 }
 
+// MARK: Write
+
+template<typename T>
+inline void write_val(const T& val, std::ostream& os) {
+    os.write(reinterpret_cast<const char*>(&val), sizeof(val));
+}
+
+template<typename T>
+inline void write_vec(const std::vector<T> &vec, std::ostream &os) {
+    write_val(vec.size(), os);
+    os.write(reinterpret_cast<const char*>(&vec[0]), sizeof(T) * vec.size());
+}
+
+inline void write_string(const std::string &str, std::ostream &os) {
+    write_val(str.size(), os);
+    os.write(reinterpret_cast<const char*>(&str[0]), sizeof(char) * str.size());
+}
+
 template<typename T>
 inline size_t size_vec(const std::vector<T>& vec) {
     return sizeof(T) * vec.size() + sizeof(vec.size());
 }
-    
+
 } // namespace sim_ds
 
 #endif /* basic_hpp */

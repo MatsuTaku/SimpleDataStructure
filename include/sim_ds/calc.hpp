@@ -8,8 +8,7 @@
 #ifndef calc_hpp
 #define calc_hpp
 
-#include <stdio.h>
-#include <malloc/malloc.h>
+#include <vector>
 
 namespace sim_ds {
     

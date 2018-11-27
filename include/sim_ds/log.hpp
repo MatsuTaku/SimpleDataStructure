@@ -8,7 +8,7 @@
 #ifndef log_hpp
 #define log_hpp
 
-#include "basic.hpp"
+#include <cstdio>
 
 namespace sim_ds {
     

@@ -15,12 +15,18 @@
 namespace sim_ds {
     
 class WaveletTree {
+    
+    size_t height_ = 0;
+    size_t leafs_ = 0;
+    size_t size_ = 0;
+    std::vector<BitVector> bv_list_;
+    
     static constexpr uint8_t kMaxChar = 8;
+    
 public:
     WaveletTree() {
         expand(kMaxChar);
     }
-    ~WaveletTree() = default;
     
     template <typename T>
     WaveletTree(std::vector<T>& vec) {
@@ -32,12 +38,6 @@ public:
         
         build();
     }
-    
-    WaveletTree(const WaveletTree&) = delete;
-    WaveletTree& operator=(const WaveletTree&) = delete;
-    
-    WaveletTree(WaveletTree&&) noexcept = default;
-    WaveletTree& operator=(WaveletTree&&) noexcept = default;
     
     uint8_t operator[](size_t index) const {
         
@@ -194,11 +194,13 @@ public:
             l.Write(os);
     }
     
-private:
-    size_t height_ = 0;
-    size_t leafs_ = 0;
-    size_t size_ = 0;
-    std::vector<BitVector> bv_list_;
+    ~WaveletTree() = default;
+    
+    WaveletTree(const WaveletTree&) = delete;
+    WaveletTree& operator=(const WaveletTree&) = delete;
+    
+    WaveletTree(WaveletTree&&) noexcept = default;
+    WaveletTree& operator=(WaveletTree&&) noexcept = default;
     
 };
     
