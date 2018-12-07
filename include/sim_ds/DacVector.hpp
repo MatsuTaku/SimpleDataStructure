@@ -48,40 +48,6 @@ public:
     
     // MARK: Function
     
-    template<typename Sequence>
-    void ConvertFromVector(const Sequence& vector) {
-        ConvertFromVector(vector, calc::split_positions_optimized_for_dac(vector));
-    }
-    
-    template<typename Sequence, typename UInt>
-    void ConvertFromVector(const Sequence& vector, std::vector<UInt> unitBitSizes) {
-        if (vector.empty())
-            return;
-        if (unitBitSizes.empty())
-            unitBitSizes = calc::split_positions_optimized_for_dac(vector);
-        for (auto i = 0; i < unitBitSizes.size(); i++)
-            layer_unit_sizes_[i] = unitBitSizes[i];
-        Expand_(unitBitSizes.size());
-        {
-            std::vector<size_t> cf = calc::cummulative_frequency_list(vector);
-            for (auto i = 0, t = 0; i < unitBitSizes.size(); i++) {
-                layers_[i].resize(0);
-                layers_[i].reserve(cf[t]);
-                t += unitBitSizes[i];
-            }
-            for (auto i = 0, t = 0; i < std::max(size_t(1), unitBitSizes.size() - 1); i++) {
-                paths_[i].resize(0);
-                paths_[i].resize(cf[t]);
-                t += unitBitSizes[i];
-            }
-        }
-        
-        for (auto v : vector) {
-            push_back(v);
-        }
-        Build();
-    }
-    
     void push_back(id_type value) {
         auto size = calc::SizeFitsAsList(value, layer_unit_sizes_);
         if (size > num_layers_)
@@ -100,6 +66,48 @@ public:
     void Build() {
         for (auto& bits : paths_)
             bits.Build();
+    }
+    
+    template<typename Sequence>
+    void ConvertFromVector(const Sequence& vector, std::vector<size_t> unitBitSizes) {
+        // Clear storages
+        for (auto& layer : layers_) {
+            layer.resize(0);
+        }
+        for (auto& path : paths_) {
+            path.resize(0);
+        }
+        
+        // Empty vector input return with no works.
+        if (vector.empty())
+            return;
+        
+        if (unitBitSizes.empty())
+            unitBitSizes = calc::split_positions_optimized_for_dac(vector);
+        for (auto i = 0; i < unitBitSizes.size(); i++)
+            layer_unit_sizes_[i] = unitBitSizes[i];
+        Expand_(unitBitSizes.size());
+        
+        std::vector<size_t> cf = calc::cummulative_frequency_list(vector);
+        for (auto i = 0, t = 0; i < unitBitSizes.size(); i++) {
+            layers_[i].reserve(cf[t]);
+            t += unitBitSizes[i];
+        }
+        for (auto i = 0, t = 0; i < std::max(size_t(1), unitBitSizes.size() - 1); i++) {
+            paths_[i].resize(cf[t]);
+            t += unitBitSizes[i];
+        }
+        
+        for (auto v : vector) {
+            push_back(v);
+        }
+        
+        Build();
+    }
+    
+    template<typename Sequence>
+    void ConvertFromVector(const Sequence& vector) {
+        ConvertFromVector(vector, calc::split_positions_optimized_for_dac(vector));
     }
     
     size_t size() const {
@@ -189,8 +197,8 @@ public:
     DacVector(const DacVector&) = default;
     DacVector& operator=(const DacVector&) = default;
     
-    DacVector(DacVector&& rhs) noexcept = default;
-    DacVector& operator=(DacVector&& rhs) noexcept = default;
+    DacVector(DacVector&&) noexcept = default;
+    DacVector& operator=(DacVector&&) noexcept = default;
     
 };
 

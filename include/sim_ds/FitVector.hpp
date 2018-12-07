@@ -17,9 +17,9 @@ namespace sim_ds {
     
 template<class Sequence>
 class BitsReference {
-    using Pointer = typename Sequence::Pointer;
+    using storage_type = typename Sequence::storage_type;
+    using storage_pointer = typename Sequence::storage_pointer;
     using entity_type = typename Sequence::entity_type;
-    using Mask = typename Sequence::storage_type;
     
     friend typename Sequence::Self;
     
@@ -44,21 +44,24 @@ public:
     }
     
 private:
-    constexpr BitsReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
+    constexpr BitsReference(storage_pointer pointer,
+                            size_t offset,
+                            size_t bits_per_element
+                            ) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
     
-    Pointer pointer_;
+    storage_pointer pointer_;
     size_t offset_;
     size_t bits_per_element_;
-    Mask mask_;
+    storage_type mask_;
     
 };
 
 
 template<class Sequence>
 class BitsConstReference {
-    using Pointer = typename Sequence::ConstPointer;
+    using storage_type = typename Sequence::storage_type;
+    using storage_pointer = typename Sequence::const_storage_pointer;
     using entity_type = typename Sequence::entity_type;
-    using Mask = typename Sequence::storage_type;
     
     friend typename Sequence::Self;
     
@@ -74,12 +77,15 @@ public:
     }
     
 private:
-    constexpr BitsConstReference(Pointer pointer, size_t offset, size_t bits_per_element) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
+    constexpr BitsConstReference(storage_pointer pointer,
+                                 size_t offset,
+                                 size_t bits_per_element
+                                 ) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
     
-    Pointer pointer_;
+    storage_pointer pointer_;
     size_t offset_;
     size_t bits_per_element_;
-    Mask mask_;
+    storage_type mask_;
     
 };
 
@@ -89,10 +95,10 @@ private:
  */
 class FitVector {
     using Self = FitVector;
-    using entity_type = id_type;
     using storage_type = id_type;
-    using Pointer = storage_type*;
-    using ConstPointer = const storage_type*;
+    using storage_pointer = storage_type*;
+    using const_storage_pointer = const storage_type*;
+    using entity_type = id_type;
     
     // * Initialized only in constructor
     size_t bits_per_element_;

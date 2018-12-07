@@ -18,8 +18,8 @@ namespace sim_ds {
 
 template <class BitSequence>
 class BitReference {
-    using Pointer = typename BitSequence::Pointer;
-    using Mask = typename BitSequence::storage_type;
+    using storage_type = typename BitSequence::storage_type;
+    using storage_pointer = typename BitSequence::storage_pointer;
     
     friend typename BitSequence::Self;
     
@@ -37,18 +37,18 @@ public:
     }
     
 private:
-    constexpr BitReference(Pointer p, Mask m) noexcept : pointer_(p), mask_(m) {}
+    constexpr BitReference(storage_pointer p, storage_type m) noexcept : pointer_(p), mask_(m) {}
     
-    Pointer pointer_;
-    Mask mask_;
+    storage_pointer pointer_;
+    storage_type mask_;
     
 };
 
 
 template <class BitSequence>
 class BitConstReference {
-    using Pointer = typename BitSequence::ConstPointer;
-    using Mask = typename BitSequence::storage_type;
+    using storage_type = typename BitSequence::storage_type;
+    using storage_pointer = typename BitSequence::const_storage_pointer;
     
     friend typename BitSequence::Self;
     
@@ -58,10 +58,10 @@ public:
     }
     
 private:
-    constexpr BitConstReference(Pointer p, Mask m) noexcept : pointer_(p), mask_(m) {}
+    constexpr BitConstReference(storage_pointer p, storage_type m) noexcept : pointer_(p), mask_(m) {}
     
-    Pointer pointer_;
-    Mask mask_;
+    storage_pointer pointer_;
+    storage_type mask_;
     
 };
 
@@ -69,8 +69,8 @@ private:
 class BitVector {
     using Self = BitVector;
     using storage_type = id_type;
-    using Pointer = storage_type*;
-    using ConstPointer = const storage_type*;
+    using storage_pointer = storage_type*;
+    using const_storage_pointer = const storage_type*;
     
     using s_block_type = uint8_t;
     
@@ -79,11 +79,11 @@ class BitVector {
     static constexpr uint8_t kNumSPerL = kLargeBlockBits / kSmallBlockBits; // (256) / 64 = 4
     static constexpr size_t kBitsPerSelectTips = 0x200;
     
-    size_t size_ = 0;
     std::vector<storage_type> bits_;
     FitVector l_blocks_;
     std::vector<s_block_type> s_blocks_;
     FitVector select_tips_;
+    size_t size_ = 0;
     
     friend class BitReference<BitVector>;
     friend class BitConstReference<BitVector>;
@@ -102,12 +102,12 @@ public:
     }
     
     Reference operator[](size_t index) {
-        assert(index < size_);
+        assert(index < size());
         return Reference(&bits_[abs_(index)], bit_tools::OffsetMask(rel_(index)));
     }
     
     ConstReference operator[](size_t index) const {
-        assert(index < size_);
+        assert(index < size());
         return ConstReference(&(bits_[abs_(index)]), bit_tools::OffsetMask(rel_(index)));
     }
     
@@ -128,14 +128,14 @@ public:
     }
     
     void resize(size_t size) {
-        size_t abs = std::ceil(float(size) / kSmallBlockBits);
-        bits_.resize(abs);
+        size_t word_size = std::ceil(float(size) / kSmallBlockBits);
+        bits_.resize(word_size);
         size_ = size;
     }
     
     void reserve(size_t size) {
-        size_t abs = std::ceil(float(size) / kSmallBlockBits);
-        bits_.reserve(abs);
+        size_t word_size = std::ceil(float(size) / kSmallBlockBits);
+        bits_.reserve(word_size);
     }
     
     size_t size() const {
@@ -224,34 +224,12 @@ public:
     
     BitVector() = default;
     ~BitVector() = default;
+
+    BitVector(const BitVector&) = default;
+    BitVector& operator=(const BitVector&) = default;
     
-    BitVector(const BitVector& rhs) noexcept  {
-        size_ = rhs.size_;
-        bits_ = rhs.bits_;
-        l_blocks_ = rhs.l_blocks_;
-        s_blocks_ = rhs.s_blocks_;
-    }
-    BitVector& operator=(const BitVector& rhs) noexcept {
-        size_ = rhs.size_;
-        bits_ = rhs.bits_;
-        l_blocks_ = rhs.l_blocks_;
-        s_blocks_ = rhs.s_blocks_;
-        return *this;
-    }
-    
-    BitVector(BitVector&& rhs) noexcept {
-        size_ = std::move(rhs.size_);
-        bits_ = std::move(rhs.bits_);
-        l_blocks_ = std::move(rhs.l_blocks_);
-        s_blocks_ = std::move(rhs.s_blocks_);
-    }
-    BitVector& operator=(BitVector&& rhs) noexcept {
-        size_ = std::move(rhs.size_);
-        bits_ = std::move(rhs.bits_);
-        l_blocks_ = std::move(rhs.l_blocks_);
-        s_blocks_ = std::move(rhs.s_blocks_);
-        return *this;
-    }
+    BitVector(BitVector&&) = default;
+    BitVector& operator=(BitVector&&) = default;
     
 };
 
@@ -260,7 +238,7 @@ void BitVector::BuildRank() {
     l_blocks_ = FitVector(calc::SizeFitsInBits(size_), std::ceil(float(size_) / kLargeBlockBits));
     s_blocks_.resize(std::ceil(float(size_) / kSmallBlockBits) + 1);
     
-    auto count = 0;
+    size_t count = 0;
     for (auto i = 0; i < l_blocks_.size(); i++) {
         l_blocks_[i] = count;
         
@@ -273,9 +251,7 @@ void BitVector::BuildRank() {
                 count += bit_tools::PopCount(bits_[index]);
             }
         }
-        
     }
-    
 }
 
 
@@ -316,7 +292,7 @@ size_t BitVector::select(size_t index) const {
     i += 1; // for i+1 th
     i -= l_blocks_[left];
     
-    uint32_t offset = 1;
+    size_t offset = 1;
     for (; offset < kNumSPerL; offset++) {
         if (i <= s_blocks_[left * kNumSPerL + offset]) {
             break;
@@ -336,7 +312,6 @@ size_t BitVector::select(size_t index) const {
             i -= count;
         }
     };
-    
 #ifndef USE_X86
     Compress(0x100000000);
 #endif
