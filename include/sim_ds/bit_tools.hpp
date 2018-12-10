@@ -16,12 +16,12 @@
 
 namespace sim_ds::bit_tools {
     
-#ifndef USE_X86
-constexpr size_t kBitsOfIdType = BITS_64;
-constexpr id_type kMaskFill = 0xFFFFFFFFFFFFFFFF;
+#ifdef USE_X86
+    constexpr size_t kBitsOfIdType = BITS_32;
+    constexpr id_type kMaskFill = 0xFFFFFFFF;
 #else
-constexpr size_t kBitsOfIdType = BITS_32;
-constexpr id_type kMaskFill = 0xFFFFFFFF;
+    constexpr size_t kBitsOfIdType = BITS_64;
+    constexpr id_type kMaskFill = 0xFFFFFFFFFFFFFFFF;
 #endif
 
 inline constexpr id_type WidthMask(size_t bits) {
@@ -33,107 +33,118 @@ inline constexpr id_type WidthMask(size_t bits) {
     }
 }
 
-template<size_t _Bits>
-constexpr id_type width_mask = WidthMask(_Bits);
+template <size_t Bits>
+constexpr id_type width_mask = WidthMask(Bits);
 
 inline constexpr id_type OffsetMask(size_t offset) {
     assert(offset < kBitsOfIdType);
-#ifndef USE_X86
-    return 1ULL << offset;
-#else
+#ifdef USE_X86
     return 1UL << offset;
+#else
+    return 1ULL << offset;
 #endif
 }
 
-template<size_t _Off>
-constexpr id_type offset_mask = OffsetMask(_Off);
+template <size_t Offset>
+constexpr id_type offset_mask = OffsetMask(Offset);
 
-template <unsigned int TYPE_SIZE, unsigned int TYPE>
-inline constexpr unsigned long long PopCount(uint64_t x) {
-    if constexpr (TYPE_SIZE == 1) {
-        assert(TYPE < 0b10);
-        if constexpr (TYPE == 0b0)
-            x = (~x & 0x5555555555555555) + ((~x >> 1) & 0x5555555555555555);
-        else if constexpr (TYPE == 0b1)
-            x = (x & 0x5555555555555555) + ((x >> 1) & 0x5555555555555555);
-        x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333); // 4:3
-        x = (x & 0x0f0f0f0f0f0f0f0f) + ((x >> 4) & 0x0f0f0f0f0f0f0f0f); // 8:4
-        x *= 0x0101010101010101;
-        return x >> 56;
+template <uint8_t Pattern>
+constexpr uint32_t bits_pattern32 = 0x01010101 * Pattern;
+
+template <uint8_t Pattern>
+constexpr uint64_t bits_pattern64 = 0x0101010101010101 * Pattern;
+
+template <size_t TypeSize, unsigned int Type>
+inline constexpr uint64_t popcnt(uint64_t x) {
+    uint64_t c = 0;
+    if constexpr (TypeSize == 1) {
+        assert(Type < 0b10);
+        if constexpr (Type == 0b0)
+            c = (~x & bits_pattern64<0b01010101>) + ((~x >> 1) & bits_pattern64<0b01010101>);
+        else if constexpr (Type == 0b1)
+            c = (x & bits_pattern64<0b01010101>) + ((x >> 1) & bits_pattern64<0b01010101>);
+        c = (c & bits_pattern64<0b00110011>) + ((c >> 2) & bits_pattern64<0b00110011>); // 4:3
+        c = (c & bits_pattern64<0b00001111>) + ((c >> 4) & bits_pattern64<0b00001111>); // 8:4
+        c *= 0x0101010101010101;
+        return c >> 56;
         
-    } else if constexpr (TYPE_SIZE == 2) {
-        assert(TYPE < 0b100);
-        if constexpr (TYPE == 0b00)
-            x = ((~x >> 1) & 0x5555555555555555) + (~x & 0x5555555555555555);
-        else if constexpr (TYPE == 0b01)
-            x = ((~x >> 1) & 0x5555555555555555) + (x & 0x5555555555555555);
-        else if constexpr (TYPE == 0b10)
-            x = ((x >> 1) & 0x5555555555555555) + (~x & 0x5555555555555555);
-        else if constexpr (TYPE == 0b11)
-            x = ((x >> 1) & 0x5555555555555555) + (x & 0x5555555555555555);
-        x = ((x >> 1) & 0x1111111111111111) + ((x >> 3) & 0x1111111111111111); // 4:2
-        x = (x & 0x0f0f0f0f0f0f0f0f) + ((x >> 4) & 0x0f0f0f0f0f0f0f0f); // 8:3
-        x *= 0x0101010101010101;
-        return x >> 56;
+    } else if constexpr (TypeSize == 2) {
+        assert(Type < 0b100);
+        if constexpr (Type == 0b00)
+            c = ((~x >> 1) & bits_pattern64<0b01010101>) + (~x & bits_pattern64<0b01010101>);
+        else if constexpr (Type == 0b01)
+            c = ((~x >> 1) & bits_pattern64<0b01010101>) + (x & bits_pattern64<0b01010101>);
+        else if constexpr (Type == 0b10)
+            c = ((x >> 1) & bits_pattern64<0b01010101>) + (~x & bits_pattern64<0b01010101>);
+        else if constexpr (Type == 0b11)
+            c = ((x >> 1) & bits_pattern64<0b01010101>) + (x & bits_pattern64<0b01010101>);
+        c = ((c >> 1) & bits_pattern64<0b00010001>) + ((c >> 3) & bits_pattern64<0b00010001>); // 4:2
+        c = (c & bits_pattern64<0b00001111>) + ((c >> 4) & bits_pattern64<0b00001111>); // 8:3
+        c *= 0x0101010101010101;
+        return c >> 56;
         
-    } else if constexpr (TYPE_SIZE == 3) {
-        assert(TYPE < 0b1000);
-        if constexpr (TYPE == 0b000)
-            x = (~x & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + ((~x >> 2) & 0x9249249249249249);
-        else if constexpr (TYPE == 0b001)
-            x = ((~x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        else if constexpr (TYPE == 0b010)
-            x = ((~x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
-        else if constexpr (TYPE == 0b011)
-            x = ((~x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        else if constexpr (TYPE == 0b100)
-            x = ((x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
-        else if constexpr (TYPE == 0b101)
-            x = ((x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        else if constexpr (TYPE == 0b110)
-            x = ((x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
-        else if constexpr (TYPE == 0b111)
-            x = ((x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        x = ((x & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249)) >> 1;
-        x = (x & 0x1041041041041041) + ((x >> 3) & 0x1041041041041041); // 6:2
-        x = (x * 0x0041041041041041 >> 54) + (x >> 60);
-        return x & 0x3F;
+    } else if constexpr (TypeSize == 3) {
+        assert(Type < 0b1000);
+        if constexpr (Type == 0b000)
+            c = (~x & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + ((~x >> 2) & 0x9249249249249249);
+        else if constexpr (Type == 0b001)
+            c = ((~x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
+        else if constexpr (Type == 0b010)
+            c = ((~x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
+        else if constexpr (Type == 0b011)
+            c = ((~x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
+        else if constexpr (Type == 0b100)
+            c = ((x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
+        else if constexpr (Type == 0b101)
+            c = ((x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
+        else if constexpr (Type == 0b110)
+            c = ((x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
+        else if constexpr (Type == 0b111)
+            c = ((x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
+        c = ((c & 0x9249249249249249) + ((c >> 1) & 0x9249249249249249)) >> 1;
+        c = (c & 0x1041041041041041) + ((c >> 3) & 0x1041041041041041); // 6:2
+        c = (c * 0x0041041041041041 >> 54) + (c >> 60);
+        return c & 0x3F;
         
     } else {
         abort();
     }
 }
 
-const std::function<unsigned long long (uint64_t value)> kPopCntTable[3][8] = {
+const std::function<uint64_t (uint64_t value)> kPopcntTable[3][8] = {
     {
-        PopCount<1, 0b0>,
-        PopCount<1, 0b1>
+        popcnt<1, 0b0>,
+        popcnt<1, 0b1>
     },
     {
-        PopCount<2, 0b00>,
-        PopCount<2, 0b01>,
-        PopCount<2, 0b10>,
-        PopCount<2, 0b11>
+        popcnt<2, 0b00>,
+        popcnt<2, 0b01>,
+        popcnt<2, 0b10>,
+        popcnt<2, 0b11>
     },
     {
-        PopCount<3, 0b000>,
-        PopCount<3, 0b001>,
-        PopCount<3, 0b010>,
-        PopCount<3, 0b011>,
-        PopCount<3, 0b100>,
-        PopCount<3, 0b101>,
-        PopCount<3, 0b110>,
-        PopCount<3, 0b111>
+        popcnt<3, 0b000>,
+        popcnt<3, 0b001>,
+        popcnt<3, 0b010>,
+        popcnt<3, 0b011>,
+        popcnt<3, 0b100>,
+        popcnt<3, 0b101>,
+        popcnt<3, 0b110>,
+        popcnt<3, 0b111>
     }
 };
 
 template <unsigned int TYPE_SIZE>
-inline constexpr unsigned long long PopCount(size_t type, uint64_t x) {
-    return kPopCntTable[TYPE_SIZE - 1][type](x);
+inline constexpr uint64_t popcnt(size_t type, uint64_t x) {
+    return kPopcntTable[TYPE_SIZE - 1][type](x);
 }
 
-inline unsigned long long PopCount(uint64_t x) {
-    return PopCount<1, 1>(x);
+inline uint64_t popcnt(uint64_t x) {
+#ifdef USE_POPCNT
+    return _popcnt64(x);
+#else
+    return popcnt<1, 1>(x);
+#endif
 }
 
 // inspired by marisa-trie
@@ -303,7 +314,7 @@ constexpr uint8_t kSelectTable[9][256] = {
 };
 
 // Use for select
-constexpr uint8_t SelectTable(size_t word, size_t offset) {
+inline constexpr uint8_t SelectTable(size_t word, size_t offset) {
     return kSelectTable[offset][word];
 }
     

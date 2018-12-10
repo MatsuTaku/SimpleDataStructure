@@ -113,7 +113,7 @@ private:
     }
     
     constexpr uint8_t pop_count_(uint8_t bits, id_type value) const {
-        return bit_tools::PopCount<kBitsUnitSize>(bits, value);
+        return bit_tools::popcnt<kBitsUnitSize>(bits, value);
     }
     
 };

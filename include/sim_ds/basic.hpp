@@ -36,24 +36,22 @@ using id_type = uint64_t;
 #endif
 
 class Stopwatch {
+    using hrc = std::chrono::high_resolution_clock;
+    hrc::time_point start_;
 public:
-    Stopwatch() : start_(std::chrono::high_resolution_clock::now()) {}
-    
+    Stopwatch() : start_(hrc::now()) {}
+    auto time_process() const {
+        return hrc::now() - start_;
+    }
     double get_sec() const {
-        auto tp = std::chrono::high_resolution_clock::now() - start_;
-        return std::chrono::duration<double>(tp).count();
+        return std::chrono::duration<double>(time_process()).count();
     }
     double get_milli_sec() const {
-        auto tp = std::chrono::high_resolution_clock::now() - start_;
-        return std::chrono::duration<double, std::milli>(tp).count();
+        return std::chrono::duration<double, std::milli>(time_process()).count();
     }
     double get_micro_sec() const {
-        auto tp = std::chrono::high_resolution_clock::now() - start_;
-        return std::chrono::duration<double, std::micro>(tp).count();
+        return std::chrono::duration<double, std::micro>(time_process()).count();
     }
-    
-private:
-    std::chrono::high_resolution_clock::time_point start_;
 };
 
 // MARK: Read

@@ -160,7 +160,7 @@ public:
     }
     
     size_t rank(size_t index) const {
-        return tip_l_(index) + tip_s_(index) + bit_tools::PopCount(bits_[abs_(index)] & bit_tools::WidthMask(rel_(index)));
+        return tip_l_(index) + tip_s_(index) + bit_tools::popcnt(bits_[abs_(index)] & bit_tools::WidthMask(rel_(index)));
     }
     
     size_t rank_1(size_t index) const {
@@ -248,7 +248,7 @@ void BitVector::BuildRank() {
                 break;
             s_blocks_[index] = count - l_blocks_[i];
             if (index < bits_.size()) {
-                count += bit_tools::PopCount(bits_[index]);
+                count += bit_tools::popcnt(bits_[index]);
             }
         }
     }
@@ -304,7 +304,7 @@ size_t BitVector::select(size_t index) const {
     auto bits = bits_[ret / kSmallBlockBits];
     
     auto Compress = [&bits, &ret, &i](const id_type block) {
-        auto count = bit_tools::PopCount(bits % block);
+        auto count = bit_tools::popcnt(bits % block);
         auto shiftBlock = calc::SizeFitsInBytes(block - 1) * 8;
         if (count < i) {
             bits >>= shiftBlock;
