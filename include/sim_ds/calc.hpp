@@ -95,9 +95,8 @@ template <class CONTAINER>
 inline std::vector<size_t> split_positions_optimized_for_dac(const CONTAINER& list, const size_t maxLevels = 8) {
     auto cf = cummulative_frequency_list(list);
     
-    auto cfSize = cf.size();
-    const auto m = cfSize - 1;
-    std::vector<size_t> s(cfSize, 0), l(cfSize, 0), b(cfSize, 0);
+    const auto m = cf.size() - 1;
+    std::vector<size_t> s(cf.size(), 0), l(cf.size(), 0), b(cf.size(), 0);
     for (int t = m; t >= 0; --t) {
         auto minSize = INFINITY;
         auto minPos = m;
@@ -164,6 +163,7 @@ inline std::vector<size_t> split_positions_optimized_for_dac(const CONTAINER& li
         }
     }
     
+
     return bk;
 }
     

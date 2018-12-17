@@ -34,7 +34,7 @@ inline constexpr id_type WidthMask(size_t bits) {
 }
 
 template <size_t Bits>
-constexpr id_type width_mask = WidthMask(Bits);
+inline constexpr id_type width_mask = WidthMask(Bits);
 
 inline constexpr id_type OffsetMask(size_t offset) {
     assert(offset < kBitsOfIdType);
@@ -46,13 +46,13 @@ inline constexpr id_type OffsetMask(size_t offset) {
 }
 
 template <size_t Offset>
-constexpr id_type offset_mask = OffsetMask(Offset);
+inline constexpr id_type offset_mask = OffsetMask(Offset);
 
 template <uint8_t Pattern>
-constexpr uint32_t bits_pattern32 = 0x01010101 * Pattern;
+inline constexpr uint32_t bits_pattern32 = 0x01010101 * Pattern;
 
 template <uint8_t Pattern>
-constexpr uint64_t bits_pattern64 = 0x0101010101010101 * Pattern;
+inline constexpr uint64_t bits_pattern64 = 0x0101010101010101 * Pattern;
 
 template <size_t TypeSize, unsigned int Type>
 inline constexpr uint64_t popcnt(uint64_t x) {
