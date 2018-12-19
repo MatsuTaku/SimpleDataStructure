@@ -128,14 +128,18 @@ public:
     }
     
     void resize(size_t size) {
-        size_t word_size = std::ceil(float(size) / kSmallBlockBits);
+        size_t word_size = std::ceil(double(size) / kSmallBlockBits);
         bits_.resize(word_size);
         size_ = size;
     }
     
     void reserve(size_t size) {
-        size_t word_size = std::ceil(float(size) / kSmallBlockBits);
+        size_t word_size = std::ceil(double(size) / kSmallBlockBits);
         bits_.reserve(word_size);
+    }
+    
+    void shrink_to_fit() {
+        bits_.shrink_to_fit();
     }
     
     size_t size() const {
@@ -160,7 +164,8 @@ public:
     }
     
     size_t rank(size_t index) const {
-        return tip_l_(index) + tip_s_(index) + bit_tools::popcnt(bits_[abs_(index)] & bit_tools::WidthMask(rel_(index)));
+        auto rel = rel_(index);
+        return tip_l_(index) + tip_s_(index) + (rel > 0 ? bit_tools::popcnt(bits_[abs_(index)] & bit_tools::WidthMask(rel)) : 0);
     }
     
     size_t rank_1(size_t index) const {
@@ -235,8 +240,8 @@ public:
 
 
 void BitVector::BuildRank() {
-    l_blocks_ = FitVector(calc::SizeFitsInBits(size_), std::ceil(float(size_) / kLargeBlockBits));
-    s_blocks_.resize(std::ceil(float(size_) / kSmallBlockBits) + 1);
+    l_blocks_ = FitVector(calc::SizeFitsInBits(size_), std::ceil(double(size() + 1) / kLargeBlockBits));
+    s_blocks_.resize(std::ceil(double(size() + 1) / kSmallBlockBits));
     
     size_t count = 0;
     for (auto i = 0; i < l_blocks_.size(); i++) {
