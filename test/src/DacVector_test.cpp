@@ -22,3 +22,16 @@ TEST(DACsTest, ConvertVector) {
         EXPECT_EQ(src[i], dac[i]);
     }
 }
+
+TEST(DACsTest, FixedSizes) {
+    const auto size = 0x100000;
+    std::vector<size_t> src(size);
+    std::random_device rnd;
+    for (auto i = 0; i < size; i++) {
+        src[i] = (1U << (rnd() % 32)) - 1;
+    }
+    sim_ds::DacVector dac(src, std::vector<size_t>{4, 13, 15});
+    for (auto i = 0; i < size; i++) {
+        EXPECT_EQ(src[i], dac[i]);
+    }
+}

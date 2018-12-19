@@ -34,8 +34,8 @@ public:
         ConvertFromVector(vector);
     }
     
-    template<class Seq, typename UInt>
-    DacVector(const Seq& vector, const std::vector<UInt>& sizes) {
+    template<class Seq, class UInt>
+    DacVector(const Seq& vector, std::vector<UInt> sizes) {
         ConvertFromVector(vector, sizes);
     }
     

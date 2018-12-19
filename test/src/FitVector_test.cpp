@@ -15,7 +15,7 @@ TEST(FitVectorTest, ConvertVector) {
     
     std::vector<size_t> source(size);
     for (auto i = 1; i <= source.size(); i++)
-        source[i] = 0x71c71c71c71c71c7 & ((1U << (i * 4)) - 1);
+        source[i] = (1U << (rand() % 14)) - 1;
     FitVector vector(source);
     for (auto i = 0; i < size; i++)
         EXPECT_EQ(source[i], vector[i]);
