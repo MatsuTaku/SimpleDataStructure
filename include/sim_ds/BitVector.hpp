@@ -298,11 +298,9 @@ size_t BitVector::select(size_t index) const {
     i -= l_blocks_[left];
     
     size_t offset = 1;
-    for (; offset < kNumSPerL; offset++) {
-        if (i <= s_blocks_[left * kNumSPerL + offset]) {
-            break;
-        }
-    }
+    for (size_t index = left * kNumSPerL + offset;
+         offset < kNumSPerL && index < s_blocks_.size() && i > s_blocks_[index];
+         offset++, index = left * kNumSPerL + offset) continue;
     i -= s_blocks_[left * kNumSPerL + --offset];
     
     auto ret = (left * kLargeBlockBits) + (offset * kSmallBlockBits);
