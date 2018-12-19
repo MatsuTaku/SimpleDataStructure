@@ -112,7 +112,7 @@ private:
         return index * kBitsUnitSize % kBitsInType;
     }
     
-    constexpr uint8_t pop_count_(uint8_t bits, id_type value) const {
+    constexpr uint8_t popcnt_(uint8_t bits, id_type value) const {
         return bit_tools::popcnt<kBitsUnitSize>(bits, value);
     }
     
@@ -123,23 +123,23 @@ inline constexpr unsigned long long MultiBitVector<S>::rank(size_t index) const 
     auto type = (*this)[index];
     assert(type > 0);
     const auto &tip = rank_tips_[type - 1][block_(index)];
-    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + pop_count_(type, bits_[abs_(index)] & bit_tools::WidthMask(rel_(index)));
+    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + popcnt_(type, bits_[abs_(index)] & bit_tools::WidthMask(rel_(index)));
 }
 
 template <unsigned int S>
 inline void MultiBitVector<S>::build() {
     if (bits_.size() == 0) return;
     
-    auto numTypes = 0;
+    auto num_types = 0;
     for (size_t i = 0, size = bits_.size() * kBitsInType / kBitsUnitSize; i < size; i++)
-        numTypes = std::max(numTypes, (*this)[i] + 1);
+        num_types = std::max(num_types, (*this)[i] + 1);
     
-    const auto tipsSize = std::ceil(float(bits_.size()) / kBlocksInTipSize);
+    const auto tips_size = std::ceil(double(bits_.size()) / kBlocksInTipSize);
     // If bits == 0b00, don't make rank dict!
-    for (auto type = 1; type < numTypes; type++) {
+    for (auto type = 1; type < num_types; type++) {
         auto b = type - 1;
         auto &tips = rank_tips_[b];
-        tips.resize(tipsSize);
+        tips.resize(tips_size);
         size_t count = 0;
         for (auto i = 0; i < tips.size(); i++) {
             auto &tip = tips[i];
@@ -148,7 +148,7 @@ inline void MultiBitVector<S>::build() {
                 tip.L2[offset] = count - tip.L1;
                 auto index = i * kBlocksInTipSize + offset;
                 if (index < bits_.size()) {
-                    count += pop_count_(type, bits_[index]);
+                    count += popcnt_(type, bits_[index]);
                 }
             }
         }

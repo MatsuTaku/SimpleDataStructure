@@ -12,6 +12,7 @@
 #include "basic.hpp"
 #include "bit_tools.hpp"
 #include "calc.hpp"
+#include "log.hpp"
 
 namespace sim_ds {
     
@@ -185,12 +186,12 @@ public:
     // MARK: setter
     
     void resize(size_t size) {
-        auto newSize = ceil(float(size) * bits_per_element_ / kBitsPerWord);
-        vector_.resize(newSize);
+        auto new_size = ceil(double(size) * bits_per_element_ / kBitsPerWord);
+        vector_.resize(new_size);
         size_ = size;
     }
     
-    void assign(size_t size, size_t value) {
+    void assign(size_t size, entity_type value) {
         resize(size);
         for (auto i = 0; i < size; i++) {
             operator[](i) = value;
@@ -203,7 +204,7 @@ public:
         vector_.reserve(offset);
     }
     
-    void push_back(size_t value) {
+    void push_back(entity_type value) {
         auto backI = size();
         resize(size() + 1);
         operator[](backI) = value;
