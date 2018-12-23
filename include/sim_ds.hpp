@@ -14,5 +14,7 @@
 #include "sim_ds/WaveletTree.hpp"
 #include "sim_ds/DacVector.hpp"
 #include "sim_ds/SuffixArray.hpp"
+#include "sim_ds/MinHeap.hpp"
+#include "sim_ds/sort.hpp"
 
 #endif /* sim_ds_hpp */
