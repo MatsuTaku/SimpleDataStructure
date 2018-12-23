@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(SimDS)
+project(SiDS)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,32 +19,14 @@ set(SDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB HEADERS ${SDS_INCUDE_DIR}/sim_ds.hpp ${SDS_INCLUDE_DIR}/sim_ds/*.hpp)
 
-# Link Boost package
-#set(Boost_USE_STATIC_LIBS ON)
-#set(Boost_USE_MULTITHREADED ON)
-#set(Boost_USE_STATIC_RUNTIME OFF)
-#find_package(Boost REQUIRED thread)
-#if(Boost_FOUND)
-#    message(STATUS "!!! BOOST FOUND !!!")
-#else()
-#    message(STATUS "!!! BOOST NOT FOUND !!!")
-#endif()
-
 # Build Public Library
 add_library(sim_ds STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
-#target_sources(sim_ds INTERFACE ${HEADERS})
-#set_target_properties(sim_ds PROPERTIES LINKER_LANGUAGE CXX)
-#include_directories(${SDS_INCLUDE_DIR})
 target_include_directories(sim_ds PUBLIC ${SDS_INCLUDE_DIR})
 target_include_directories(sim_ds PRIVATE ${Boost_INCLUDE_DIR})
 target_link_libraries(sim_ds PRIVATE ${Boost_LIBRARIES})
 
-
 # Build Private Static Library for Development on Xcode
-#add_library(sim_ds_dev STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
 include_directories(${SDS_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
-#target_link_libraries(sim_ds_dev ${Boost_LIBRARIES})
-
 
 if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
 	message(STATUS "Enable test SimDS")
