@@ -155,11 +155,11 @@ public:
     
     void BuildSelect();
     
-    void Build(bool useSelect = false) {
+    void Build(bool use_select) {
         if (bits_.empty())
             return;
         BuildRank();
-        if (useSelect)
+        if (use_select)
             BuildSelect();
     }
     
