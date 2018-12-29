@@ -15,11 +15,8 @@ namespace sim_ds {
 
 template <bool UseSelect = true>
 class SuccinctBitVector {
-public:
-    using bit_vector_type = BitVector;
-    
 private:
-    bit_vector_type bits_;
+    BitVector bits_;
     /* Contains large/small block as follows:
      * || large tip - 64bits - || small tip reversal - 9bits - | ... * 8||   -- total 63bits
      */
@@ -28,7 +25,7 @@ private:
     std::vector<uint32_t> select_tips_;
     
 public:
-    explicit SuccinctBitVector(const BitVector bits) : bits_(bits) {
+    explicit SuccinctBitVector(const BitVector& bits) : bits_(bits) {
         if (bits.empty()) {
             basic_block_.assign(2, 0);
             return;
@@ -78,6 +75,11 @@ public:
         }
     }
     
+    template <class BitSequence>
+    explicit SuccinctBitVector(const BitSequence bits) : SuccinctBitVector(BitVector(bits)) {}
+    
+    SuccinctBitVector() = default;
+    ~SuccinctBitVector() = default;
     SuccinctBitVector(const SuccinctBitVector&) = default;
     SuccinctBitVector(SuccinctBitVector&&) = default;
     SuccinctBitVector& operator=(const SuccinctBitVector&) = default;
@@ -85,10 +87,6 @@ public:
     
     
     constexpr bool operator[](size_t index) const {
-        return bits_[index];
-    }
-    
-    constexpr bool operator[](size_t index) {
         return bits_[index];
     }
     
@@ -159,6 +157,28 @@ public:
     
     size_t num_blocks() const {
         return basic_block_.size() / 2;
+    }
+    
+    size_t size_in_bytes() const {
+        auto size = bits_.size_in_bytes();
+        size += size_vec(basic_block_);
+        if constexpr (UseSelect)
+            size += size_vec(select_tips_);
+        return size;
+    }
+    
+    void Read(std::istream& is) {
+        bits_.Read(is);
+        basic_block_ = read_vec<uint64_t>(is);
+        if constexpr (UseSelect)
+            select_tips_ = read_vec<uint32_t>(is);
+    }
+    
+    void Write(std::ostream& os) const {
+        bits_.Write(os);
+        write_vec(basic_block_, os);
+        if constexpr (UseSelect)
+            write_vec(select_tips_, os);
     }
     
 };
