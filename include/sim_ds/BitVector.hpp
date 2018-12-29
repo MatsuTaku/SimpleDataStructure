@@ -68,6 +68,7 @@ private:
 
 
 class BitVector {
+public:
     using Self = BitVector;
     using storage_type = id_type;
     using storage_pointer = storage_type*;
@@ -81,7 +82,7 @@ class BitVector {
     static constexpr uint8_t kNumSPerL = kLargeBlockBits / kSmallBlockBits; // (256) / 64 = 4
     static constexpr size_t kBitsPerSelectTips = 0x200;
     
-    std::vector<storage_type> bits_;
+    std::vector<storage_type> base_;
     FitVector l_blocks_;
     std::vector<s_block_type> s_blocks_;
     FitVector select_tips_;
@@ -95,7 +96,13 @@ class BitVector {
     
 public:
     template <typename BitSet>
-    BitVector(const BitSet& bools, bool use_rank, bool use_select = false) {
+    explicit BitVector(const BitSet& bools) : BitVector(bools, false, false) {}
+    
+    template <typename BitSet>
+    explicit BitVector(const BitSet& bools, bool use_rank) : BitVector(bools, use_rank, false) {}
+    
+    template <typename BitSet>
+    explicit BitVector(const BitSet& bools, bool use_rank, bool use_select) {
         resize(bools.size());
         for (auto i = 0; i < bools.size(); i++)
             operator[](i) = bools[i];
@@ -105,12 +112,12 @@ public:
     
     Reference operator[](size_t index) {
         assert(index < size());
-        return Reference(&bits_[abs_(index)], bit_tools::OffsetMask(rel_(index)));
+        return Reference(&base_[abs_(index)], bit_tools::OffsetMask(rel_(index)));
     }
     
     ConstReference operator[](size_t index) const {
         assert(index < size());
-        return ConstReference(&(bits_[abs_(index)]), bit_tools::OffsetMask(rel_(index)));
+        return ConstReference(&(base_[abs_(index)]), bit_tools::OffsetMask(rel_(index)));
     }
     
     Reference front() {
@@ -131,21 +138,25 @@ public:
     
     void resize(size_t size) {
         size_t word_size = std::ceil(double(size) / kSmallBlockBits);
-        bits_.resize(word_size);
+        base_.resize(word_size);
         size_ = size;
     }
     
     void reserve(size_t size) {
         size_t word_size = std::ceil(double(size) / kSmallBlockBits);
-        bits_.reserve(word_size);
+        base_.reserve(word_size);
     }
     
     void shrink_to_fit() {
-        bits_.shrink_to_fit();
+        base_.shrink_to_fit();
     }
     
     size_t size() const {
         return size_;
+    }
+    
+    bool empty() const {
+        return size() == 0;
     }
     
     void push_back(bool bit) {
@@ -153,12 +164,16 @@ public:
         back() = bit;
     }
     
+    auto data() const {
+        return base_.data();
+    }
+    
     void BuildRank();
     
     void BuildSelect();
     
     void Build(bool use_select) {
-        if (bits_.empty())
+        if (base_.empty())
             return;
         BuildRank();
         if (use_select)
@@ -167,7 +182,7 @@ public:
     
     size_t rank(size_t index) const {
         auto rel = rel_(index);
-        return tip_l_(index) + tip_s_(index) + (rel > 0 ? bit_tools::popcnt(bits_[abs_(index)] & bit_tools::WidthMask(rel)) : 0);
+        return tip_l_(index) + tip_s_(index) + (rel > 0 ? bit_tools::popcnt(base_[abs_(index)] & bit_tools::WidthMask(rel)) : 0);
     }
     
     size_t rank_1(size_t index) const {
@@ -182,7 +197,7 @@ public:
     
     size_t size_in_bytes() const {
         auto size = sizeof(size_t);
-        size +=  size_vec(bits_);
+        size +=  size_vec(base_);
         size += l_blocks_.size_in_bytes();
         size += size_vec(s_blocks_);
         size += select_tips_.size_in_bytes();
@@ -191,7 +206,7 @@ public:
     
     void Read(std::istream& is) {
         size_ = read_val<size_t>(is);
-        bits_ = read_vec<storage_type>(is);
+        base_ = read_vec<storage_type>(is);
         l_blocks_ = FitVector(is);
         s_blocks_ = read_vec<s_block_type>(is);
         select_tips_ = FitVector(is);
@@ -199,7 +214,7 @@ public:
     
     void Write(std::ostream& os) const {
         write_val(size_, os);
-        write_vec(bits_, os);
+        write_vec(base_, os);
         l_blocks_.Write(os);
         write_vec(s_blocks_, os);
         select_tips_.Write(os);
@@ -254,8 +269,8 @@ void BitVector::BuildRank() {
             if (index > s_blocks_.size() - 1)
                 break;
             s_blocks_[index] = count - l_blocks_[i];
-            if (index < bits_.size()) {
-                count += bit_tools::popcnt(bits_[index]);
+            if (index < base_.size()) {
+                count += bit_tools::popcnt(base_[index]);
             }
         }
     }
@@ -306,189 +321,24 @@ size_t BitVector::select(size_t index) const {
     i -= s_blocks_[left * kNumSPerL + --offset];
     
     auto ret = (left * kLargeBlockBits) + (offset * kSmallBlockBits);
-    auto bits = bits_[ret / kSmallBlockBits];
+    auto bits = base_[ret / kSmallBlockBits];
     
-    auto Compress = [&bits, &ret, &i](const id_type block) {
-        auto count = bit_tools::popcnt(bits % block);
-        auto shiftBlock = calc::SizeFitsInBytes(block - 1) * 8;
+    auto Compress = [&bits, &ret, &i](const id_type shift_block) {
+        auto count = bit_tools::popcnt(bits & bit_tools::WidthMask(shift_block));
         if (count < i) {
-            bits >>= shiftBlock;
-            ret += shiftBlock;
+            bits >>= shift_block;
+            ret += shift_block;
             i -= count;
         }
     };
 #ifndef USE_X86
-    Compress(0x100000000);
+    Compress(32);
 #endif
-    Compress(0x10000);
-    Compress(0x100);
+    Compress(16);
+    Compress(8);
     
     ret += bit_tools::SelectTable(bits % 0x100, i);
     return ret - 1;
-}
-
-
-template <class BitSequence, bool UseSelect = false>
-class SuccinctBitVector : MultipleVector {
-    using sequence_type = BitSequence;
-    using Base = MultipleVector;
-    
-    static constexpr uint8_t kSmallTipBits = BitSequence::kSmallBlockBits;
-    static constexpr size_t kLargeTipBits = BitSequence::kLargeBlockBits;
-    static constexpr size_t kNumSPerL = BitSequence::kNumSPerL;
-    static constexpr size_t kBitsPerSelectTips = BitSequence::kBitsPerSelectTips;
-    static constexpr size_t kLargeTipId = kNumSPerL * 1;
-    static constexpr size_t kSelectTipId = kLargeTipId + 1;
-    static constexpr size_t kLargeTipPos = kNumSPerL * 1;
-    
-    sequence_type bits_;
-    FitVector select_tips_;
-    
-    friend typename BitSequence::Self;
-    
-public:
-    constexpr size_t rank(size_t index) const {
-        auto block_offset = block_offset_(index);
-        auto l_count = Base::get_(block_offset + kLargeTipPos, Base::element_table_[kLargeTipId].size);
-        auto s_count = Base::bytes_[block_offset + index / kSmallTipBits % kNumSPerL];
-        auto rel = relative_offset_(index);
-        return (l_count + s_count +
-                (rel > 0 ? bit_tools::popcnt(bits_[index / kBitsPerWord]) & bit_tools::WidthMask(rel) : 0));
-    }
-    
-    constexpr size_t select(size_t index) const;
-    
-    size_t num_blocks() const {
-        return Base::size();
-    }
-    
-    size_t size() const {
-        return bits_.size();
-    }
-    
-private:
-    explicit SuccinctBitVector(const sequence_type bits);
-    
-    void BuildRank();
-    void BuildSelect();
-    
-    constexpr size_t relative_offset_(size_t index) const {
-        return index % kBitsPerWord;
-    }
-    
-    constexpr size_t block_offset_(size_t index) const {
-        return index / kLargeTipBits * block_size();
-    }
-    
-    constexpr size_t l_tip_at_block(size_t block) const {
-        return Base::get_(block * block_size() + kLargeTipPos, element_table_[kLargeTipId].size);
-    }
-    
-    constexpr size_t s_tip_at_count(size_t count) const {
-        return Base::bytes_[count / kNumSPerL * block_size() + count % kNumSPerL];
-    }
-    
-};
-
-template <class BitSequence, bool UseSelect>
-constexpr size_t SuccinctBitVector<BitSequence, UseSelect>::select(size_t index) const {
-    id_type left = 0, right = num_blocks();
-    auto i = index;
-    
-    if (select_tips_.size() != 0) {
-        auto selectTipId = i / kBitsPerSelectTips;
-        left = select_tips_[selectTipId];
-        right = select_tips_[selectTipId + 1] + 1;
-    }
-    
-    while (left + 1 < right) {
-        const auto center = (left + right) / 2;
-        if (i < l_tip_at_block(i)) {
-            right = center;
-        } else {
-            left = center;
-        }
-    }
-    
-    i += 1; // for i+1 th
-    i -= l_tip_at_block(left);
-    
-    size_t offset = 1;
-    for (size_t index = left * kNumSPerL + offset;
-         offset < kNumSPerL && index < num_blocks() * kNumSPerL && i > s_tip_at_count(index);
-         offset++, index = left * kNumSPerL + offset) continue;
-    i -= s_tip_at_count(left * kNumSPerL + --offset);
-    
-    auto ret = (left * kLargeTipBits) + (offset * kSmallTipBits);
-    auto bits = bits_[ret / kSmallTipBits];
-    
-    auto Compress = [&bits, &ret, &i](const id_type block) {
-        auto count = bit_tools::popcnt(bits % block);
-        auto shiftBlock = calc::SizeFitsInBytes(block - 1) * 8;
-        if (count < i) {
-            bits >>= shiftBlock;
-            ret += shiftBlock;
-            i -= count;
-        }
-    };
-#ifndef USE_X86
-    Compress(0x100000000);
-#endif
-    Compress(0x10000);
-    Compress(0x100);
-    
-    ret += bit_tools::SelectTable(bits % 0x100, i);
-    return ret - 1;
-}
-
-template <class BitSequence, bool UseSelect>
-SuccinctBitVector<BitSequence, UseSelect>::SuccinctBitVector(const sequence_type bits) : bits_(bits) {
-    auto num_blocks = std::ceil(double(bits.size() + 1) / kLargeTipBits);
-    std::vector<size_t> element_sizes(kNumSPerL, 1);
-    auto l_tip_size = calc::SizeFitsInBytes(bits.size());
-    element_sizes.push_back(l_tip_size);
-    if constexpr (UseSelect) {
-        select_tips_ = FitVector(calc::SizeFitsInBits(num_blocks));
-    }
-    Base::set_element_sizes(element_sizes);
-    Base::resize(num_blocks);
-    
-    BuildRank();
-    if constexpr (UseSelect) {
-        BuildSelect();
-    }
-}
-
-template <class BitSequence, bool UseSelect>
-void SuccinctBitVector<BitSequence, UseSelect>::BuildRank() {
-    size_t count = 0;
-    for (auto i = 0; i < num_blocks(); i++) {
-        Base::block(i).set<kLargeTipId>(count);
-        
-        for (auto offset = 0; offset < kNumSPerL; offset++) {
-            auto index = i * kNumSPerL + offset;
-            if (index > kNumSPerL * num_blocks())
-                break;
-            Base::bytes_[i * block_size() + offset] = count - Base::block(i).template get<kLargeTipId>();
-            if (index < bits_.size()) {
-                count += bit_tools::popcnt(bits_[index]);
-            }
-        }
-    }
-}
-
-template <class BitSequence, bool UseSelect>
-void SuccinctBitVector<BitSequence, UseSelect>::BuildSelect() {
-    auto count = kBitsPerSelectTips;
-    select_tips_.push_back(0);
-    for (id_type i = 0; i < num_blocks(); i++) {
-        if (count < Base::block(i).template get<kLargeTipId>()) {
-            select_tips_.push_back(i - 1);
-            count += kBitsPerSelectTips;
-        }
-    }
-    
-    select_tips_.push_back(num_blocks() - 1);
 }
 
 
