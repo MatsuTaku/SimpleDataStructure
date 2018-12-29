@@ -93,8 +93,10 @@ inline size_t additional_size_of_rank(const double l) {
 
 template <class Container>
 inline std::vector<size_t> split_positions_optimized_for_dac(const Container& list, const size_t max_levels = 8) {
-    auto cf = cummulative_frequency_list(list);
+    if (list.empty())
+        return {};
     
+    auto cf = cummulative_frequency_list(list);
     const auto m = cf.size() - 1;
     std::vector<size_t> s(cf.size(), 0), l(cf.size(), 0), b(cf.size(), 0);
     for (int t = m; t >= 0; --t) {
