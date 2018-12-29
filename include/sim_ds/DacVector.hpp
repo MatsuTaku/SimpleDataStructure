@@ -117,7 +117,7 @@ public:
     
     void Build() {
         for (auto& path : paths_)
-            path.Build();
+            path.Build(false);
     }
     
     // MARK: getter

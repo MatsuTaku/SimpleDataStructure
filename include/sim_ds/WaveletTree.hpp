@@ -168,7 +168,7 @@ public:
     
     void build() {
         for (auto &l : bv_list_)
-            l.Build();
+            l.Build(false);
     }
     
     size_t size_in_bytes() const {

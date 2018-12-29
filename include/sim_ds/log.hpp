@@ -12,10 +12,8 @@
 
 namespace sim_ds {
     
-namespace log {
-    
 template <typename T>
-inline void ShowAsBinary(T value, size_t size = sizeof(id_type)) {
+inline void ShowAsBinary(T value, size_t size = sizeof(T)) {
     using std::cout;
     using std::endl;
     for (int i = size * 8 - 1; i >= 0; i--) {
@@ -25,8 +23,6 @@ inline void ShowAsBinary(T value, size_t size = sizeof(id_type)) {
     }
     cout << endl;
 }
-    
-} // namespace log
     
 } // namespace sim_ds
 

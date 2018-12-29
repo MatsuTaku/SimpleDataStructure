@@ -85,32 +85,32 @@ inline std::vector<size_t> cummulative_frequency_list(const CONTAINER& list, boo
 }
 
 inline size_t additional_size_of_rank(const double l) {
-    using std::ceil;
+    using std::ceil, std::log2;
     auto a = ceil(l / 8) * 8;
     auto b = (4 * 8 + ceil(log2(l))) * ceil(l / 256) ;
     return a + b;
 }
 
-template <class CONTAINER>
-inline std::vector<size_t> split_positions_optimized_for_dac(const CONTAINER& list, const size_t maxLevels = 8) {
+template <class Container>
+inline std::vector<size_t> split_positions_optimized_for_dac(const Container& list, const size_t max_levels = 8) {
     auto cf = cummulative_frequency_list(list);
     
     const auto m = cf.size() - 1;
     std::vector<size_t> s(cf.size(), 0), l(cf.size(), 0), b(cf.size(), 0);
     for (int t = m; t >= 0; --t) {
-        auto minSize = INFINITY;
-        auto minPos = m;
+        auto min_size = INFINITY;
+        auto min_pos = m;
         for (auto i = t + 1; i <= m; i++) {
-            auto currentSize = s[i] + cf[t] * (i - t) + additional_size_of_rank(cf[t]);
-            if (currentSize < minSize) {
-                minSize = currentSize;
-                minPos = i;
+            auto current_size = s[i] + cf[t] * (i - t) + additional_size_of_rank(cf[t]);
+            if (current_size < min_size) {
+                min_size = current_size;
+                min_pos = i;
             }
         }
-        if (minSize < cf[t] * ((m + 1) - t)) {
-            s[t] = minSize;
-            l[t] = l[minPos] + 1;
-            b[t] = minPos - t;
+        if (min_size < cf[t] * ((m + 1) - t)) {
+            s[t] = min_size;
+            l[t] = l[min_pos] + 1;
+            b[t] = min_pos - t;
         } else {
             s[t] = cf[t] * ((m + 1) - t);
             l[t] = 1;
@@ -127,12 +127,12 @@ inline std::vector<size_t> split_positions_optimized_for_dac(const CONTAINER& li
         t = t + b[t];
     }
     
-    if (L > maxLevels) { // TODO: Skeptical algorithm
-        std::vector<bool> sepPos(cf.size() + 1, false);
+    if (L > max_levels) { // TODO: Skeptical algorithm
+        std::vector<bool> sep_pos(cf.size() + 1, false);
         auto p = 0;
         for (auto v : bk) {
             p += v;
-            sepPos[p] = true;
+            sep_pos[p] = true;
         }
         using P = std::pair<uint64_t, uint64_t>;
         auto cmp = [](P lhs, P rhs) {
@@ -143,22 +143,22 @@ inline std::vector<size_t> split_positions_optimized_for_dac(const CONTAINER& li
             pq.push_back(P(cf[i - 1] - cf[i], i));
         }
         std::sort(pq.begin(), pq.end(), cmp);
-        auto numSeps = L;
-        while (numSeps > maxLevels && !pq.empty()) {
+        auto num_seps = L;
+        while (num_seps > max_levels && !pq.empty()) {
             auto curP = pq.back();
             pq.pop_back();
-            if (sepPos[curP.second]) {
-                sepPos[curP.second] = false;
-                numSeps--;
+            if (sep_pos[curP.second]) {
+                sep_pos[curP.second] = false;
+                num_seps--;
             }
         }
         
         bk.resize(0);
-        auto lastP = 0;
-        for (auto i = 0; i < sepPos.size(); i++) {
-            if (sepPos[i]) {
-                bk.push_back(i - lastP);
-                lastP = i;
+        auto last_p = 0;
+        for (auto i = 0; i < sep_pos.size(); i++) {
+            if (sep_pos[i]) {
+                bk.push_back(i - last_p);
+                last_p = i;
             }
         }
     }
