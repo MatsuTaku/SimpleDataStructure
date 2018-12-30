@@ -21,20 +21,18 @@ using std::string;
 using std::string_view;
 
 class SuffixArray {
+public:
+    static constexpr size_t kInf = std::numeric_limits<size_t>::max();
     
+private:
     string str_;
     FitVector s_arr_;
     FitVector lcp_arr_;
     
-    static constexpr size_t kInf = std::numeric_limits<size_t>::max();
-    
 public:
     SuffixArray() = default;
-    SuffixArray(const string &str) {
-        Build(str);
-    }
     
-    void Build(const string &str) {
+    SuffixArray(const string &str) {
         BuildSA_(str);
         BuildLCP_();
     }

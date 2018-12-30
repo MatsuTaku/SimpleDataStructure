@@ -25,6 +25,8 @@ private:
     std::vector<uint32_t> select_tips_;
     
 public:
+    SuccinctBitVector() = default;
+    
     explicit SuccinctBitVector(const BitVector& bits) : bits_(bits) {
         if (bits.empty()) {
             basic_block_.assign(2, 0);
@@ -35,7 +37,7 @@ public:
         basic_block_.resize(basic_block_size * 2);
         
         const uint64_t* data = bits.data();
-        size_t sum = bit_tools::popcnt(*data);
+        size_t sum = bit_util::popcnt(*data);
         uint64_t sum_word = 0;
         basic_block_[0] = basic_block_[1] = 0;
         size_t i = 0;
@@ -48,7 +50,7 @@ public:
             } else {
                 sum_word |= sum << (63 - 9*(i%8));
             }
-            sum += bit_tools::popcnt(*(++data));
+            sum += bit_util::popcnt(*(++data));
         }
         if (i % 8 != 0) {
             size_t j = i/8*2;
@@ -78,27 +80,28 @@ public:
     template <class BitSequence>
     explicit SuccinctBitVector(const BitSequence bits) : SuccinctBitVector(BitVector(bits)) {}
     
-    SuccinctBitVector() = default;
-    ~SuccinctBitVector() = default;
-    SuccinctBitVector(const SuccinctBitVector&) = default;
-    SuccinctBitVector(SuccinctBitVector&&) = default;
-    SuccinctBitVector& operator=(const SuccinctBitVector&) = default;
-    SuccinctBitVector& operator=(SuccinctBitVector&&) = default;
-    
     
     constexpr bool operator[](size_t index) const {
         return bits_[index];
     }
     
     constexpr size_t rank(size_t index) const {
+        return rank_1(index);
+    }
+    
+    constexpr size_t rank_0(size_t index) const {
+        return index - rank_1(index);
+    }
+    
+    constexpr size_t rank_1(size_t index) const {
         size_t block_index = index / 512 * 2;
-        size_t before_sum = basic_block_[block_index] + ((basic_block_[block_index+1] >> (63-9*((index/64)%8))) & bit_tools::width_mask<9>);
+        size_t before_sum = basic_block_[block_index] + ((basic_block_[block_index+1] >> (63-9*((index/64)%8))) & bit_util::width_mask<9>);
         size_t inword_offset = index % 64;
         if (inword_offset == 0) {
             return before_sum;
         } else {
-            auto word = bits_.data()[index/64] & bit_tools::WidthMask(inword_offset);
-            return before_sum + bit_tools::popcnt(word);
+            auto word = bits_.data()[index/64] & bit_util::WidthMask(inword_offset);
+            return before_sum + bit_util::popcnt(word);
         }
     }
     
@@ -123,7 +126,7 @@ public:
         i -= basic_block_[left * 2];
         
         auto second_tip = [&](size_t index) {
-            return (basic_block_[index/8*2+1] >> (63-9*(index%8))) & bit_tools::width_mask<9>;
+            return (basic_block_[index/8*2+1] >> (63-9*(index%8))) & bit_util::width_mask<9>;
         };
         size_t offset = 1;
         size_t second_tip_size = size()/64+1;
@@ -135,7 +138,7 @@ public:
         size_t ret = left*512 + offset*64;
         auto bits = bits_.data()[ret/64];
         auto Compress = [&bits, &ret, &i](const id_type shift_bits) {
-            auto count = bit_tools::popcnt(bits & bit_tools::WidthMask(shift_bits));
+            auto count = bit_util::popcnt(bits & bit_util::WidthMask(shift_bits));
             if (count < i) {
                 bits >>= shift_bits;
                 ret += shift_bits;
@@ -146,7 +149,7 @@ public:
         Compress(16);
         Compress(8);
         
-        ret += bit_tools::SelectTable(bits & 0xFF, i);
+        ret += bit_util::SelectTable(bits & 0xFF, i);
         
         return ret - 1;
     }

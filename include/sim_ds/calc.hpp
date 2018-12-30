@@ -10,10 +10,8 @@
 
 #include <vector>
 
-namespace sim_ds {
-    
-namespace calc {
-    
+namespace sim_ds::calc {
+
 /* Calculate minimal number of units of argument required for value expression. */
 inline constexpr size_t SizeFitsInUnits(unsigned long long value, const size_t unit) {
     size_t size = 0;
@@ -21,9 +19,9 @@ inline constexpr size_t SizeFitsInUnits(unsigned long long value, const size_t u
     return size;
 }
 
-template<size_t _Bits>
+template<size_t Bits>
 inline constexpr size_t size_fits(unsigned long long value) {
-    return SizeFitsInUnits(value, _Bits);
+    return SizeFitsInUnits(value, Bits);
 }
 
 /* Calculate minimal number of bytes required for value expression. */
@@ -36,27 +34,27 @@ inline constexpr size_t SizeFitsInBits(unsigned long long value) {
     return size_fits<1>(value);
 }
 
-template <typename CONTAINER>
-inline size_t SizeFitsAsList(unsigned long long value, const CONTAINER sizes) {
+template <typename Container>
+inline size_t SizeFitsAsList(unsigned long long value, const Container sizes) {
     size_t size = 0;
     while (static_cast<bool>(value >>= sizes[size++])) continue;
     return size;
 }
 
-template <class CONTAINER>
-inline std::vector<size_t> bit_size_frequency_list(const CONTAINER& list, bool shouldShow = false) {
+template <class Container>
+inline std::vector<size_t> bit_size_frequency_list(const Container& list, bool should_show = false) {
     std::vector<size_t> map;
-    auto maxSize = 0;
+    auto max_size = 0;
     for (size_t i = 0; i < list.size(); i++) {
         auto size = SizeFitsInBits(list[i]);
-        if (size > maxSize) {
+        if (size > max_size) {
             map.resize(size, 0);
-            maxSize = size;
+            max_size = size;
         }
         map[size - 1]++;
     }
     
-    if (shouldShow) {
+    if (should_show) {
         for (auto i = 0; i < map.size(); i++)
             std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
     }
@@ -64,8 +62,8 @@ inline std::vector<size_t> bit_size_frequency_list(const CONTAINER& list, bool s
     return map;
 }
 
-template <class CONTAINER>
-inline std::vector<size_t> cummulative_frequency_list(const CONTAINER& list, bool shouldShow = false) {
+template <class Container>
+inline std::vector<size_t> cummulative_frequency_list(const Container& list, bool should_show = false) {
     std::vector<size_t> cf;
     auto map = bit_size_frequency_list(list);
     auto count = 0;
@@ -75,7 +73,7 @@ inline std::vector<size_t> cummulative_frequency_list(const CONTAINER& list, boo
         cf[i - 1] = count;
     }
     
-    if (shouldShow) {
+    if (should_show) {
         std::cout << "Cummulative frequency of vector" << std::endl;
         for (int i = 0; i < cf.size(); i++)
             std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
@@ -164,13 +162,10 @@ inline std::vector<size_t> split_positions_optimized_for_dac(const Container& li
             }
         }
     }
-    
 
     return bk;
 }
-    
-} // namespace calc
-    
-} // namespace sim_ds
+
+} // namespace sim_ds::calc
 
 #endif /* calc_hpp */

@@ -11,12 +11,13 @@
 #include "basic.hpp"
 #include "calc.hpp"
 #include "log.hpp"
-#include "bit_tools.hpp"
+#include "bit_util.hpp"
 
 namespace sim_ds {
     
 template <unsigned int UnitSize>
 class MultiBitVector {
+public:
     static constexpr size_t kBitsUnitSize = UnitSize;
     static constexpr uint8_t kMaxNumTypes = 1ULL << kBitsUnitSize;
     static constexpr id_type kBitsMask = kMaxNumTypes - 1;
@@ -26,6 +27,7 @@ class MultiBitVector {
     static constexpr uint8_t kBitSize = 0x40;
     static constexpr uint8_t kBlocksInTipSize = kBlockSize / kBitSize;
     
+private:
     std::vector<id_type> bits_;
     struct RankTip {
         id_type L1;
@@ -33,9 +35,24 @@ class MultiBitVector {
     };
     std::vector<RankTip> rank_tips_[kMaxNumTypes];
     
-public:
+    constexpr size_t block_(size_t index) const {
+        return index / kBlockCapacity;
+    }
     
-    // MARK: Getter
+    constexpr size_t abs_(size_t index) const {
+        return index / (kBitsInType / kBitsUnitSize);
+    }
+    
+    constexpr size_t rel_(size_t index) const {
+        return index * kBitsUnitSize % kBitsInType;
+    }
+    
+    constexpr uint8_t popcnt_(uint8_t bits, id_type value) const {
+        return bit_util::popcnt<kBitsUnitSize>(bits, value);
+    }
+    
+public:
+    MultiBitVector() = default;
     
     constexpr uint8_t operator[](size_t index) const {
         return bits_[abs_(index)] >> rel_(index) & kBitsMask;
@@ -85,37 +102,6 @@ public:
             write_vec(tips, os);
     }
     
-    // MARK: - Copy guard
-    
-    MultiBitVector() = default;
-    ~MultiBitVector() = default;
-    
-    MultiBitVector(const MultiBitVector&) = delete;
-    MultiBitVector& operator=(const MultiBitVector&) = delete;
-    
-    MultiBitVector(MultiBitVector&&) noexcept = default;
-    MultiBitVector& operator=(MultiBitVector&&) noexcept = default;
-    
-private:
-    
-    // MARK: - private methods
-    
-    constexpr size_t block_(size_t index) const {
-        return index / kBlockCapacity;
-    }
-    
-    constexpr size_t abs_(size_t index) const {
-        return index / (kBitsInType / kBitsUnitSize);
-    }
-    
-    constexpr size_t rel_(size_t index) const {
-        return index * kBitsUnitSize % kBitsInType;
-    }
-    
-    constexpr uint8_t popcnt_(uint8_t bits, id_type value) const {
-        return bit_tools::popcnt<kBitsUnitSize>(bits, value);
-    }
-    
 };
 
 template <unsigned int S>
@@ -123,7 +109,7 @@ inline constexpr unsigned long long MultiBitVector<S>::rank(size_t index) const 
     auto type = (*this)[index];
     assert(type > 0);
     const auto &tip = rank_tips_[type - 1][block_(index)];
-    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + popcnt_(type, bits_[abs_(index)] & bit_tools::WidthMask(rel_(index)));
+    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + popcnt_(type, bits_[abs_(index)] & bit_util::WidthMask(rel_(index)));
 }
 
 template <unsigned int S>

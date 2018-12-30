@@ -15,8 +15,8 @@
 #include "calc.hpp"
 
 namespace sim_ds {
-    
-    
+
+
 class DacVector {
 public:
     using layer_v = FitVector;
@@ -35,6 +35,8 @@ private:
     path_bv paths_[kMaxSplits - 1];
     
 public:
+    DacVector() = default;
+    
     template<class Seq>
     DacVector(const Seq& vector) : DacVector(vector, calc::split_positions_optimized_for_dac(vector)) {}
     
@@ -65,7 +67,7 @@ public:
         
         for (id_type v : vector) {
             id_type x = v;
-            layers_[0].push_back(x & bit_tools::WidthMask(layers_unit_bits_[0]));
+            layers_[0].push_back(x & bit_util::WidthMask(layers_unit_bits_[0]));
             x >>= layers_unit_bits_[0];
             for (size_t depth = 1; depth < num_layers; depth++) {
                 bool exist = x > 0;
@@ -73,7 +75,7 @@ public:
                 if (!exist)
                     break;
                 auto unit_bits = layers_unit_bits_[depth];
-                layers_[depth].push_back(x & bit_tools::WidthMask(unit_bits));
+                layers_[depth].push_back(x & bit_util::WidthMask(unit_bits));
                 x >>= unit_bits;
             }
         }
@@ -86,15 +88,6 @@ public:
     DacVector(std::istream &is) {
         Read(is);
     }
-    
-    // MARK: Copy guard
-    
-    DacVector() = default;
-    ~DacVector() = default;
-    DacVector(const DacVector&) = default;
-    DacVector(DacVector&&) = default;
-    DacVector& operator=(const DacVector&) = default;
-    DacVector& operator=(DacVector&&) = default;
     
     // MARK: getter
     
@@ -159,8 +152,6 @@ public:
         return size;
     }
     
-    void ShowStatus(std::ostream& os) const;
-    
     void Read(std::istream& is) {
         num_layers_ = read_val<size_t>(is);
         for (auto i = 0; i < num_layers(); i++)
@@ -183,29 +174,29 @@ public:
                 paths_[i].Write(os);
     }
     
+    void ShowStatus(std::ostream& os) const {
+        using std::endl;
+        os << "--- Stat of " << "DACs " << " ---" << endl;
+        os << "number of elements: " << size() << endl;
+        auto size_bytes = size_in_bytes();
+        os << "size:   " << size_bytes << endl;
+        os << "sizeBits/element:   " << (float(size_bytes * 8) / size()) << endl;
+        auto bitsSize = 0;
+        for (auto i = 0; i == 0 || i + 1 < num_layers(); i++)
+            bitsSize += paths_[i].size_in_bytes();
+        os << "size bits:   " << bitsSize << endl;
+        auto flowSize = 0;
+        for (auto i = 0; i < num_layers(); i++)
+            flowSize += layers_[i].size_in_bytes();
+        os << "size flows:   " << flowSize << endl;
+        os << "--- element map ---" << endl;
+        os << "num_units: " << num_layers() << endl;
+        for (auto i = 0; i < num_layers(); i++)
+            os << "[" << layers_unit_bits_[i] << "]"<< endl;
+    }
+    
 };
 
-
-void DacVector::ShowStatus(std::ostream &os) const {
-    using std::endl;
-    os << "--- Stat of " << "DACs " << " ---" << endl;
-    os << "number of elements: " << size() << endl;
-    auto size_bytes = size_in_bytes();
-    os << "size:   " << size_bytes << endl;
-    os << "sizeBits/element:   " << (float(size_bytes * 8) / size()) << endl;
-    auto bitsSize = 0;
-    for (auto i = 0; i == 0 || i + 1 < num_layers(); i++)
-        bitsSize += paths_[i].size_in_bytes();
-    os << "size bits:   " << bitsSize << endl;
-    auto flowSize = 0;
-    for (auto i = 0; i < num_layers(); i++)
-        flowSize += layers_[i].size_in_bytes();
-    os << "size flows:   " << flowSize << endl;
-    os << "--- element map ---" << endl;
-    os << "num_units: " << num_layers() << endl;
-    for (auto i = 0; i < num_layers(); i++)
-        os << "[" << layers_unit_bits_[i] << "]"<< endl;
-}
     
 } // namespace sim_ds
 

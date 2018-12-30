@@ -14,7 +14,7 @@
 #define BITS_64 64
 #define BITS_32 32
 
-namespace sim_ds::bit_tools {
+namespace sim_ds::bit_util {
     
 #ifdef USE_X86
     constexpr size_t kBitsOfIdType = BITS_32;

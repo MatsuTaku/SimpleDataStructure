@@ -10,12 +10,13 @@
 #define Vector_hpp
 
 #include "basic.hpp"
-#include "bit_tools.hpp"
+#include "bit_util.hpp"
 #include "calc.hpp"
 #include "log.hpp"
 
 namespace sim_ds {
-    
+
+
 template<class Sequence>
 class BitsReference {
     using storage_type = typename Sequence::storage_type;
@@ -35,7 +36,7 @@ public:
         }
     }
     
-    BitsReference& operator=(entity_type value) {
+    constexpr BitsReference& operator=(entity_type value) {
         *pointer_ = (*pointer_ & ~(mask_ << offset_)) | (value << offset_);
         if (bits_per_element_ + offset_ > kBitsPerWord) {
             auto roffset = kBitsPerWord - offset_;
@@ -48,7 +49,7 @@ private:
     constexpr BitsReference(storage_pointer pointer,
                             size_t offset,
                             size_t bits_per_element
-                            ) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
+                            ) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_util::WidthMask(bits_per_element)) {}
     
     storage_pointer pointer_;
     size_t offset_;
@@ -81,7 +82,7 @@ private:
     constexpr BitsConstReference(storage_pointer pointer,
                                  size_t offset,
                                  size_t bits_per_element
-                                 ) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_tools::WidthMask(bits_per_element)) {}
+                                 ) noexcept : pointer_(pointer), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_util::WidthMask(bits_per_element)) {}
     
     storage_pointer pointer_;
     size_t offset_;
@@ -101,14 +102,6 @@ class FitVector {
     using const_storage_pointer = const storage_type*;
     using entity_type = id_type;
     
-    // * Initialized only in constructor
-    size_t bits_per_element_;
-    storage_type mask_;
-    // *
-    
-    size_t size_ = 0;
-    std::vector<storage_type> vector_;
-    
     friend class BitsReference<FitVector>;
     friend class BitsConstReference<FitVector>;
     
@@ -117,16 +110,33 @@ class FitVector {
     
     static constexpr size_t kBitsPerWord = 8 * sizeof(id_type); // 64
     
+private:
+    // * Initialized only in constructor
+    size_t bits_per_element_;
+    storage_type mask_;
+    // *
+    
+    size_t size_ = 0;
+    std::vector<storage_type> vector_;
+    
+    size_t abs_(size_t index) const {
+        return index * bits_per_element_ / kBitsPerWord;
+    }
+    
+    size_t rel_(size_t index) const {
+        return index * bits_per_element_ % kBitsPerWord;
+    }
+    
 public:
-    // MARK: Constructor
+    FitVector() : FitVector(kBitsPerWord) {}
     
-    FitVector(size_t wordBits = kBitsPerWord) : bits_per_element_(wordBits), mask_(bit_tools::WidthMask(wordBits)) {}
+    FitVector(size_t unit_width) : bits_per_element_(unit_width), mask_(bit_util::WidthMask(unit_width)) {}
     
-    FitVector(size_t wordBits, size_t size) : FitVector(wordBits) {
+    FitVector(size_t unit_width, size_t size) : FitVector(unit_width) {
         resize(size);
     }
     
-    FitVector(size_t wordBits, size_t size, size_t value) : FitVector(wordBits) {
+    FitVector(size_t unit_width, size_t size, size_t value) : FitVector(unit_width) {
         assign(size, value);
     }
     
@@ -157,12 +167,12 @@ public:
     
     // MARK: Operator
     
-    Reference operator[](size_t index) {
+    constexpr Reference operator[](size_t index) {
         assert(index < size());
         return Reference(&vector_[abs_(index)], rel_(index), bits_per_element_);
     }
     
-    ConstReference operator[](size_t index) const {
+    constexpr ConstReference operator[](size_t index) const {
         assert(index < size());
         return ConstReference(&vector_[abs_(index)], rel_(index), bits_per_element_);
     }
@@ -234,25 +244,6 @@ public:
         write_vec(vector_, os);
     }
     
-private:
-    
-    size_t abs_(size_t index) const {
-        return index * bits_per_element_ / kBitsPerWord;
-    }
-    
-    size_t rel_(size_t index) const {
-        return index * bits_per_element_ % kBitsPerWord;
-    }
-    
-public:
-    
-    ~FitVector() = default;
-    
-    FitVector(const FitVector&) = default;
-    FitVector& operator=(const FitVector&) = default;
-    
-    FitVector(FitVector&&) noexcept = default;
-    FitVector& operator=(FitVector&&) noexcept = default;
     
 };
     

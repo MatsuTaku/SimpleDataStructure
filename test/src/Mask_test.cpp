@@ -6,9 +6,9 @@
 //
 
 #include "gtest/gtest.h"
-#include "sim_ds/bit_tools.hpp"
+#include "sim_ds/bit_util.hpp"
 
-using namespace sim_ds::bit_tools;
+using namespace sim_ds::bit_util;
 
 TEST(MaskTest, bits) {
     EXPECT_EQ(WidthMask(0), 0x00);

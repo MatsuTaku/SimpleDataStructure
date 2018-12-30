@@ -153,6 +153,32 @@ public:
     friend class BlockReference<MultipleVector>;
     friend class BlockConstReference<MultipleVector>;
     
+protected:
+    table_type element_table_;
+    std::vector<storage_type> bytes_ = {};
+    
+    size_t offset_(size_t index) const {
+        return index * block_size();
+    }
+    
+    id_type set_(size_t offset, size_t width, id_type value) {
+        for (size_t i = 0; i < width; i++)
+            bytes_[offset + i] = static_cast<storage_type>(value >> (i * kBitsPerWord));
+        
+        return value;
+    }
+    
+    id_type get_(size_t offset, size_t width) const {
+        id_type value = 0;
+        for (size_t i = 0; i < width; i++)
+            value |= static_cast<id_type>(bytes_[offset + i]) << (i * kBitsPerWord);
+        
+        return value;
+    }
+    
+public:
+    MultipleVector() = default;
+    
     void set_element_sizes(std::vector<size_t> sizes) {
         element_table_.resize(sizes.size());
         for (auto i = 0, pos = 0; i < sizes.size(); i++) {
@@ -226,40 +252,6 @@ public:
             element_sizes.push_back(table.size);
         }
         write_vec(element_sizes, os);
-    }
-    
-    // MARK: copy guard
-    
-    MultipleVector() = default;
-    ~MultipleVector() = default;
-    
-    MultipleVector(const MultipleVector&) = delete;
-    MultipleVector& operator=(const MultipleVector&) = delete;
-    
-    MultipleVector(MultipleVector &&rhs) noexcept = default;
-    MultipleVector& operator=(MultipleVector &&rhs) noexcept = default;
-    
-protected:
-    table_type element_table_;
-    std::vector<storage_type> bytes_ = {};
-    
-    size_t offset_(size_t index) const {
-        return index * block_size();
-    }
-    
-    id_type set_(size_t offset, size_t width, id_type value) {
-        for (size_t i = 0; i < width; i++)
-            bytes_[offset + i] = static_cast<storage_type>(value >> (i * kBitsPerWord));
-        
-        return value;
-    }
-    
-    id_type get_(size_t offset, size_t width) const {
-        id_type value = 0;
-        for (size_t i = 0; i < width; i++)
-            value |= static_cast<id_type>(bytes_[offset + i]) << (i * kBitsPerWord);
-        
-        return value;
     }
     
 };
