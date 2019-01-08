@@ -18,7 +18,7 @@ class SuccinctBitVector {
 private:
     BitVector bits_;
     /* Contains large/small block as follows:
-     * || large tip - 64bits - || small tip reversal - 9bits - | ... * 8||   -- total 63bits
+     * || large tip - 64bits - || small tip reversal - 9bits - | ... * 8||   -- 127bits per block
      */
     std::vector<uint64_t> basic_block_;
     // For select support
@@ -78,7 +78,7 @@ public:
     }
     
     template <class BitSequence>
-    explicit SuccinctBitVector(const BitSequence bits) : SuccinctBitVector(BitVector(bits)) {}
+    explicit SuccinctBitVector(const BitSequence& bits) : SuccinctBitVector(BitVector(bits)) {}
     
     
     constexpr bool operator[](size_t index) const {

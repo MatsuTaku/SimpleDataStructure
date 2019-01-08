@@ -29,10 +29,10 @@
 
 namespace sim_ds {
 
-#ifdef USE_X86
-using id_type = uint32_t;
-#else
+#ifdef __x86_64__
 using id_type = uint64_t;
+#else
+using id_type = uint32_t;
 #endif
 
 class Stopwatch {

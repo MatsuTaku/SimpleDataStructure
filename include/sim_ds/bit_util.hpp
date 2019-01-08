@@ -11,17 +11,14 @@
 #include "basic.hpp"
 #include <popcntintrin.h>
 
-#define BITS_64 64
-#define BITS_32 32
-
 namespace sim_ds::bit_util {
     
-#ifdef USE_X86
-    constexpr size_t kBitsOfIdType = BITS_32;
-    constexpr id_type kMaskFill = 0xFFFFFFFF;
-#else
-    constexpr size_t kBitsOfIdType = BITS_64;
+#ifdef __x86_64__
+    constexpr size_t kBitsOfIdType = 64;
     constexpr id_type kMaskFill = 0xFFFFFFFFFFFFFFFF;
+#else
+    constexpr size_t kBitsOfIdType = 32;
+    constexpr id_type kMaskFill = 0xFFFFFFFF;
 #endif
 
 inline constexpr id_type WidthMask(size_t bits) {
@@ -38,10 +35,10 @@ inline constexpr id_type width_mask = WidthMask(Bits);
 
 inline constexpr id_type OffsetMask(size_t offset) {
     assert(offset < kBitsOfIdType);
-#ifdef USE_X86
-    return 1UL << offset;
-#else
+#ifdef __x86_64__
     return 1ULL << offset;
+#else
+    return 1UL << offset;
 #endif
 }
 
@@ -51,8 +48,10 @@ inline constexpr id_type offset_mask = OffsetMask(Offset);
 template <uint8_t Pattern>
 inline constexpr uint32_t bits_pattern32 = 0x01010101 * Pattern;
 
+#ifdef __x86_64__
 template <uint8_t Pattern>
 inline constexpr uint64_t bits_pattern64 = 0x0101010101010101 * Pattern;
+#endif
 
 template <size_t TypeSize, unsigned int Type>
 inline constexpr uint64_t popcnt(uint64_t x) {
@@ -111,7 +110,7 @@ inline constexpr uint64_t popcnt(uint64_t x) {
     }
 }
 
-const std::function<uint64_t (uint64_t value)> kPopcntTable[3][8] = {
+const std::function<uint64_t (uint64_t value)> kPopcntTL[3][8] = {
     {
         popcnt<1, 0b0>,
         popcnt<1, 0b1>
@@ -134,21 +133,21 @@ const std::function<uint64_t (uint64_t value)> kPopcntTable[3][8] = {
     }
 };
 
-template <unsigned int TYPE_SIZE>
+template <unsigned int TypeSize>
 inline constexpr uint64_t popcnt(size_t type, uint64_t x) {
-    return kPopcntTable[TYPE_SIZE - 1][type](x);
+    return kPopcntTL[TypeSize - 1][type](x);
 }
 
 inline uint64_t popcnt(uint64_t x) {
-#ifdef USE_POPCNT
-    return _popcnt64(x);
+#ifdef __SSE4_2__
+    return _mm_popcnt_u64(x);
 #else
     return popcnt<1, 1>(x);
 #endif
 }
 
 // inspired by marisa-trie
-constexpr uint8_t kSelectTable[9][256] = {
+constexpr uint8_t kSelectTL[9][256] = {
     {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -315,7 +314,7 @@ constexpr uint8_t kSelectTable[9][256] = {
 
 // Use for select
 inline constexpr uint8_t SelectTable(size_t word, size_t offset) {
-    return kSelectTable[offset][word];
+    return kSelectTL[offset][word];
 }
     
     
