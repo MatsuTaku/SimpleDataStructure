@@ -9,7 +9,9 @@
 #define bit_tools_hpp
 
 #include "basic.hpp"
+#ifdef __SSE4_2__
 #include <popcntintrin.h>
+#endif
 
 namespace sim_ds::bit_util {
     
@@ -144,6 +146,10 @@ inline uint64_t popcnt(uint64_t x) {
 #else
     return popcnt<1, 1>(x);
 #endif
+}
+
+inline uint64_t popcnt(uint64_t x, size_t width) {
+    return popcnt(x & WidthMask(width));
 }
 
 // inspired by marisa-trie

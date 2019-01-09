@@ -100,8 +100,7 @@ public:
         if (inword_offset == 0) {
             return before_sum;
         } else {
-            auto word = bits_.data()[index/64] & bit_util::WidthMask(inword_offset);
-            return before_sum + bit_util::popcnt(word);
+            return before_sum + bit_util::popcnt(bits_.data()[index/64], inword_offset);
         }
     }
     
@@ -138,7 +137,7 @@ public:
         size_t ret = left*512 + offset*64;
         auto bits = bits_.data()[ret/64];
         auto Compress = [&bits, &ret, &i](const id_type shift_bits) {
-            auto count = bit_util::popcnt(bits & bit_util::WidthMask(shift_bits));
+            auto count = bit_util::popcnt(bits, shift_bits);
             if (count < i) {
                 bits >>= shift_bits;
                 ret += shift_bits;
