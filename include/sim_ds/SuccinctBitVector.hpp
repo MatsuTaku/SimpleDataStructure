@@ -93,14 +93,13 @@ public:
         return index - rank_1(index);
     }
     
-    constexpr size_t rank_1(size_t index) const {
+    constexpr size_t rank_1(const size_t index) const {
         size_t block_index = index / 512 * 2;
         size_t before_sum = basic_block_[block_index] + ((basic_block_[block_index+1] >> (63-9*((index/64)%8))) & bit_util::width_mask<9>);
-        size_t inword_offset = index % 64;
-        if (inword_offset == 0) {
+        if (index%64 == 0) {
             return before_sum;
         } else {
-            return before_sum + bit_util::popcnt(bits_.data()[index/64], inword_offset);
+            return before_sum + bit_util::cnt(bits_.data()[index/64], index%64);
         }
     }
     
@@ -136,21 +135,8 @@ public:
         
         size_t ret = left*512 + offset*64;
         auto bits = bits_.data()[ret/64];
-        auto Compress = [&bits, &ret, &i](const id_type shift_bits) {
-            auto count = bit_util::popcnt(bits, shift_bits);
-            if (count < i) {
-                bits >>= shift_bits;
-                ret += shift_bits;
-                i -= count;
-            }
-        };
-        Compress(32);
-        Compress(16);
-        Compress(8);
         
-        ret += bit_util::SelectTable(bits & 0xFF, i);
-        
-        return ret - 1;
+        return ret + bit_util::sel(bits, i) - 1; // 0 index
     }
     
     size_t size() const {

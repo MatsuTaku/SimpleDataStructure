@@ -17,6 +17,7 @@ namespace sim_ds {
     
 template <unsigned int UnitSize>
 class MultiBitVector {
+    static_assert(UnitSize <= 3, "MultipleBitVector::UnitSize is overflow");
 public:
     static constexpr size_t kBitsUnitSize = UnitSize;
     static constexpr uint8_t kMaxNumTypes = 1ULL << kBitsUnitSize;
@@ -47,8 +48,86 @@ private:
         return index * kBitsUnitSize % kBitsInType;
     }
     
-    constexpr uint8_t popcnt_(uint8_t bits, id_type value) const {
-        return bit_util::popcnt<kBitsUnitSize>(bits, value);
+    constexpr uint8_t popcnt_(uint8_t bits, id_type word) const {
+        if constexpr (kBitsUnitSize == 1) {
+            if (bits == 0)
+                return bit_util::popcnt(~word);
+            else
+                return bit_util::popcnt(word);
+        } else if (kBitsUnitSize == 2) {
+            if (bits == 0b00)
+                return bit_util::popcnt11(~word);
+            if (bits == 0b01)
+                return bit_util::popcnt10(~word);
+            if (bits == 0b10)
+                return bit_util::popcnt10(word);
+            else // bits == 0b11
+                return bit_util::popcnt11(word);
+        } else if (kBitsUnitSize == 3) {
+            if (bits & 4)
+                if (bits & 2)
+                    if (bits & 1)
+                        return bit_util::popcnt111(word);
+                    else
+                        return bit_util::popcnt110(word);
+                else
+                    if (bits & 1)
+                        return bit_util::popcnt101(word);
+                    else
+                        return bit_util::popcnt100(word);
+            else
+                if (bits & 2)
+                    if (bits & 1) // bits = 0b011
+                        return bit_util::popcnt100(~word);
+                    else          // bits = 0b010
+                        return bit_util::popcnt101(~word);
+                else
+                    if (bits & 1) // bits = 0b001
+                        return bit_util::popcnt110(~word);
+                    else          // bits = 0b000
+                        return bit_util::popcnt111(~word);
+        }
+    }
+    
+    constexpr uint8_t popcnt_(uint8_t bits, id_type word, size_t width) const {
+        if constexpr (kBitsUnitSize == 1) {
+            if (bits == 0)
+                return bit_util::popcnt(~word & bit_util::WidthMask(width));
+            else
+                return bit_util::popcnt(word & bit_util::WidthMask(width));
+        } else if (kBitsUnitSize == 2) {
+            if (bits == 0b00)
+                return bit_util::popcnt11(~word & bit_util::WidthMask(width));
+            if (bits == 0b01)
+                return bit_util::popcnt10(~word & bit_util::WidthMask(width));
+            if (bits == 0b10)
+                return bit_util::popcnt10(word & bit_util::WidthMask(width));
+            else // bits == 0b11
+                return bit_util::popcnt11(word & bit_util::WidthMask(width));
+        } else if (kBitsUnitSize == 3) {
+            if (bits & 4)
+                if (bits & 2)
+                    if (bits & 1)
+                        return bit_util::popcnt111(word & bit_util::WidthMask(width));
+                    else
+                        return bit_util::popcnt110(word & bit_util::WidthMask(width));
+                else
+                    if (bits & 1)
+                        return bit_util::popcnt101(word & bit_util::WidthMask(width));
+                    else
+                        return bit_util::popcnt100(word & bit_util::WidthMask(width));
+            else
+                if (bits & 2)
+                    if (bits & 1) // bits = 0b011
+                        return bit_util::popcnt100(~word & bit_util::WidthMask(width));
+                    else          // bits = 0b010
+                        return bit_util::popcnt101(~word & bit_util::WidthMask(width));
+                else
+                    if (bits & 1) // bits = 0b001
+                        return bit_util::popcnt110(~word & bit_util::WidthMask(width));
+                    else          // bits = 0b000
+                        return bit_util::popcnt111(~word & bit_util::WidthMask(width));
+        }
     }
     
 public:
@@ -108,8 +187,14 @@ template <unsigned int S>
 inline constexpr unsigned long long MultiBitVector<S>::rank(size_t index) const {
     auto type = (*this)[index];
     assert(type > 0);
-    const auto &tip = rank_tips_[type - 1][block_(index)];
-    return tip.L1 + tip.L2[abs_(index) % kBlocksInTipSize] + popcnt_(type, bits_[abs_(index)] & bit_util::WidthMask(rel_(index)));
+    const auto& tip = rank_tips_[type - 1][block_(index)];
+    auto abs = abs_(index);
+    auto rel = rel_(index);
+    if (rel == 0) {
+        return tip.L1 + tip.L2[abs % kBlocksInTipSize];
+    } else {
+        return tip.L1 + tip.L2[abs % kBlocksInTipSize] + popcnt_(type, bits_[abs] & bit_util::WidthMask(rel));
+    }
 }
 
 template <unsigned int S>
