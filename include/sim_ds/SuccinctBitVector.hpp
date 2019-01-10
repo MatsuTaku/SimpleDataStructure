@@ -36,7 +36,7 @@ public:
         size_t basic_block_size = bits.size() / 512 + 1;
         basic_block_.resize(basic_block_size * 2);
         
-        const uint64_t* data = bits.data();
+        const auto* data = bits.data();
         size_t sum = bit_util::popcnt(*data);
         uint64_t sum_word = 0;
         basic_block_[0] = basic_block_[1] = 0;

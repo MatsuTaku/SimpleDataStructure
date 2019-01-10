@@ -75,7 +75,7 @@ private:
 class BitVector {
 public:
     using Self = BitVector;
-    using storage_type = uint64_t;
+    using storage_type = id_type;
     using storage_pointer = storage_type*;
     using const_storage_pointer = const storage_type*;
     
