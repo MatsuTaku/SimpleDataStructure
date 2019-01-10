@@ -105,29 +105,29 @@ public:
             operator[](i) = bits[i];
     }
     
-    constexpr Reference operator[](size_t index) {
+    Reference operator[](size_t index) {
         assert(index < size());
         return Reference(&base_[index/kBitsPerWord], bit_util::OffsetMask(index%kBitsPerWord));
     }
     
-    constexpr ConstReference operator[](size_t index) const {
+    ConstReference operator[](size_t index) const {
         assert(index < size());
         return ConstReference(&(base_[index/kBitsPerWord]), bit_util::OffsetMask(index%kBitsPerWord));
     }
     
-    constexpr Reference front() {
+    Reference front() {
         return operator[](0);
     }
     
-    constexpr ConstReference front() const {
+    ConstReference front() const {
         return operator[](0);
     }
     
-    constexpr Reference back() {
+    Reference back() {
         return operator[](size() - 1);
     }
     
-    constexpr ConstReference back() const {
+    ConstReference back() const {
         return operator[](size() - 1);
     }
     

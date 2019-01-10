@@ -167,12 +167,12 @@ public:
     
     // MARK: Operator
     
-    constexpr Reference operator[](size_t index) {
+    Reference operator[](size_t index) {
         assert(index < size());
         return Reference(&vector_[abs_(index)], rel_(index), bits_per_element_);
     }
     
-    constexpr ConstReference operator[](size_t index) const {
+    ConstReference operator[](size_t index) const {
         assert(index < size());
         return ConstReference(&vector_[abs_(index)], rel_(index), bits_per_element_);
     }
