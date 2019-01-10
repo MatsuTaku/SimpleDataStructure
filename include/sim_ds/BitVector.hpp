@@ -30,12 +30,16 @@ public:
         return static_cast<bool>(*pointer_ & mask_);
     }
     
-    constexpr BitReference& operator=(bool x) {
+    BitReference& operator=(bool x) {
         if (x)
             *pointer_ |= mask_;
         else
             *pointer_ &= ~mask_;
         return *this;
+    }
+    
+    BitReference& operator=(const BitReference& rhs) {
+        return operator=(static_cast<bool>(rhs));
     }
     
 private:
