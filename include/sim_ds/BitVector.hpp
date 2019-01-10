@@ -71,11 +71,11 @@ private:
 class BitVector {
 public:
     using Self = BitVector;
-    using storage_type = id_type;
+    using storage_type = uint64_t;
     using storage_pointer = storage_type*;
     using const_storage_pointer = const storage_type*;
     
-    static constexpr uint8_t kBitsPerWord = sizeof(id_type) * 8; // 64
+    static constexpr uint8_t kBitsPerWord = 64;
     
     friend class BitReference<BitVector>;
     friend class BitConstReference<BitVector>;
