@@ -19,7 +19,6 @@ TEST(BitVectorTest, Convert) {
     BitVector bv(bits);
     for (auto i = 0; i < bits.size(); i++)
         EXPECT_EQ(bits[i], bv[i]);
-    std::bitset<3>;
     
 }
 

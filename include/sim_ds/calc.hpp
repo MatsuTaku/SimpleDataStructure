@@ -82,11 +82,8 @@ inline std::vector<size_t> cummulative_frequency_list(const Container& list, boo
     return cf;
 }
 
-inline size_t additional_size_of_rank(const double l) {
-    using std::ceil, std::log2;
-    auto a = ceil(l / 8) * 8;
-    auto b = (4 * 8 + ceil(log2(l))) * ceil(l / 256) ;
-    return a + b;
+inline size_t additional_size_of_rank(double n) {
+    return (((n-1)/64+1) + ((n/512+1) * 2)) * 8; // about 1.25*n/8 = (5/32)n bytes
 }
 
 template <class Container>

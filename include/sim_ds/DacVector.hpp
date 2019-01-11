@@ -37,11 +37,11 @@ private:
 public:
     DacVector() = default;
     
-    template<class Seq>
-    DacVector(const Seq& vector) : DacVector(vector, calc::split_positions_optimized_for_dac(vector)) {}
+    template<class Vector>
+    DacVector(const Vector& vector) : DacVector(vector, calc::split_positions_optimized_for_dac(vector)) {}
     
-    template<class T, class UInt>
-    DacVector(const std::vector<T>& vector, std::vector<UInt> unit_bit_list_) {
+    template<class Vector, class Unit>
+    DacVector(const Vector& vector, std::vector<Unit> unit_bit_list_) {
         // Empty vector input return with no works.
         if (vector.empty())
             return;
@@ -107,7 +107,8 @@ public:
         id_type value = layers_[0][index];
         for (size_t depth = 1, shift_bits = layers_unit_bits_[depth - 1], i = index;
              depth < num_layers();
-             depth++, shift_bits += layers_unit_bits_[depth - 1]) {
+             depth++, shift_bits += layers_unit_bits_[depth - 1])
+        {
             auto& path = paths_[depth - 1];
             if (!path[i])
                 break;
