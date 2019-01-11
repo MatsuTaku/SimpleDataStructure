@@ -67,10 +67,8 @@ public:
     FitVector(const Vector& vector) : FitVector(minimal_word_size(vector)) {
         if (vector.empty())
             return;
-        resize(vector.size());
-        for (auto i = 0; i < vector.size(); i++) {
-            operator[](i) = vector[i];
-        }
+        for (auto x : vector)
+            push_back(static_cast<value_type>(x));
     }
     
     // Used at constructor

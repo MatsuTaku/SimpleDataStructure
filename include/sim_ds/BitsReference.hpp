@@ -197,7 +197,7 @@ public:
     
     friend BitsIterator& operator+(long long difference, const BitsIterator& x) {return x + difference;}
     
-    friend long long operator-(const BitsIterator& x, const BitsIterator& y) {return static_cast<long long>(y.seg_ - x.seg_) * kBitsPerWord + static_cast<long long>(y.offset_ - x.offset_);}
+    friend long long operator-(const BitsIterator& x, const BitsIterator& y) {return static_cast<long long>(x.seg_ - y.seg_) * kBitsPerWord + static_cast<long long>(x.offset_ - y.offset_);}
     
     value_type operator[](long long pos) const {return *(*this + pos);}
     

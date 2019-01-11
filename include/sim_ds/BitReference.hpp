@@ -169,7 +169,7 @@ public:
     
     friend BitIterator operator+(size_t difference, const BitIterator& x) {return x + difference;}
     
-    friend long long operator-(const BitIterator& x, const BitIterator& y) {return (y.pointer_ - x.pointer_) * kBitsPerWord + static_cast<long long>(y.ctz_ - x.ctz_);}
+    friend long long operator-(const BitIterator& x, const BitIterator& y) {return (x.pointer_ - y.pointer_) * kBitsPerWord + static_cast<long long>(x.ctz_ - y.ctz_);}
     
     Reference operator[](long long difference) const {return *(*this + difference);}
     

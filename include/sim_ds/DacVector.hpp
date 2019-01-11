@@ -15,12 +15,99 @@
 #include "calc.hpp"
 
 namespace sim_ds {
+    
+    
+template <class Sequence>
+class IndexConstIterator {
+public:
+    using value_type = typename Sequence::value_type;
+    
+private:
+    const Sequence& source_;
+    size_t pos_;
+    
+public:
+    value_type operator*() const {
+        return source_[pos_];
+    }
+    
+    IndexConstIterator& operator++() {
+        ++pos_;
+        return *this;
+    }
+    
+    IndexConstIterator operator++(int) {
+        IndexConstIterator itr = *this;
+        ++(*this);
+        return itr;
+    }
+    
+    IndexConstIterator& operator--() {
+        --pos_;
+        return *this;
+    }
+    
+    IndexConstIterator operator--(int) {
+        IndexConstIterator itr = *this;
+        --(*this);
+        return itr;
+    }
+    
+    IndexConstIterator& operator+=(long long distance) {
+        pos_ += distance;
+        return *this;
+    }
+    
+    IndexConstIterator& operator-=(long long distance) {
+        return *this += -distance;
+    }
+    
+    IndexConstIterator operator+(long long distance) const {
+        IndexConstIterator itr = *this;
+        itr += distance;
+        return itr;
+    }
+    
+    IndexConstIterator operator-(long long distance) const {
+        IndexConstIterator itr = *this;
+        itr -= distance;
+        return itr;
+    }
+    
+    friend IndexConstIterator operator+(long long distance, const IndexConstIterator& x) {return x + distance;}
+    
+    friend long long operator-(const IndexConstIterator& x, const IndexConstIterator& y) {return x.pos_ - y.pos_;}
+    
+    value_type operator[](size_t pos) const {return *(*this + pos);}
+    
+    friend bool operator==(const IndexConstIterator& x, const IndexConstIterator& y) {return x.pos_ == y.pos_;}
+    
+    friend bool operator!=(const IndexConstIterator& x, const IndexConstIterator& y) {return !(x == y);}
+    
+    friend bool operator<(const IndexConstIterator& x, const IndexConstIterator& y) {return x.pos_ < y.pos_;}
+    
+    friend bool operator>(const IndexConstIterator& x, const IndexConstIterator& y) {return y < x;}
+    
+    friend bool operator<=(const IndexConstIterator& x, const IndexConstIterator& y) {return !(x > y);}
+    
+    friend bool operator>=(const IndexConstIterator& x, const IndexConstIterator& y) {return !(x < y);}
+    
+private:
+    IndexConstIterator(const Sequence& source, size_t pos) : source_(source), pos_(pos) {}
+    
+    friend typename Sequence::Self;
+    
+};
 
 
 class DacVector {
 public:
-    using layer_v = FitVector;
-    using path_bv = SuccinctBitVector<false>;
+    using Self = DacVector;
+    using ConstIterator = IndexConstIterator<DacVector>;
+    using value_type = id_type;
+    
+    using Layer = FitVector;
+    using Path = SuccinctBitVector<false>;
     
     static constexpr size_t kMaxSplits = 8;
     
@@ -31,8 +118,8 @@ public:
 private:
     size_t num_layers_ = 0;
     size_t layers_unit_bits_[kMaxSplits] = {8, 8, 8, 8, 8, 8, 8, 8};
-    layer_v layers_[kMaxSplits];
-    path_bv paths_[kMaxSplits - 1];
+    Layer layers_[kMaxSplits];
+    Path paths_[kMaxSplits - 1];
     
 public:
     DacVector() = default;
@@ -65,8 +152,8 @@ public:
                 paths_src_[i].reserve(cf[t]);
         }
         
-        for (id_type v : vector) {
-            id_type x = v;
+        for (auto v : vector) {
+            value_type x = v;
             layers_[0].push_back(x & bit_util::WidthMask(layers_unit_bits_[0]));
             x >>= layers_unit_bits_[0];
             for (size_t depth = 1; depth < num_layers; depth++) {
@@ -81,7 +168,7 @@ public:
         }
         
         for (size_t i = 0; i < paths_src_.size(); i++) {
-            paths_[i] = path_bv(paths_src_[i]);
+            paths_[i] = Path(paths_src_[i]);
         }
     }
     
@@ -103,8 +190,8 @@ public:
         return num_layers_;
     }
     
-    id_type operator[](size_t index) const {
-        id_type value = layers_[0][index];
+    value_type operator[](size_t index) const {
+        value_type value = layers_[0][index];
         for (size_t depth = 1, shift_bits = layers_unit_bits_[depth - 1], i = index;
              depth < num_layers();
              depth++, shift_bits += layers_unit_bits_[depth - 1])
@@ -113,17 +200,25 @@ public:
             if (!path[i])
                 break;
             i = path.rank(i);
-            id_type unit = layers_[depth][i];
+            value_type unit = layers_[depth][i];
             value |= unit << shift_bits;
         }
         return value;
     }
     
-    id_type front() const {
+    ConstIterator begin() const {
+        return ConstIterator(*this, 0);
+    }
+    
+    ConstIterator end() const {
+        return ConstIterator(*this, size());
+    }
+    
+    value_type front() const {
         return operator[](0);
     }
     
-    id_type back() const {
+    value_type back() const {
         return operator[](size() - 1);
     }
     
