@@ -24,28 +24,24 @@ namespace sim_ds::bit_util {
 // MARK: - Mask
 
 using mask_type = id_type;
-constexpr size_t kMaxWidthMask = sizeof(mask_type) * 8;
+constexpr size_t kMaxWidthOfMask = sizeof(mask_type) * 8;
 constexpr mask_type kMaskFill = std::numeric_limits<mask_type>::max();
 
 inline constexpr mask_type WidthMask(size_t bits) {
-    assert(bits <= kMaxWidthMask);
-    if (bits == 0) {
-        return 0;
-    } else {
-        return kMaskFill >> (kMaxWidthMask - bits);
-    }
+    assert(bits <= kMaxWidthOfMask and bits != 0);
+    return kMaskFill >> (kMaxWidthOfMask - bits);
 }
 
 template <size_t Bits>
-inline constexpr mask_type width_mask = WidthMask(Bits);
+inline constexpr mask_type width_mask = kMaskFill >> (kMaxWidthOfMask - Bits);
 
 inline constexpr mask_type OffsetMask(size_t offset) {
-    assert(offset < kMaxWidthMask);
+    assert(offset < kMaxWidthOfMask);
     return mask_type(1) << offset;
 }
 
 template <size_t Offset>
-inline constexpr mask_type offset_mask = OffsetMask(Offset);
+inline constexpr mask_type offset_mask = mask_type(1) << Offset;
 
 // MARK: - popcnt
 
@@ -119,7 +115,7 @@ inline Word cnt(Word x, size_t width) {
 inline uint64_t popcnt11(uint64_t x) {
     x = (x&(x>>1)) & 0x5555555555555555ull;
 #ifdef __POPCNT__
-    return popcnt64(x);
+    return _mm_popcnt_u64(x);
 #else
     x = (x & 0x3333333333333333ull) + ((x >> 2) & 0x3333333333333333ull);
     x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0Full;
@@ -130,7 +126,7 @@ inline uint64_t popcnt11(uint64_t x) {
 inline uint64_t popcnt10(uint64_t x) {
     x = (~x&(x>>1)) & 0x5555555555555555ull;
 #ifdef __POPCNT__
-    return popcnt64(x);
+    return _mm_popcnt_u64(x);
 #else
     x = (x & 0x3333333333333333ull) + ((x >> 2) & 0x3333333333333333ull);
     x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0Full;
@@ -141,7 +137,7 @@ inline uint64_t popcnt10(uint64_t x) {
 inline uint64_t popcnt111(uint64_t x) {
     x = (x&(x>>1)&(x>>2)) & 0x1249249249249249ull;
 #ifdef __POPCNT__
-    return popcnt64(x);
+    return _mm_popcnt_u64(x);
 #else
     x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
     return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
@@ -151,7 +147,7 @@ inline uint64_t popcnt111(uint64_t x) {
 inline uint64_t popcnt110(uint64_t x) {
     x = (~x&(x>>1)&(x>>2)) & 0x1249249249249249ull;
 #ifdef __POPCNT__
-    return popcnt64(x);
+    return _mm_popcnt_u64(x);
 #else
     x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
     return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
@@ -161,7 +157,7 @@ inline uint64_t popcnt110(uint64_t x) {
 inline uint64_t popcnt101(uint64_t x) {
     x = (x&(~x>>1)&(x>>2)) & 0x1249249249249249ull;
 #ifdef __POPCNT__
-    return popcnt64(x);
+    return _mm_popcnt_u64(x);
 #else
     x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
     return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
@@ -171,7 +167,7 @@ inline uint64_t popcnt101(uint64_t x) {
 inline uint64_t popcnt100(uint64_t x) {
     x = (~x&(~x>>1)&(x>>2)) & 0x1249249249249249ull;
 #ifdef __POPCNT__
-    return popcnt64(x);
+    return _mm_popcnt_u64(x);
 #else
     x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
     return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
