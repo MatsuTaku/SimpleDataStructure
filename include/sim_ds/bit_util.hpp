@@ -9,146 +9,174 @@
 #define bit_tools_hpp
 
 #include "basic.hpp"
+#ifdef __BMI2__
+#include <immintrin.h>
+#endif
+#ifdef __SSE4_2__
+#include <smmintrin.h>
+#endif
+#ifdef __POPCNT__
 #include <popcntintrin.h>
-
-#define BITS_64 64
-#define BITS_32 32
-
-namespace sim_ds::bit_tools {
-    
-#ifdef USE_X86
-    constexpr size_t kBitsOfIdType = BITS_32;
-    constexpr id_type kMaskFill = 0xFFFFFFFF;
-#else
-    constexpr size_t kBitsOfIdType = BITS_64;
-    constexpr id_type kMaskFill = 0xFFFFFFFFFFFFFFFF;
 #endif
 
-inline constexpr id_type WidthMask(size_t bits) {
-    assert(bits <= kBitsOfIdType);
-    if (bits == 0) {
-        return 0;
-    } else {
-        return kMaskFill >> (kBitsOfIdType - bits);
-    }
+namespace sim_ds::bit_util {
+
+// MARK: - Mask
+
+using mask_type = id_type;
+constexpr size_t kMaxWidthOfMask = sizeof(mask_type) * 8;
+constexpr mask_type kMaskFill = std::numeric_limits<mask_type>::max();
+
+inline constexpr mask_type WidthMask(size_t bits) {
+    assert(bits <= kMaxWidthOfMask and bits != 0);
+    return kMaskFill >> (kMaxWidthOfMask - bits);
 }
 
 template <size_t Bits>
-inline constexpr id_type width_mask = WidthMask(Bits);
+inline constexpr mask_type width_mask = kMaskFill >> (kMaxWidthOfMask - Bits);
 
-inline constexpr id_type OffsetMask(size_t offset) {
-    assert(offset < kBitsOfIdType);
-#ifdef USE_X86
-    return 1UL << offset;
-#else
-    return 1ULL << offset;
-#endif
+inline constexpr mask_type OffsetMask(size_t offset) {
+    assert(offset < kMaxWidthOfMask);
+    return mask_type(1) << offset;
 }
 
 template <size_t Offset>
-inline constexpr id_type offset_mask = OffsetMask(Offset);
+inline constexpr mask_type offset_mask = mask_type(1) << Offset;
 
-template <uint8_t Pattern>
-inline constexpr uint32_t bits_pattern32 = 0x01010101 * Pattern;
+// MARK: - popcnt
 
-template <uint8_t Pattern>
-inline constexpr uint64_t bits_pattern64 = 0x0101010101010101 * Pattern;
-
-template <size_t TypeSize, unsigned int Type>
-inline constexpr uint64_t popcnt(uint64_t x) {
-    uint64_t c = 0;
-    if constexpr (TypeSize == 1) {
-        assert(Type < 0b10);
-        if constexpr (Type == 0b0)
-            c = (~x & bits_pattern64<0b01010101>) + ((~x >> 1) & bits_pattern64<0b01010101>);
-        else if constexpr (Type == 0b1)
-            c = (x & bits_pattern64<0b01010101>) + ((x >> 1) & bits_pattern64<0b01010101>);
-        c = (c & bits_pattern64<0b00110011>) + ((c >> 2) & bits_pattern64<0b00110011>); // 4:3
-        c = (c & bits_pattern64<0b00001111>) + ((c >> 4) & bits_pattern64<0b00001111>); // 8:4
-        c *= 0x0101010101010101;
-        return c >> 56;
-        
-    } else if constexpr (TypeSize == 2) {
-        assert(Type < 0b100);
-        if constexpr (Type == 0b00)
-            c = ((~x >> 1) & bits_pattern64<0b01010101>) + (~x & bits_pattern64<0b01010101>);
-        else if constexpr (Type == 0b01)
-            c = ((~x >> 1) & bits_pattern64<0b01010101>) + (x & bits_pattern64<0b01010101>);
-        else if constexpr (Type == 0b10)
-            c = ((x >> 1) & bits_pattern64<0b01010101>) + (~x & bits_pattern64<0b01010101>);
-        else if constexpr (Type == 0b11)
-            c = ((x >> 1) & bits_pattern64<0b01010101>) + (x & bits_pattern64<0b01010101>);
-        c = ((c >> 1) & bits_pattern64<0b00010001>) + ((c >> 3) & bits_pattern64<0b00010001>); // 4:2
-        c = (c & bits_pattern64<0b00001111>) + ((c >> 4) & bits_pattern64<0b00001111>); // 8:3
-        c *= 0x0101010101010101;
-        return c >> 56;
-        
-    } else if constexpr (TypeSize == 3) {
-        assert(Type < 0b1000);
-        if constexpr (Type == 0b000)
-            c = (~x & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + ((~x >> 2) & 0x9249249249249249);
-        else if constexpr (Type == 0b001)
-            c = ((~x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        else if constexpr (Type == 0b010)
-            c = ((~x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
-        else if constexpr (Type == 0b011)
-            c = ((~x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        else if constexpr (Type == 0b100)
-            c = ((x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
-        else if constexpr (Type == 0b101)
-            c = ((x >> 2) & 0x9249249249249249) + ((~x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        else if constexpr (Type == 0b110)
-            c = ((x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (~x & 0x9249249249249249);
-        else if constexpr (Type == 0b111)
-            c = ((x >> 2) & 0x9249249249249249) + ((x >> 1) & 0x9249249249249249) + (x & 0x9249249249249249);
-        c = ((c & 0x9249249249249249) + ((c >> 1) & 0x9249249249249249)) >> 1;
-        c = (c & 0x1041041041041041) + ((c >> 3) & 0x1041041041041041); // 6:2
-        c = (c * 0x0041041041041041 >> 54) + (c >> 60);
-        return c & 0x3F;
-        
-    } else {
-        abort();
-    }
-}
-
-const std::function<uint64_t (uint64_t value)> kPopcntTable[3][8] = {
-    {
-        popcnt<1, 0b0>,
-        popcnt<1, 0b1>
-    },
-    {
-        popcnt<2, 0b00>,
-        popcnt<2, 0b01>,
-        popcnt<2, 0b10>,
-        popcnt<2, 0b11>
-    },
-    {
-        popcnt<3, 0b000>,
-        popcnt<3, 0b001>,
-        popcnt<3, 0b010>,
-        popcnt<3, 0b011>,
-        popcnt<3, 0b100>,
-        popcnt<3, 0b101>,
-        popcnt<3, 0b110>,
-        popcnt<3, 0b111>
-    }
+constexpr uint8_t kLtCnt[256] = {
+    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
 };
 
-template <unsigned int TYPE_SIZE>
-inline constexpr uint64_t popcnt(size_t type, uint64_t x) {
-    return kPopcntTable[TYPE_SIZE - 1][type](x);
+inline constexpr uint8_t popcnt8(uint8_t x) {
+    return kLtCnt[x];
 }
 
-inline uint64_t popcnt(uint64_t x) {
-#ifdef USE_POPCNT
-    return _popcnt64(x);
+inline constexpr uint16_t popcnt16(uint16_t x) {
+    return kLtCnt[(x>>8)&0xFF] + kLtCnt[x&0xFF];
+}
+
+inline uint32_t popcnt32(uint32_t x) {
+#ifdef __POPCNT__
+    return _mm_popcnt_u32(x);
 #else
-    return popcnt<1, 1>(x);
+    x = x-((x>>1) & 0x55555555ull);
+    x = (x & 0x33333333ull) + ((x>>2) & 0x33333333ull);
+    return (0x10101010*x >>28)+(0x01010101*x >>28);
 #endif
 }
 
-// inspired by marisa-trie
-constexpr uint8_t kSelectTable[9][256] = {
+inline uint64_t popcnt64(uint64_t x) {
+#ifdef __POPCNT__
+    return _mm_popcnt_u64(x);
+#else
+    x = x-((x>>1) & 0x5555555555555555ull);
+    x = (x & 0x3333333333333333ull) + ((x >> 2) & 0x3333333333333333ull);
+    x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0Full;
+    return (0x0101010101010101ull*x >> 56);
+#endif
+}
+
+template <typename Word>
+inline Word popcnt(Word x) {
+    if constexpr (sizeof(Word) == 1)
+        return popcnt8(x);
+    else if constexpr (sizeof(Word) == 2)
+        return popcnt16(x);
+    else if constexpr (sizeof(Word) == 4)
+        return popcnt32(x);
+    else if constexpr (sizeof(Word) == 8)
+        return popcnt64(x);
+    else
+        return 0;
+}
+
+template <typename Word>
+inline Word cnt(Word x, size_t width) {
+    return popcnt(x & WidthMask(width));
+}
+
+inline uint64_t popcnt11(uint64_t x) {
+    x = (x&(x>>1)) & 0x5555555555555555ull;
+#ifdef __POPCNT__
+    return _mm_popcnt_u64(x);
+#else
+    x = (x & 0x3333333333333333ull) + ((x >> 2) & 0x3333333333333333ull);
+    x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0Full;
+    return (0x0101010101010101ull*x >> 56);
+#endif
+}
+
+inline uint64_t popcnt10(uint64_t x) {
+    x = (~x&(x>>1)) & 0x5555555555555555ull;
+#ifdef __POPCNT__
+    return _mm_popcnt_u64(x);
+#else
+    x = (x & 0x3333333333333333ull) + ((x >> 2) & 0x3333333333333333ull);
+    x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0Full;
+    return (0x0101010101010101ull*x >> 56);
+#endif
+}
+
+inline uint64_t popcnt111(uint64_t x) {
+    x = (x&(x>>1)&(x>>2)) & 0x1249249249249249ull;
+#ifdef __POPCNT__
+    return _mm_popcnt_u64(x);
+#else
+    x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
+    return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
+#endif
+}
+
+inline uint64_t popcnt110(uint64_t x) {
+    x = (~x&(x>>1)&(x>>2)) & 0x1249249249249249ull;
+#ifdef __POPCNT__
+    return _mm_popcnt_u64(x);
+#else
+    x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
+    return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
+#endif
+}
+
+inline uint64_t popcnt101(uint64_t x) {
+    x = (x&(~x>>1)&(x>>2)) & 0x1249249249249249ull;
+#ifdef __POPCNT__
+    return _mm_popcnt_u64(x);
+#else
+    x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
+    return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
+#endif
+}
+
+inline uint64_t popcnt100(uint64_t x) {
+    x = (~x&(~x>>1)&(x>>2)) & 0x1249249249249249ull;
+#ifdef __POPCNT__
+    return _mm_popcnt_u64(x);
+#else
+    x = (x + (x>>3)) & 0x30C30C30C30C30C3ull;
+    return (((0x0041041041041041ull*x) >> 54) & 0x3F) + (x >> 60);
+#endif
+}
+
+// MARK: - select
+
+constexpr uint8_t kLtSel[9][256] = {
     {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -313,11 +341,36 @@ constexpr uint8_t kSelectTable[9][256] = {
     }
 };
 
-// Use for select
-inline constexpr uint8_t SelectTable(size_t word, size_t offset) {
-    return kSelectTable[offset][word];
-}
+/* Select operation for 1 index at byte */
+inline uint8_t sel(uint64_t x, size_t i) {
+#ifdef __BMI2__
+    return __builtin_ctzll(_pdep_u64(1ull << (i-1), x)) + 1; // for 1 index
+//#elif define(__SSE4_2__)
+#else
+    size_t ret = 0;
+    auto bit_cnt = bit_util::popcnt32(x);
+    if (bit_cnt < i) {
+        x >>= 32;
+        ret += 32;
+        i -= bit_cnt;
+    }
+    bit_cnt = bit_util::popcnt16(x);
+    if (bit_cnt < i) {
+        x >>= 16;
+        ret += 16;
+        i -= bit_cnt;
+    }
+    bit_cnt = bit_util::popcnt8(x);
+    if (bit_cnt < i) {
+        x >>= 8;
+        ret += 8;
+        i -= bit_cnt;
+    }
     
+    return ret + kLtSel[i][x & 0xFF];
+#endif
+}
+
     
 } // namespace sim_ds
 

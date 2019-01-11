@@ -29,11 +29,7 @@
 
 namespace sim_ds {
 
-#ifdef USE_X86
-using id_type = uint32_t;
-#else
-using id_type = uint64_t;
-#endif
+using id_type = size_t;
 
 class Stopwatch {
     using hrc = std::chrono::high_resolution_clock;

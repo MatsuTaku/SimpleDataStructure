@@ -7,6 +7,7 @@
 
 #include "gtest/gtest.h"
 #include "sim_ds/BitVector.hpp"
+#include "sim_ds/SuccinctBitVector.hpp"
 
 using namespace sim_ds;
 
@@ -15,13 +16,13 @@ TEST(BitVectorTest, Convert) {
     for (auto i = 0; i < bits.size(); i++)
         bits[i] = rand() % 2;
     
-    BitVector bv(bits, false);
+    BitVector bv(bits);
     for (auto i = 0; i < bits.size(); i++)
         EXPECT_EQ(bits[i], bv[i]);
     
 }
 
-TEST(BitVectorTest, Rank) {
+TEST(SuccinctBitVectorTest, Rank) {
     const auto size = 0xFFFFFF;
     std::vector<bool> bits(size);
     std::vector<size_t> ranks(size);
@@ -34,25 +35,27 @@ TEST(BitVectorTest, Rank) {
         }
     }
     
-    BitVector bv(bits, true);
+    BitVector bv(bits);
+    SuccinctBitVector<false> sbv(bv);
     for (auto i = 0; i < bits.size(); i++)
-        EXPECT_EQ(bv.rank(i), ranks[i]);
+        EXPECT_EQ(sbv.rank(i), ranks[i]);
     
 }
 
-TEST(BitVectorTest, Select) {
+TEST(SuccinctBitVectorTest, Select) {
     const auto size = 0xFFFFFF;
     std::vector<bool> bits(size);
     std::vector<size_t> selects;
     for (auto i = 0; i < bits.size();) {
         bits[i] = true;
         selects.push_back(i);
-        size_t randLen = rand() % 4 + 1;
-        i += randLen;
+        size_t rand_len = rand() % 4 + 1;
+        i += rand_len;
     }
     
-    BitVector bv(bits, true, true);
+    BitVector bv(bits);
+    SuccinctBitVector<true> sbv(bv);
     for (auto i = 0; i < selects.size(); i++)
-        EXPECT_EQ(bv.select(i), selects[i]);
+        EXPECT_EQ(sbv.select(i), selects[i]);
     
 }
