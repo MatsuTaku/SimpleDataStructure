@@ -15,12 +15,13 @@
 
 namespace sim_ds {
 
-class MinHeap {
+template <bool Ascending = true>
+class Heap {
 public:
-    MinHeap() = default;
+    Heap() = default;
     
     template <typename T>
-    explicit MinHeap(const std::vector<T> array) {
+    explicit Heap(const std::vector<T> array) {
         base_.reserve(array.size());
         for (auto v : array) {
             base_.push_back(v);
@@ -29,7 +30,7 @@ public:
     }
     
     template <class Iterator>
-    explicit MinHeap(Iterator begin, Iterator end) {
+    explicit Heap(Iterator begin, Iterator end) {
         base_.reserve(end - begin);
         while (begin < end) {
             base_.push_back(*begin);
@@ -38,38 +39,38 @@ public:
         Build();
     }
     
-    void MinHeapify(size_t id) {
+    void Heapify(size_t id) {
         if (is_leaf(id))
             return;
         auto l = left(id);
         auto min_i = l;
         auto r = right(id);
         if (r <= size()) {
-            if (value(l) > value(r)) {
+            if (!Compare(value(l), value(r))) {
                 min_i = r;
             }
         }
-        if (value(id) > value(min_i)) {
+        if (!Compare(value(id), value(min_i))) {
             std::swap(base_[id - 1], base_[min_i - 1]);
-            MinHeapify(min_i);
+            Heapify(min_i);
         }
     }
     
     void Build() {
         for (size_t i = size() / 2; i > 0; i--) {
-            MinHeapify(i);
+            Heapify(i);
         }
     }
     
     void push(id_type value) {
         base_.insert(base_.begin(), value);
-        MinHeapify(root());
+        Heapify(root());
     }
     
     void pop() {
         std::swap(base_.front(), base_.back());
         base_.resize(base_.size() - 1);
-        MinHeapify(root());
+        Heapify(root());
     }
     
     id_type value(size_t id) const {
@@ -113,7 +114,14 @@ public:
 private:
     std::vector<id_type> base_;
     
+    bool Compare(id_type l, id_type r) {
+        return Ascending ? l < r : l > r;
+    };
+    
 };
+
+using MinHeap = Heap<true>;
+using MaxHeap = Heap<false>;
 
 }
 
