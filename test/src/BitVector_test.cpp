@@ -59,3 +59,21 @@ TEST(SuccinctBitVectorTest, Select) {
         EXPECT_EQ(sbv.select(i), selects[i]);
     
 }
+
+TEST(SuccinctBitVectorTest, SelectMinimal) {
+    const auto size = 64;
+    std::vector<bool> bits(size);
+    std::vector<size_t> selects;
+    for (auto i = 0; i < bits.size();) {
+        bits[i] = true;
+        selects.push_back(i);
+        size_t rand_len = rand() % 4 + 1;
+        i += rand_len;
+    }
+    
+    BitVector bv(bits);
+    SuccinctBitVector<true> sbv(bv);
+    for (auto i = 0; i < selects.size(); i++)
+        EXPECT_EQ(sbv.select(i), selects[i]);
+    
+}

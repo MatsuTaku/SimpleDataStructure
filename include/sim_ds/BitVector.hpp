@@ -34,6 +34,7 @@ public:
     using ConstIterator = BitIterator<BitVector, true>;
     
     using value_type = bool;
+    using difference_type = long long;
     using pointer = Iterator;
     
 private:
@@ -61,6 +62,20 @@ public:
     Reference operator[](size_t index) {return make_ref(index);}
     
     ConstReference operator[](size_t index) const {return make_ref(index);}
+    
+    Reference at(size_t index) {
+        if (index >= size())
+            throw std::out_of_range("Index out of range");
+        
+        return operator[](index);
+    }
+    
+    ConstReference at(size_t index) const {
+        if (index >= size())
+            throw std::out_of_range("Index out of range");
+        
+        return operator[](index);
+    }
     
     Iterator begin() {return make_iter(0);}
     
@@ -113,9 +128,7 @@ public:
     
     bool empty() const {return size() == 0;}
     
-    const storage_type* data() const {
-        return base_.data();
-    }
+    const storage_type* data() const {return base_.data();}
     
     size_t size_in_bytes() const {
         auto size = sizeof(size_t);

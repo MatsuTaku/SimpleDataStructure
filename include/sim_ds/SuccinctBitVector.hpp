@@ -72,38 +72,31 @@ public:
                     sum_shreshold += 512;
                 }
             }
-            if (select_tips_.back() != basic_block_size - 1)
-                select_tips_.push_back(basic_block_size - 1);
+            select_tips_.push_back(basic_block_size - 1);
         }
     }
     
     template <class BitSequence>
-    explicit SuccinctBitVector(const BitSequence& bits) : SuccinctBitVector(BitVector(bits)) {}
+    SuccinctBitVector(const BitSequence& bits) : SuccinctBitVector(BitVector(bits)) {}
     
+    bool operator[](size_t index) const {return bits_[index];}
     
-    constexpr bool operator[](size_t index) const {
-        return bits_[index];
-    }
+    size_t rank(size_t index) const {return rank_1(index);}
     
-    constexpr size_t rank(size_t index) const {
-        return rank_1(index);
-    }
+    size_t rank_0(size_t index) const {return index - rank_1(index);}
     
-    constexpr size_t rank_0(size_t index) const {
-        return index - rank_1(index);
-    }
-    
-    constexpr size_t rank_1(const size_t index) const {
+    size_t rank_1(const size_t index) const {
         size_t block_index = index / 512 * 2;
         size_t before_sum = basic_block_[block_index] + ((basic_block_[block_index+1] >> (63-9*((index/64)%8))) & bit_util::width_mask<9>);
-        if (index%64 == 0) {
+        size_t word_len = index % 64;
+        if (word_len == 0) {
             return before_sum;
         } else {
-            return before_sum + bit_util::cnt(bits_.data()[index/64], index%64);
+            return before_sum + bit_util::cnt(bits_.data()[index/64], word_len);
         }
     }
     
-    constexpr size_t select(size_t index) const {
+    size_t select(size_t index) const {
         id_type left = 0, right = num_blocks();
         size_t i = index;
         

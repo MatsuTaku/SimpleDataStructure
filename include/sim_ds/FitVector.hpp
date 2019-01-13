@@ -34,6 +34,7 @@ public:
     using ConstIterator = BitsIterator<FitVector, true>;
     
     using value_type = id_type;
+    using difference_type = long long;
     using pointer = Iterator;
     
     static constexpr size_t kBitsPerWord = 8 * sizeof(id_type); // 64
@@ -48,13 +49,13 @@ private:
     std::vector<storage_type> vector_;
     
 public:
-    explicit FitVector(size_t unit_width = kBitsPerWord) : bits_per_element_(unit_width), mask_(bit_util::WidthMask(unit_width)), size_(0), vector_(0) {}
+    explicit FitVector(size_t unit_len = kBitsPerWord) : bits_per_element_(unit_len), mask_(bit_util::WidthMask(unit_len)), size_(0), vector_(0) {}
     
-    explicit FitVector(size_t unit_width, size_t size) : FitVector(unit_width) {
+    explicit FitVector(size_t unit_len, size_t size) : FitVector(unit_len) {
         resize(size);
     }
     
-    explicit FitVector(size_t unit_width, size_t size, size_t value) : FitVector(unit_width) {
+    explicit FitVector(size_t unit_len, size_t size, size_t value) : FitVector(unit_len) {
         assign(size, value);
     }
     
@@ -85,6 +86,20 @@ public:
     
     ConstReference operator[](size_t index) const {return make_ref(index);}
     
+    Reference at(size_t index) {
+        if (index >= size())
+            throw std::out_of_range("Index out of range");
+        
+        return operator[](index);
+    }
+    
+    ConstReference at(size_t index) const {
+        if (index >= size())
+            throw std::out_of_range("Index out of range");
+        
+        return operator[](index);
+    }
+    
     Iterator begin() {return make_iter(0);}
     
     ConstIterator begin() const {return make_iter(0);}
@@ -101,7 +116,9 @@ public:
     
     ConstReference back() const {return operator[](size() - 1);}
     
-    // MARK: setter
+    size_t size() const {return size_;}
+    
+    bool empty() const {return size() == 0;}
     
     void resize(size_t size) {
         vector_.resize(size == 0 ? 0 : ((size * bits_per_element_ - 1) / kBitsPerWord) + 1);
@@ -130,12 +147,6 @@ public:
         back() = value;
     }
     
-    // MARK: Getter
-    
-    size_t size() const {return size_;}
-    
-    bool empty() const {return size() == 0;}
-    
     // MARK: method
     
     size_t size_in_bytes() const {
@@ -151,13 +162,9 @@ public:
     }
     
 private:
-    size_t abs_(size_t index) const {
-        return index * bits_per_element_ / kBitsPerWord;
-    }
+    size_t abs_(size_t index) const {return index * bits_per_element_ / kBitsPerWord;}
     
-    size_t rel_(size_t index) const {
-        return index * bits_per_element_ % kBitsPerWord;
-    }
+    size_t rel_(size_t index) const {return index * bits_per_element_ % kBitsPerWord;}
     
     Reference make_ref(size_t pos) {
         assert(pos < size());
@@ -170,11 +177,11 @@ private:
     }
     
     Iterator make_iter(size_t pos) {
-        return Iterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
+        return Iterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
     }
     
     ConstIterator make_iter(size_t pos) const {
-        return ConstIterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
+        return ConstIterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
     }
     
 };

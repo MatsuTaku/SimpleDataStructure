@@ -13,6 +13,7 @@
 #include "SuccinctBitVector.hpp"
 #include "FitVector.hpp"
 #include "calc.hpp"
+#include <stdexcept>
 
 namespace sim_ds {
     
@@ -21,6 +22,7 @@ template <class Sequence>
 class IndexConstIterator {
 public:
     using value_type = typename Sequence::value_type;
+    using differencce_type = typename Sequence::difference_type;
     
 private:
     const Sequence& source_;
@@ -53,22 +55,22 @@ public:
         return itr;
     }
     
-    IndexConstIterator& operator+=(long long distance) {
+    IndexConstIterator& operator+=(differencce_type distance) {
         pos_ += distance;
         return *this;
     }
     
-    IndexConstIterator& operator-=(long long distance) {
+    IndexConstIterator& operator-=(differencce_type distance) {
         return *this += -distance;
     }
     
-    IndexConstIterator operator+(long long distance) const {
+    IndexConstIterator operator+(differencce_type distance) const {
         IndexConstIterator itr = *this;
         itr += distance;
         return itr;
     }
     
-    IndexConstIterator operator-(long long distance) const {
+    IndexConstIterator operator-(differencce_type distance) const {
         IndexConstIterator itr = *this;
         itr -= distance;
         return itr;
@@ -76,7 +78,7 @@ public:
     
     friend IndexConstIterator operator+(long long distance, const IndexConstIterator& x) {return x + distance;}
     
-    friend long long operator-(const IndexConstIterator& x, const IndexConstIterator& y) {return x.pos_ - y.pos_;}
+    friend differencce_type operator-(const IndexConstIterator& x, const IndexConstIterator& y) {return x.pos_ - y.pos_;}
     
     value_type operator[](size_t pos) const {return *(*this + pos);}
     
@@ -105,6 +107,7 @@ public:
     using Self = DacVector;
     using ConstIterator = IndexConstIterator<DacVector>;
     using value_type = id_type;
+    using difference_type = long long;
     
     using Layer = FitVector;
     using Path = SuccinctBitVector<false>;
@@ -204,6 +207,13 @@ public:
             value |= unit << shift_bits;
         }
         return value;
+    }
+    
+    value_type at(size_t index) const {
+        if (index >= size())
+            throw std::out_of_range("Index out of range");
+        
+        return operator[](index);
     }
     
     ConstIterator begin() const {
