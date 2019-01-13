@@ -21,7 +21,7 @@ public:
     Heap() = default;
     
     template <typename T>
-    explicit Heap(const std::vector<T> array) {
+    Heap(const std::vector<T> array) {
         base_.reserve(array.size());
         for (auto v : array) {
             base_.push_back(v);
