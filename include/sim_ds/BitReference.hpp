@@ -92,7 +92,7 @@ class BitIterator {
     using storage_type = typename BitSequence::storage_type;
     using storage_pointer = std::conditional_t<IsConst, typename BitSequence::const_storage_pointer, typename BitSequence::storage_pointer>;
     
-    using reference = std::conditional_t<IsConst, typename BitSequence::ConstReference, typename BitSequence::Reference>;
+    using reference = std::conditional_t<IsConst, typename BitSequence::const_reference, typename BitSequence::reference>;
     
     static constexpr size_t kBitsPerWord = BitSequence::kBitsPerWord;
     
