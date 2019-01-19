@@ -268,25 +268,35 @@ public:
     }
     
     void Read(std::istream& is) {
+        layers_unit_bits_.resize(0);
+        layers_.resize(0);
+        paths_.resize(0);
+        
         num_layers_ = read_val<size_t>(is);
+        
+        layers_unit_bits_.reserve(num_layers_);
         for (auto i = 0; i < num_layers_; i++)
-            layers_unit_bits_[i] = read_val<size_t>(is);
-        for (auto i = 0; i < num_layers_; i++) {
-            layers_.emplace_back(Layer(is));
-        }
-        for (auto i = 0; i < num_layers_ - 1; i++) {
-            paths_.emplace_back(RankSupportBV(is));
+            layers_unit_bits_.push_back(read_val<size_t>(is));
+        
+        layers_.reserve(num_layers_);
+        for (auto i = 0; i < num_layers_; i++)
+            layers_.push_back(Layer(is));
+        
+        if (num_layers_ > 1) {
+            paths_.reserve(num_layers_ - 1);
+            for (auto i = 0; i < num_layers_ - 1; i++)
+                paths_.push_back(RankSupportBV(is));
         }
     }
     
     void Write(std::ostream& os) const {
         write_val(num_layers(), os);
-        for (auto i = 0; i < num_layers(); i++)
-            write_val(layers_unit_bits_[i], os);
-        for (auto i = 0; i < num_layers(); i++)
-            layers_[i].Write(os);
-        for (auto i = 0; i < num_layers() - 1; i++)
-            paths_[i].Write(os);
+        for (auto& unit : layers_unit_bits_)
+            write_val(unit, os);
+        for (auto& layer : layers_)
+            layer.Write(os);
+        for (auto& path : paths_)
+            path.Write(os);
     }
     
     void ShowStatus(std::ostream& os) const {

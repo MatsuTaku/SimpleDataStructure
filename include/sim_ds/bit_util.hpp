@@ -28,7 +28,7 @@ template <size_t Bits>
 inline constexpr mask_type width_mask = (1ull << Bits) - 1;
 
 inline constexpr mask_type WidthMask(size_t width) {
-    assert(width <= kMaxWidthOfMask and width != 0);
+    assert(width <= kMaxWidthOfMask);
     return (1ull << width) - 1;
 }
 
