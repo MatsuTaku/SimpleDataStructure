@@ -116,7 +116,7 @@ class BitsIterator {
 public:
     using value_type = typename Sequence::value_type;
     using difference_type = typename Sequence::difference_type;
-    using Reference = std::conditional_t<IsConst, BitsConstReference<Sequence>, BitsReference<Sequence>>;
+    using reference = std::conditional_t<IsConst, BitsConstReference<Sequence>, BitsReference<Sequence>>;
     
     static constexpr size_t kBitsPerWord = Sequence::kBitsPerWord;
     
@@ -135,7 +135,7 @@ public:
     BitsIterator(const BitsIterator<Sequence, false>& x) : seg_(x.seg_), start_(x.offset_), bits_per_entity_(x.bits_per_entity_) {}
     
     value_type operator*() const {
-        return Reference(seg_, start_, bits_per_entity_, bit_util::WidthMask(bits_per_entity_));
+        return reference(seg_, start_, bits_per_entity_, bit_util::WidthMask(bits_per_entity_));
     }
     
     BitsIterator& operator++() {

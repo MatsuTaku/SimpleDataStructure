@@ -28,14 +28,14 @@ public:
     using storage_pointer = storage_type*;
     using const_storage_pointer = const storage_type*;
     
-    using Reference = BitsReference<FitVector>;
-    using ConstReference = BitsConstReference<FitVector>;
-    using Iterator = BitsIterator<FitVector, false>;
-    using ConstIterator = BitsIterator<FitVector, true>;
+    using reference = BitsReference<FitVector>;
+    using const_reference = BitsConstReference<FitVector>;
+    using iterator = BitsIterator<FitVector, false>;
+    using const_iterator = BitsIterator<FitVector, true>;
     
     using value_type = id_type;
     using difference_type = long long;
-    using pointer = Iterator;
+    using pointer = iterator;
     
     static constexpr size_t kBitsPerWord = 8 * sizeof(id_type); // 64
     
@@ -82,39 +82,39 @@ public:
         return calc::SizeFitsInBits(max_e);
     }
     
-    Reference operator[](size_t index) {return make_ref(index);}
+    reference operator[](size_t index) {return make_ref(index);}
     
-    ConstReference operator[](size_t index) const {return make_ref(index);}
+    const_reference operator[](size_t index) const {return make_ref(index);}
     
-    Reference at(size_t index) {
+    reference at(size_t index) {
         if (index >= size())
             throw std::out_of_range("Index out of range");
         
         return operator[](index);
     }
     
-    ConstReference at(size_t index) const {
+    const_reference at(size_t index) const {
         if (index >= size())
             throw std::out_of_range("Index out of range");
         
         return operator[](index);
     }
     
-    Iterator begin() {return make_iter(0);}
+    iterator begin() {return make_iter(0);}
     
-    ConstIterator begin() const {return make_iter(0);}
+    const_iterator begin() const {return make_iter(0);}
     
-    Iterator end() {return make_iter(size());}
+    iterator end() {return make_iter(size());}
     
-    ConstIterator end() const {return make_iter(size());}
+    const_iterator end() const {return make_iter(size());}
     
-    Reference front() {return operator[](0);}
+    reference front() {return operator[](0);}
     
-    ConstReference front() const {return operator[](0);}
+    const_reference front() const {return operator[](0);}
     
-    Reference back() {return operator[](size() - 1);}
+    reference back() {return operator[](size() - 1);}
     
-    ConstReference back() const {return operator[](size() - 1);}
+    const_reference back() const {return operator[](size() - 1);}
     
     size_t size() const {return size_;}
     
@@ -166,22 +166,22 @@ private:
     
     size_t rel_(size_t index) const {return index * bits_per_element_ % kBitsPerWord;}
     
-    Reference make_ref(size_t pos) {
+    reference make_ref(size_t pos) {
         assert(pos < size());
-        return Reference(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
+        return reference(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
     }
     
-    ConstReference make_ref(size_t pos) const {
+    const_reference make_ref(size_t pos) const {
         assert(pos < size());
-        return ConstReference(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
+        return const_reference(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
     }
     
-    Iterator make_iter(size_t pos) {
-        return Iterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
+    iterator make_iter(size_t pos) {
+        return iterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
     }
     
-    ConstIterator make_iter(size_t pos) const {
-        return ConstIterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
+    const_iterator make_iter(size_t pos) const {
+        return const_iterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
     }
     
 };

@@ -107,7 +107,7 @@ private:
 class DacVector {
 public:
     using Self = DacVector;
-    using ConstIterator = IndexConstIterator<DacVector>;
+    using const_iterator = IndexConstIterator<DacVector>;
     using value_type = id_type;
     using difference_type = long long;
     
@@ -225,12 +225,12 @@ public:
         return operator[](index);
     }
     
-    ConstIterator begin() const {
-        return ConstIterator(*this, 0);
+    const_iterator begin() const {
+        return const_iterator(*this, 0);
     }
     
-    ConstIterator end() const {
-        return ConstIterator(*this, size());
+    const_iterator end() const {
+        return const_iterator(*this, size());
     }
     
     value_type front() const {

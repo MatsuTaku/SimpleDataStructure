@@ -92,7 +92,7 @@ class BitIterator {
     using storage_type = typename BitSequence::storage_type;
     using storage_pointer = std::conditional_t<IsConst, typename BitSequence::const_storage_pointer, typename BitSequence::storage_pointer>;
     
-    using Reference = std::conditional_t<IsConst, typename BitSequence::ConstReference, typename BitSequence::Reference>;
+    using reference = std::conditional_t<IsConst, typename BitSequence::ConstReference, typename BitSequence::Reference>;
     
     static constexpr size_t kBitsPerWord = BitSequence::kBitsPerWord;
     
@@ -104,8 +104,8 @@ public:
     
     BitIterator(const BitIterator<BitSequence, false>& x) : seg_(x.pointer_), ctz_(x.ctz_) {}
     
-    Reference operator*() const {
-        return Reference(seg_, storage_type(1) << ctz_);
+    reference operator*() const {
+        return reference(seg_, storage_type(1) << ctz_);
     }
     
     BitIterator& operator++() {
@@ -171,7 +171,7 @@ public:
     
     friend difference_type operator-(const BitIterator& x, const BitIterator& y) {return (x.pointer_ - y.pointer_) * kBitsPerWord + static_cast<difference_type>(x.ctz_ - y.ctz_);}
     
-    Reference operator[](difference_type difference) const {return *(*this + difference);}
+    reference operator[](difference_type difference) const {return *(*this + difference);}
     
     friend bool operator==(const BitIterator& x, const BitIterator& y) {return x.pointer_ == y.pointer_ and x.ctz_ == y.ctz_;}
     
