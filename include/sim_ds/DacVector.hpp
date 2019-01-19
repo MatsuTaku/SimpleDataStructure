@@ -1,19 +1,21 @@
 //
-//  DACs.hpp
+//  DacVector.hpp
 //  array_fsa
 //
 //  Created by 松本拓真 on 2018/01/07.
 //
 
-#ifndef DACs_hpp
-#define DACs_hpp
+#ifndef DacVector_hpp
+#define DacVector_hpp
 
 #include "basic.hpp"
 #include "BitVector.hpp"
 #include "SuccinctBitVector.hpp"
 #include "FitVector.hpp"
+#include "bit_util.hpp"
 #include "calc.hpp"
 #include <stdexcept>
+#include <malloc/malloc.h>
 
 namespace sim_ds {
     
@@ -110,7 +112,7 @@ public:
     using difference_type = long long;
     
     using Layer = FitVector;
-    using Path = SuccinctBitVector<false>;
+    using RankSupportBV = SuccinctBitVector<false>;
     
     static constexpr size_t kMaxSplits = 8;
     
@@ -120,44 +122,51 @@ public:
     
 private:
     size_t num_layers_ = 0;
-    size_t layers_unit_bits_[kMaxSplits] = {8, 8, 8, 8, 8, 8, 8, 8};
-    Layer layers_[kMaxSplits];
-    Path paths_[kMaxSplits - 1];
+    std::vector<size_t> layers_unit_bits_ = {8, 8, 8, 8, 8, 8, 8, 8};
+    std::vector<Layer> layers_;
+    std::vector<RankSupportBV> paths_;
     
 public:
-    DacVector() = default;
+    DacVector() : num_layers_(0), layers_unit_bits_({8, 8, 8, 8, 8, 8, 8, 8}) {
+        layers_.assign(8, Layer(size_t(8)));
+        paths_.resize(7);
+    }
     
-    template<class Vector>
-    DacVector(const Vector& vector) : DacVector(vector, calc::split_positions_optimized_for_dac(vector)) {}
+    template <class Vector>
+    DacVector(const Vector& vector) : DacVector(vector, std::vector<size_t>{}) {}
     
-    template<class Vector, class Unit>
-    DacVector(const Vector& vector, std::vector<Unit> unit_bit_list_) {
+    template <class Vector, typename T>
+    DacVector(const Vector& vector, std::vector<T> unit_bit_list) {
         // Empty vector input return with no works.
         if (vector.empty())
             return;
         
-        if (unit_bit_list_.empty())
-            unit_bit_list_ = calc::split_positions_optimized_for_dac(vector);
-        for (auto i = 0; i < unit_bit_list_.size(); i++)
-            layers_unit_bits_[i] = unit_bit_list_[i];
+        if (unit_bit_list.empty()) {
+            calc::split_positions_optimized_for_dac(vector, &layers_unit_bits_);
+        } else {
+            layers_unit_bits_.reserve(unit_bit_list.size());
+            std::transform(unit_bit_list.begin(), unit_bit_list.end(), std::back_inserter(layers_unit_bits_), [](auto x) {return x;});
+        }
         
-        size_t num_layers = unit_bit_list_.size();
-        for (auto i = 0; i < num_layers; i++)
-            layers_[i] = FitVector(layers_unit_bits_[i]);
+        size_t num_layers = layers_unit_bits_.size();
         num_layers_ = num_layers;
+        layers_.reserve(num_layers);
+        std::transform(layers_unit_bits_.begin(), layers_unit_bits_.end(), std::back_inserter(layers_), [](auto unit) {return Layer(unit);});
         
         std::vector<BitVector> paths_src_(num_layers - 1);
-        
-        std::vector<size_t> cf = calc::cummulative_frequency_list(vector);
-        for (auto i = 0, t = 0; i < num_layers; t += unit_bit_list_[i], i++) {
+        {
+        std::vector<size_t> cf;
+        calc::cummulative_frequency_list(vector, &cf);
+        for (auto i = 0, t = 0; i < num_layers; t += layers_unit_bits_[i], i++) {
             layers_[i].reserve(cf[t]);
             if (i < num_layers - 1)
                 paths_src_[i].reserve(cf[t]);
         }
+        }
         
         for (auto v : vector) {
             value_type x = v;
-            layers_[0].push_back(x & bit_util::WidthMask(layers_unit_bits_[0]));
+            layers_[0].push_back(bit_util::bits_extract_len(x, layers_unit_bits_[0]));
             x >>= layers_unit_bits_[0];
             for (size_t depth = 1; depth < num_layers; depth++) {
                 bool exist = x > 0;
@@ -165,17 +174,17 @@ public:
                 if (!exist)
                     break;
                 auto unit_bits = layers_unit_bits_[depth];
-                layers_[depth].push_back(x & bit_util::WidthMask(unit_bits));
+                layers_[depth].push_back(bit_util::bits_extract_len(x, unit_bits));
                 x >>= unit_bits;
             }
         }
         
-        for (size_t i = 0; i < paths_src_.size(); i++) {
-            paths_[i] = Path(paths_src_[i]);
-        }
+        paths_.reserve(paths_src_.size());
+        std::transform(paths_src_.begin(), paths_src_.end(), std::back_inserter(paths_), [](auto&& src) {return RankSupportBV(src);});
+        assert(malloc_zone_check(NULL));
     }
     
-    DacVector(std::istream &is) {
+    DacVector(std::istream& is) {
         Read(is);
     }
     
@@ -247,12 +256,12 @@ public:
     }
     
     size_t size_in_bytes() const {
-        auto size = sizeof(num_layers());
-        size += sizeof(*layers_unit_bits_) * num_layers();
+        auto size = sizeof(num_layers_);
+        size += size_vec(layers_unit_bits_);
         for (auto i = 0; i < num_layers(); i++)
             size += layers_[i].size_in_bytes();
         if (num_layers() > 0)
-            for (auto i = 0; i == 0 || i + 1 < num_layers(); i++)
+            for (auto i = 0; i < num_layers() - 1; i++)
                 size += paths_[i].size_in_bytes();
         
         return size;
@@ -260,13 +269,14 @@ public:
     
     void Read(std::istream& is) {
         num_layers_ = read_val<size_t>(is);
-        for (auto i = 0; i < num_layers(); i++)
+        for (auto i = 0; i < num_layers_; i++)
             layers_unit_bits_[i] = read_val<size_t>(is);
-        for (auto i = 0; i < num_layers(); i++)
-            layers_[i] = FitVector(is);
-        if (num_layers() > 0)
-            for (auto i = 0; i == 0 || i + 1 < num_layers(); i++)
-                paths_[i].Read(is);
+        for (auto i = 0; i < num_layers_; i++) {
+            layers_.emplace_back(Layer(is));
+        }
+        for (auto i = 0; i < num_layers_ - 1; i++) {
+            paths_.emplace_back(RankSupportBV(is));
+        }
     }
     
     void Write(std::ostream& os) const {
@@ -275,9 +285,8 @@ public:
             write_val(layers_unit_bits_[i], os);
         for (auto i = 0; i < num_layers(); i++)
             layers_[i].Write(os);
-        if (num_layers() > 0)
-            for (auto i = 0; i == 0 || i + 1 < num_layers(); i++)
-                paths_[i].Write(os);
+        for (auto i = 0; i < num_layers() - 1; i++)
+            paths_[i].Write(os);
     }
     
     void ShowStatus(std::ostream& os) const {

@@ -16,12 +16,11 @@ TEST(MaskTest, bits) {
     EXPECT_EQ(WidthMask(8), 0xFF);
     EXPECT_EQ(WidthMask(15), 0x7FFF);
     EXPECT_EQ(WidthMask(63), 0x7FFFFFFFFFFFFFFF);
-    EXPECT_EQ(WidthMask(64), 0xFFFFFFFFFFFFFFFF);
     EXPECT_EQ(width_mask<0>, 0x0);
     EXPECT_EQ(width_mask<63>, 0x7FFFFFFFFFFFFFFF);
     
     uint64_t mask = 1;
-    for (int i = 1; i <= 64; i++) {
+    for (int i = 1; i < 64; i++) {
         EXPECT_EQ(WidthMask(i), mask);
         mask = mask * 2 + 1;
     }

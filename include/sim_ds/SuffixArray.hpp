@@ -303,35 +303,36 @@ inline void SuffixArray::BuildLCP_() {
     for (auto i = 0; i < s_arr_.size(); i++) {
         posInArr[s_arr_[i]] = i;
     }
-    vector<size_t> lcpArr(s_arr_.size());
+    vector<size_t> lcp_arr(s_arr_.size());
     auto prevLCP = 0;
     for (auto i = 0; i < posInArr.size(); i++) {
         auto pos = posInArr[i];
         auto lcp = (pos == posInArr.size() - 1) ? 0 : CompareLCP_(i, s_arr_[pos + 1], prevLCP > 1 ? prevLCP - 1 : 0);
-        lcpArr[pos] = lcp;
+        lcp_arr[pos] = lcp;
         prevLCP = lcp;
     }
     
-    lcp_arr_ = FitVector(lcpArr);
+    lcp_arr_ = FitVector(lcp_arr);
     
     size_t maxL = 0;
     long long sum = 0;
-    std::sort(lcpArr.begin(), lcpArr.end());
-    for (auto l : lcpArr) {
+    std::sort(lcp_arr.begin(), lcp_arr.end());
+    for (auto l : lcp_arr) {
         maxL = std::max(l, maxL);
         sum += l;
     }
-    float ave = float(sum) / lcpArr.size();
-    size_t median = lcpArr[lcpArr.size() / 2];
+    float ave = float(sum) / lcp_arr.size();
+    size_t median = lcp_arr[lcp_arr.size() / 2];
     using std::cout, std::endl;
     cout << "------ LCP-Arr Status ------" << endl;
-    cout << "Number of elements: " << lcpArr.size() << endl;
+    cout << "Number of elements: " << lcp_arr.size() << endl;
     cout << "Maximum value: " << maxL << endl;
     cout << "Average value: " << ave << endl;
     cout << "Median value: " << median << endl;
     cout << "---- size map ----" << endl;
     auto i = 0;
-    auto map = calc::bit_size_frequency_list(lcpArr);
+    std::vector<size_t> map;
+    calc::bit_length_frequencies(lcp_arr, &map);
     for (auto num : map)
         cout << "[" << i++ << "]: " << num << endl;
     cout << "----------------------------" << endl;

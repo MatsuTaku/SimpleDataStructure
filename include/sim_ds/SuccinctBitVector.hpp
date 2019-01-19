@@ -24,24 +24,21 @@ private:
     // For select support
     std::vector<uint32_t> select_tips_;
     
-public:
-    SuccinctBitVector() = default;
-    
-    explicit SuccinctBitVector(const BitVector& bits) : bits_(bits) {
-        if (bits.empty()) {
+    void Build_() {
+        if (bits_.empty()) {
             basic_block_.assign(2, 0);
             return;
         }
         
-        size_t basic_block_size = bits.size() / 512 + 1;
+        size_t basic_block_size = bits_.size() / 512 + 1;
         basic_block_.resize(basic_block_size * 2);
         
-        const auto* data = bits.data();
+        const auto* data = bits_.data();
         size_t sum = bit_util::popcnt(*data);
         uint64_t sum_word = 0;
         basic_block_[0] = basic_block_[1] = 0;
         size_t i = 0;
-        for (i = 1; i < bits.size() / 64; i++) {
+        for (i = 1; i < bits_.size() / 64; i++) {
             if (i % 8 == 0) {
                 size_t j = i/8*2;
                 basic_block_[j - 1] = sum_word;
@@ -76,8 +73,19 @@ public:
         }
     }
     
+public:
+    SuccinctBitVector() = default;
+    
+    explicit SuccinctBitVector(BitVector&& bits) : bits_(std::forward<BitVector>(bits)) {
+        Build_();
+    }
+    
     template <class BitSequence>
     SuccinctBitVector(const BitSequence& bits) : SuccinctBitVector(BitVector(bits)) {}
+    
+    SuccinctBitVector(std::istream& is) {
+        Read(is);
+    }
     
     bool operator[](size_t index) const {return bits_[index];}
     
