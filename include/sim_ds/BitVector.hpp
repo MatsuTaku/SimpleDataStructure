@@ -28,13 +28,14 @@ public:
     
     static constexpr uint8_t kBitsPerWord = 64;
     
-    using Reference = BitReference<BitVector>;
-    using ConstReference = BitConstReference<BitVector>;
-    using Iterator = BitIterator<BitVector, false>;
-    using ConstIterator = BitIterator<BitVector, true>;
+    using reference = BitReference<BitVector>;
+    using const_reference = BitConstReference<BitVector>;
+    using iterator = BitIterator<BitVector, false>;
+    using const_iterator = BitIterator<BitVector, true>;
     
     using value_type = bool;
-    using pointer = Iterator;
+    using difference_type = long long;
+    using pointer = iterator;
     
 private:
     std::vector<storage_type> base_;
@@ -58,25 +59,39 @@ public:
         assign(size, initial_bit);
     }
     
-    Reference operator[](size_t index) {return make_ref(index);}
+    reference operator[](size_t index) {return make_ref(index);}
     
-    ConstReference operator[](size_t index) const {return make_ref(index);}
+    const_reference operator[](size_t index) const {return make_ref(index);}
     
-    Iterator begin() {return make_iter(0);}
+    reference at(size_t index) {
+        if (index >= size())
+            throw std::out_of_range("Index out of range");
+        
+        return operator[](index);
+    }
     
-    ConstIterator begin() const {return make_iter(0);}
+    const_reference at(size_t index) const {
+        if (index >= size())
+            throw std::out_of_range("Index out of range");
+        
+        return operator[](index);
+    }
     
-    Iterator end() {return make_iter(size());}
+    iterator begin() {return make_iter(0);}
     
-    ConstIterator end() const {return make_iter(size());}
+    const_iterator begin() const {return make_iter(0);}
     
-    Reference front() {return operator[](0);}
+    iterator end() {return make_iter(size());}
     
-    ConstReference front() const {return operator[](0);}
+    const_iterator end() const {return make_iter(size());}
     
-    Reference back() {return operator[](size() - 1);}
+    reference front() {return operator[](0);}
     
-    ConstReference back() const {return operator[](size() - 1);}
+    const_reference front() const {return operator[](0);}
+    
+    reference back() {return operator[](size() - 1);}
+    
+    const_reference back() const {return operator[](size() - 1);}
     
     void push_back(bool bit) {
         resize(size() + 1);
@@ -113,9 +128,7 @@ public:
     
     bool empty() const {return size() == 0;}
     
-    const storage_type* data() const {
-        return base_.data();
-    }
+    const storage_type* data() const {return base_.data();}
     
     size_t size_in_bytes() const {
         auto size = sizeof(size_t);
@@ -134,22 +147,22 @@ public:
     }
     
 private:
-    Reference make_ref(size_t pos) {
+    reference make_ref(size_t pos) {
         assert(pos < size());
-        return Reference(base_.data() + pos / kBitsPerWord, bit_util::OffsetMask(pos % kBitsPerWord));
+        return reference(base_.data() + pos / kBitsPerWord, bit_util::OffsetMask(pos % kBitsPerWord));
     }
     
-    ConstReference make_ref(size_t pos) const {
+    const_reference make_ref(size_t pos) const {
         assert(pos < size());
-        return ConstReference(base_.data() + pos / kBitsPerWord, bit_util::OffsetMask(pos % kBitsPerWord));
+        return const_reference(base_.data() + pos / kBitsPerWord, bit_util::OffsetMask(pos % kBitsPerWord));
     }
     
-    Iterator make_iter(size_t pos) {
-        return Iterator(base_.data() + pos / kBitsPerWord, pos % kBitsPerWord);
+    iterator make_iter(size_t pos) {
+        return iterator(base_.data() + pos / kBitsPerWord, pos % kBitsPerWord);
     }
     
-    ConstIterator make_iter(size_t pos) const {
-        return ConstIterator(base_.data() + pos / kBitsPerWord, pos % kBitsPerWord);
+    const_iterator make_iter(size_t pos) const {
+        return const_iterator(base_.data() + pos / kBitsPerWord, pos % kBitsPerWord);
     }
     
 };

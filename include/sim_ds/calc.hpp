@@ -41,8 +41,8 @@ inline size_t SizeFitsAsList(unsigned long long value, const Container sizes) {
     return size;
 }
 
-template <class Container>
-inline std::vector<size_t> bit_size_frequency_list(const Container& list, bool should_show = false) {
+template <class Container, typename T>
+inline void bit_length_frequencies(const Container& list, std::vector<T>* result) {
     std::vector<size_t> map;
     auto max_size = 0;
     for (size_t i = 0; i < list.size(); i++) {
@@ -54,18 +54,16 @@ inline std::vector<size_t> bit_size_frequency_list(const Container& list, bool s
         map[size - 1]++;
     }
     
-    if (should_show) {
-        for (auto i = 0; i < map.size(); i++)
-            std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
-    }
-    
-    return map;
+    result->reserve(map.size());
+    result->resize(0);
+    std::transform(map.begin(), map.end(), std::back_inserter(*result), [](auto x) {return x;});
 }
 
-template <class Container>
-inline std::vector<size_t> cummulative_frequency_list(const Container& list, bool should_show = false) {
+template <class Container, typename T>
+inline void cummulative_frequency_list(const Container& list, std::vector<T>* result, bool should_show = false) {
     std::vector<size_t> cf;
-    auto map = bit_size_frequency_list(list);
+    std::vector<size_t> map;
+    bit_length_frequencies(list, &map);
     auto count = 0;
     cf.assign(map.size(), 0);
     for (auto i = map.size(); i > 0; i--) {
@@ -79,26 +77,29 @@ inline std::vector<size_t> cummulative_frequency_list(const Container& list, boo
             std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
     }
     
-    return cf;
+    result->reserve(cf.size());
+    result->resize(0);
+    std::transform(cf.begin(), cf.end(), std::back_inserter(*result), [](auto x) {return x;});
 }
 
-inline size_t additional_size_of_rank(double n) {
-    return (((n-1)/64+1) + ((n/512+1) * 2)) * 8; // about 1.25*n/8 = (5/32)n bytes
+inline size_t additional_bit_size_of_rank(double n) {
+    return (((n-1)/64+1) + ((n/512+1) * 2)) * 64; // about 1.25*n bits
 }
 
-template <class Container>
-inline std::vector<size_t> split_positions_optimized_for_dac(const Container& list, const size_t max_levels = 8) {
+template <class Container, typename T>
+inline void split_positions_optimized_for_dac(const Container& list, std::vector<T>* result, const size_t max_levels = 8) {
     if (list.empty())
-        return {};
+        return;
     
-    auto cf = cummulative_frequency_list(list);
+    std::vector<size_t> cf;
+    cummulative_frequency_list(list, &cf);
     const auto m = cf.size() - 1;
-    std::vector<size_t> s(cf.size(), 0), l(cf.size(), 0), b(cf.size(), 0);
+    std::vector<size_t> s(m+1, 0), l(m+1, 0), b(m+1, 0);
     for (int t = m; t >= 0; --t) {
-        auto min_size = INFINITY;
+        auto min_size = std::numeric_limits<size_t>::max();
         auto min_pos = m;
         for (auto i = t + 1; i <= m; i++) {
-            auto current_size = s[i] + cf[t] * (i - t) + additional_size_of_rank(cf[t]);
+            auto current_size = s[i] + cf[t] * (i - t) + additional_bit_size_of_rank(cf[t]);
             if (current_size < min_size) {
                 min_size = current_size;
                 min_pos = i;
@@ -160,7 +161,9 @@ inline std::vector<size_t> split_positions_optimized_for_dac(const Container& li
         }
     }
 
-    return bk;
+    result->reserve(bk.size());
+    result->resize(0);
+    std::transform(bk.begin(), bk.end(), std::back_inserter(*result), [](auto x) {return x;});
 }
 
 } // namespace sim_ds::calc

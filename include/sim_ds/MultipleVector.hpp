@@ -147,8 +147,8 @@ public:
     };
     using table_type = std::vector<Element>;
     
-    using Reference = BlockReference<MultipleVector>;
-    using ConstReference = BlockConstReference<MultipleVector>;
+    using reference = BlockReference<MultipleVector>;
+    using const_reference = BlockConstReference<MultipleVector>;
     
     friend class BlockReference<MultipleVector>;
     friend class BlockConstReference<MultipleVector>;
@@ -201,12 +201,12 @@ public:
         return bytes_.size() / block_size();
     }
     
-    Reference block(size_t index) {
-        return Reference(&bytes_[offset_(index)], element_table_);
+    reference block(size_t index) {
+        return reference(&bytes_[offset_(index)], element_table_);
     }
     
-    ConstReference block(size_t index) const {
-        return ConstReference(&bytes_[offset_(index)], element_table_);
+    const_reference block(size_t index) const {
+        return const_reference(&bytes_[offset_(index)], element_table_);
     }
     
     template <int Id>

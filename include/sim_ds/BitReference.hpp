@@ -87,11 +87,12 @@ private:
 
 template <class BitSequence, bool IsConst>
 class BitIterator {
-    using value_type = bool;
+    using value_type = typename BitSequence::value_type;
+    using difference_type = typename BitSequence::difference_type;
     using storage_type = typename BitSequence::storage_type;
     using storage_pointer = std::conditional_t<IsConst, typename BitSequence::const_storage_pointer, typename BitSequence::storage_pointer>;
     
-    using Reference = std::conditional_t<IsConst, typename BitSequence::ConstReference, typename BitSequence::Reference>;
+    using reference = std::conditional_t<IsConst, typename BitSequence::const_reference, typename BitSequence::reference>;
     
     static constexpr size_t kBitsPerWord = BitSequence::kBitsPerWord;
     
@@ -101,10 +102,10 @@ class BitIterator {
 public:
     BitIterator() : seg_(nullptr), ctz_(0) {}
     
-    BitIterator(const BitIterator<BitSequence, IsConst>& x) : seg_(x.pointer_), ctz_(x.ctz_) {}
+    BitIterator(const BitIterator<BitSequence, false>& x) : seg_(x.pointer_), ctz_(x.ctz_) {}
     
-    Reference operator*() const {
-        return Reference(seg_, storage_type(1) << ctz_);
+    reference operator*() const {
+        return reference(seg_, storage_type(1) << ctz_);
     }
     
     BitIterator& operator++() {
@@ -125,7 +126,7 @@ public:
     
     BitIterator& operator--() {
         if (ctz_ == 0) {
-            ++seg_;
+            --seg_;
             ctz_ = kBitsPerWord - 1;
         } else {
             --ctz_;
@@ -139,20 +140,19 @@ public:
         return itr;
     }
     
-    BitIterator& operator+=(size_t offset) {
-        if (offset >= 0) {
-            seg_ += (ctz_ + offset) / kBitsPerWord;
+    BitIterator& operator+=(difference_type difference) {
+        if (difference >= 0) {
+            seg_ += (ctz_ + difference) / kBitsPerWord;
         } else {
-            seg_ += static_cast<long long>(-offset - kBitsPerWord + ctz_ + 1) / static_cast<long long>(kBitsPerWord);
+            seg_ += static_cast<difference_type>(-difference - kBitsPerWord + ctz_ + 1) / static_cast<difference_type>(kBitsPerWord);
         }
-        offset &= kBitsPerWord - 1;
-        ctz_ = static_cast<size_t>((offset + ctz_) % kBitsPerWord);
+        difference &= kBitsPerWord - 1;
+        ctz_ = static_cast<size_t>((difference + ctz_) % kBitsPerWord);
         return *this;
     }
     
-    BitIterator& operator-=(size_t offset) {
-        return (*this) += -offset;
-        
+    BitIterator& operator-=(difference_type difference) {
+        return (*this) += -difference;
     }
     
     BitIterator operator+(size_t difference) const {
@@ -169,9 +169,9 @@ public:
     
     friend BitIterator operator+(size_t difference, const BitIterator& x) {return x + difference;}
     
-    friend long long operator-(const BitIterator& x, const BitIterator& y) {return (y.pointer_ - x.pointer_) * kBitsPerWord + static_cast<long long>(y.ctz_ - x.ctz_);}
+    friend difference_type operator-(const BitIterator& x, const BitIterator& y) {return (x.pointer_ - y.pointer_) * kBitsPerWord + static_cast<difference_type>(x.ctz_ - y.ctz_);}
     
-    Reference operator[](long long difference) const {return *(*this + difference);}
+    reference operator[](difference_type difference) const {return *(*this + difference);}
     
     friend bool operator==(const BitIterator& x, const BitIterator& y) {return x.pointer_ == y.pointer_ and x.ctz_ == y.ctz_;}
     

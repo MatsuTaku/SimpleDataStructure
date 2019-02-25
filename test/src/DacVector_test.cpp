@@ -34,4 +34,6 @@ TEST(DACsTest, FixedSizes) {
     for (auto i = 0; i < size; i++) {
         EXPECT_EQ(src[i], dac[i]);
     }
+    
+    sim_ds::DacVector ndac = std::vector{1,2,3,4};
 }

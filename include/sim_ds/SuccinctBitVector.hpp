@@ -24,24 +24,21 @@ private:
     // For select support
     std::vector<uint32_t> select_tips_;
     
-public:
-    SuccinctBitVector() = default;
-    
-    explicit SuccinctBitVector(const BitVector& bits) : bits_(bits) {
-        if (bits.empty()) {
+    void Build_() {
+        if (bits_.empty()) {
             basic_block_.assign(2, 0);
             return;
         }
         
-        size_t basic_block_size = bits.size() / 512 + 1;
+        size_t basic_block_size = bits_.size() / 512 + 1;
         basic_block_.resize(basic_block_size * 2);
         
-        const auto* data = bits.data();
+        const auto* data = bits_.data();
         size_t sum = bit_util::popcnt(*data);
         uint64_t sum_word = 0;
         basic_block_[0] = basic_block_[1] = 0;
         size_t i = 0;
-        for (i = 1; i < bits.size() / 64; i++) {
+        for (i = 1; i < bits_.size() / 64; i++) {
             if (i % 8 == 0) {
                 size_t j = i/8*2;
                 basic_block_[j - 1] = sum_word;
@@ -72,38 +69,42 @@ public:
                     sum_shreshold += 512;
                 }
             }
-            if (select_tips_.back() != basic_block_size - 1)
-                select_tips_.push_back(basic_block_size - 1);
+            select_tips_.push_back(basic_block_size - 1);
         }
+    }
+    
+public:
+    SuccinctBitVector() = default;
+    
+    explicit SuccinctBitVector(BitVector&& bits) : bits_(std::forward<BitVector>(bits)) {
+        Build_();
     }
     
     template <class BitSequence>
-    explicit SuccinctBitVector(const BitSequence& bits) : SuccinctBitVector(BitVector(bits)) {}
+    SuccinctBitVector(const BitSequence& bits) : SuccinctBitVector(BitVector(bits)) {}
     
-    
-    constexpr bool operator[](size_t index) const {
-        return bits_[index];
+    SuccinctBitVector(std::istream& is) {
+        Read(is);
     }
     
-    constexpr size_t rank(size_t index) const {
-        return rank_1(index);
-    }
+    bool operator[](size_t index) const {return bits_[index];}
     
-    constexpr size_t rank_0(size_t index) const {
-        return index - rank_1(index);
-    }
+    size_t rank(size_t index) const {return rank_1(index);}
     
-    constexpr size_t rank_1(const size_t index) const {
+    size_t rank_0(size_t index) const {return index - rank_1(index);}
+    
+    size_t rank_1(const size_t index) const {
         size_t block_index = index / 512 * 2;
         size_t before_sum = basic_block_[block_index] + ((basic_block_[block_index+1] >> (63-9*((index/64)%8))) & bit_util::width_mask<9>);
-        if (index%64 == 0) {
+        size_t word_len = index % 64;
+        if (word_len == 0) {
             return before_sum;
         } else {
-            return before_sum + bit_util::cnt(bits_.data()[index/64], index%64);
+            return before_sum + bit_util::cnt(bits_.data()[index/64], word_len);
         }
     }
     
-    constexpr size_t select(size_t index) const {
+    size_t select(size_t index) const {
         id_type left = 0, right = num_blocks();
         size_t i = index;
         

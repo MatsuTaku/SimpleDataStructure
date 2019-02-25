@@ -13,10 +13,7 @@
 #include <immintrin.h>
 #endif
 #ifdef __SSE4_2__
-#include <smmintrin.h>
-#endif
-#ifdef __POPCNT__
-#include <popcntintrin.h>
+#include <nmmintrin.h>
 #endif
 
 namespace sim_ds::bit_util {
@@ -27,21 +24,24 @@ using mask_type = id_type;
 constexpr size_t kMaxWidthOfMask = sizeof(mask_type) * 8;
 constexpr mask_type kMaskFill = std::numeric_limits<mask_type>::max();
 
-inline constexpr mask_type WidthMask(size_t bits) {
-    assert(bits <= kMaxWidthOfMask and bits != 0);
-    return kMaskFill >> (kMaxWidthOfMask - bits);
+template <size_t Bits>
+inline constexpr mask_type width_mask = (1ull << Bits) - 1;
+
+inline constexpr mask_type WidthMask(size_t width) {
+    assert(width <= kMaxWidthOfMask);
+    return (1ull << width) - 1;
 }
 
-template <size_t Bits>
-inline constexpr mask_type width_mask = kMaskFill >> (kMaxWidthOfMask - Bits);
+template <typename T>
+inline T bits_extract_len(T x, size_t len) {return x & WidthMask(len);}
+
+template <size_t Offset>
+inline constexpr mask_type offset_mask = mask_type(1) << Offset;
 
 inline constexpr mask_type OffsetMask(size_t offset) {
     assert(offset < kMaxWidthOfMask);
     return mask_type(1) << offset;
 }
-
-template <size_t Offset>
-inline constexpr mask_type offset_mask = mask_type(1) << Offset;
 
 // MARK: - popcnt
 
@@ -89,7 +89,7 @@ inline uint64_t popcnt64(uint64_t x) {
     x = x-((x>>1) & 0x5555555555555555ull);
     x = (x & 0x3333333333333333ull) + ((x >> 2) & 0x3333333333333333ull);
     x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0Full;
-    return (0x0101010101010101ull*x >> 56);
+    return 0x0101010101010101ull*x >> 56;
 #endif
 }
 
@@ -108,8 +108,8 @@ inline Word popcnt(Word x) {
 }
 
 template <typename Word>
-inline Word cnt(Word x, size_t width) {
-    return popcnt(x & WidthMask(width));
+inline Word cnt(Word x, size_t len) {
+    return popcnt(bits_extract_len(x, len));
 }
 
 inline uint64_t popcnt11(uint64_t x) {
@@ -345,7 +345,6 @@ constexpr uint8_t kLtSel[9][256] = {
 inline uint8_t sel(uint64_t x, size_t i) {
 #ifdef __BMI2__
     return __builtin_ctzll(_pdep_u64(1ull << (i-1), x)) + 1; // for 1 index
-//#elif define(__SSE4_2__)
 #else
     size_t ret = 0;
     auto bit_cnt = bit_util::popcnt32(x);
@@ -369,6 +368,14 @@ inline uint8_t sel(uint64_t x, size_t i) {
     
     return ret + kLtSel[i][x & 0xFF];
 #endif
+}
+    
+/* Bit field extract */
+inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
+#ifdef __BMI__
+    return _bextr_u64(x, start, len);
+#endif
+    return bits_extract_len(x >> start, len);
 }
 
     
