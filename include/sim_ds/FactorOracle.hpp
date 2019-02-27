@@ -36,9 +36,20 @@ private:
     
 public:
     FactorOracleBaseCTAFOBuilder(const std::string& text) : check_(text), base_(text.size() + 1, kEmptyValue) {
-        assert(text.size() < 0xFFFFFFFF);
+        Build();
+    }
+    
+    template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
+              class CharTraits = std::char_traits<typename IterTraits::value_type>>
+    FactorOracleBaseCTAFOBuilder(InputIter begin, InputIter end) : check_(begin, end), base_(end - begin + 1, kEmptyValue) {
+        Build();
+    }
+    
+    void Build() {
+        const size_t kKeySize = check_.size();
+        const size_t kNumStates = kKeySize + 1;
+        assert(kNumStates < 0x100000000);
         
-        const size_t kNumStates = text.size() + 1;
         while (next_.size() < kNumStates - 1) {
             expand_block();
         }
@@ -46,7 +57,7 @@ public:
         
         // Add letters on-line algorithm
         set_next(0, 0);
-        for (size_t i = 0; i < text.size(); i++) {
+        for (size_t i = 0; i < kKeySize; i++) {
             lrs[0] = i + 1;
             size_t k = lrs[i];
             while (k < i + 1 and translate(k, i + 1) == 0) {
@@ -216,11 +227,13 @@ private:
     std::vector<id_type> next_;
     
 public:
-    FactorOracleBaseCTAFO(const std::string& text) : check_(text) {
-        Builder builder(text);
-        base_ = std::move(builder.base_);
-        next_ = std::move(builder.next_);
-    }
+    FactorOracleBaseCTAFO(Builder&& builder) : check_(std::move(builder.check_)), base_(std::move(builder.base_)), next_(std::move(builder.next_)) {}
+    
+    FactorOracleBaseCTAFO(const std::string& text) : FactorOracleBaseCTAFO(Builder(text)) {}
+    
+    template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
+              class CharTraits = std::char_traits<typename IterTraits::value_type>>
+    FactorOracleBaseCTAFO(InputIter begin, InputIter end) : FactorOracleBaseCTAFO(Builder(begin, end)) {}
     
     uint8_t check(size_t index) const {return index == 0 ? '\0' : check_[index - 1];}
     
@@ -258,6 +271,10 @@ public:
     using Exproler = FactorOracleExproler;
     
     FactorOracle(const std::string& text) : Base(text) {}
+    
+    template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
+              class CharTraits = std::char_traits<typename IterTraits::value_type>>
+    FactorOracle(InputIter begin, InputIter end) : Base(begin, end) {}
     
     bool image(size_t& state, uint8_t c) const {
         if (Base::check(state + 1) == c) {

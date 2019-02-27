@@ -98,9 +98,7 @@ std::vector<size_t> PatternMatchBM(std::string_view text, std::string_view key) 
 // MARK: BOM
 
 std::vector<size_t> PatternMatchBOM(std::string_view text, std::string_view key) {
-    std::string reversed_key{key};
-    std::reverse(reversed_key.begin(), reversed_key.end());
-    FactorOracle oracle(reversed_key);
+    FactorOracle oracle(key.rbegin(), key.rend());
     const long long kWindowSize = key.size();
     
     std::vector<size_t> matchies;
@@ -124,9 +122,7 @@ std::vector<size_t> PatternMatchBOM(std::string_view text, std::string_view key)
 // MARK: Turbo-BOM
 
 std::vector<size_t> PatternMatchTurboBOM(std::string_view text, std::string_view key) {
-    std::string reversed_key{key};
-    std::reverse(reversed_key.begin(), reversed_key.end());
-    FactorOracle oracle(reversed_key);
+    FactorOracle oracle(key.rbegin(), key.rend());
     Kmp kmp(key);
     auto kmp_search = [&key, &kmp](std::string_view text) -> long long {
         long long pos = 0;
@@ -139,7 +135,7 @@ std::vector<size_t> PatternMatchTurboBOM(std::string_view text, std::string_view
     };
     const size_t kWindowSize = key.size();
     const double alpha = 0.1;
-    const size_t kKmpWindowSize = kWindowSize * alpha + 1;
+    const size_t kKmpWindowSize = (kWindowSize - 1) * alpha + 1;
     
     std::vector<size_t> matchies;
     size_t i = kWindowSize - 1;
