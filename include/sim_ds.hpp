@@ -17,5 +17,6 @@
 #include "sim_ds/FactorOracle.hpp"
 #include "sim_ds/Heap.hpp"
 #include "sim_ds/sort.hpp"
+#include "sim_ds/PatternMatching.hpp"
 
 #endif /* sim_ds_hpp */

@@ -196,31 +196,62 @@ public:
     
 };
 
-class FactorOracle : FactorOracleBaseCTAFO {
+struct FactorOracleExproler {
 private:
-    using Base = FactorOracleBaseCTAFO;
+    std::string_view str_;
+    size_t pos_;
+    
+    friend class FactorOracle;
     
 public:
+    FactorOracleExproler(std::string_view str) : str_(str), pos_(0) {}
+    
+    std::string_view text() {return str_;}
+    
+    uint8_t c() const {return str_[pos_];}
+    
+    size_t size() const {return str_.size();}
+    
+    size_t pos() const {return pos_;}
+    
+};
+
+class FactorOracle : FactorOracleBaseCTAFO {
+public:
+    using Base = FactorOracleBaseCTAFO;
+    using Exproler = FactorOracleExproler;
+    
     FactorOracle(const std::string& text) : Base(text) {}
     
-    bool accept(std::string_view str) const {
-        size_t state = 0;
-        for (uint8_t c : str) {
-            if (Base::check(state + 1) == c) {
-                state++;
-            } else {
-                auto b = Base::base(state);
-                if (b == Base::kEmptyValue) {
-                    return false;
-                }
-                auto next_state = Base::next(b ^ c);
-                if (next_state <= state or Base::check(next_state) != c) {
-                    return false;
-                }
-                state = next_state;
+    bool image(size_t& state, uint8_t c) const {
+        if (Base::check(state + 1) == c) {
+            state++;
+        } else {
+            auto b = Base::base(state);
+            if (b == Base::kEmptyValue) {
+                return false;
             }
+            auto next_state = Base::next(b ^ c);
+            if (next_state <= state or Base::check(next_state) != c) {
+                return false;
+            }
+            state = next_state;
         }
         return true;
+    }
+    
+    bool accept(Exproler& exp) const {
+        size_t state = 0;
+        for (;exp.pos_ < exp.size(); exp.pos_++) {
+            if (not image(state, exp.c()))
+                return false;
+        }
+        return true;
+    }
+    
+    bool accept(std::string_view str) const {
+        Exproler exp(str);
+        return accept(exp);
     }
     
 };
