@@ -14,8 +14,9 @@ TEST(FactorOracleTest, sample) {
     EXPECT_TRUE(fo.accept("aaab"));
     EXPECT_TRUE(fo.accept("abbbab"));
     EXPECT_TRUE(fo.accept("bab"));
-    EXPECT_TRUE(fo.accept("abba"));
     EXPECT_TRUE(fo.accept("aba"));
+    EXPECT_TRUE(fo.accept("abba")); // False acceptance
+    EXPECT_TRUE(fo.accept("abbbaa")); // False acceptance
 }
 
 TEST(FactorOracleTest, full_exploration_small) {

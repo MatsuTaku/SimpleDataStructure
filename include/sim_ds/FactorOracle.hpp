@@ -28,6 +28,7 @@ protected:
     
 public:
     FactorOracleBaseCTAFO(const std::string& text) : check_(text) {
+        assert(text.size() < 0xFFFFFFFF);
         base_.assign(text.size() + 1, kEmptyValue);
         size_t empty_trans_front = 0;
         BitVector used_state;
@@ -117,15 +118,15 @@ public:
             auto c = check(next_state);
             if (base(state) == kEmptyValue) {
                 auto init_b = find_base({next_state});
-                auto trans = init_b ^ check(next_state);
+                auto trans = init_b ^ c;
                 base_[state] = init_b;
                 set_next(trans, next_state);
                 used_state[init_b] = true;
             } else if (used_trans[base(state) ^ c]) {
                 auto transes = get_transes(state);
                 transes.push_back(next_state);
-                auto old_b = base(state);
                 auto new_b = find_base(transes);
+                auto old_b = base(state);
                 used_state[old_b] = false;
                 used_state[new_b] = true;
                 base_[state] = new_b;
@@ -139,7 +140,7 @@ public:
                     set_next(new_b ^ check(t), t);
                 }
                 // Insert new trans
-                set_next(new_b ^ check(next_state), next_state);
+                set_next(new_b ^ c, next_state);
             } else {
                 auto trans = base(state) ^ c;
                 set_next(trans, next_state);
@@ -166,8 +167,10 @@ public:
         while (next_.size() < text.size() + 1) {
             expand_block();
         }
-        set_next(0, 0);
         std::vector<id_type> lrs(text.size() + 1);
+        
+        // Add letters on-line algorithm
+        set_next(0, 0);
         for (size_t i = 0; i < text.size(); i++) {
             lrs[0] = i + 1;
             size_t k = lrs[i];
@@ -176,6 +179,12 @@ public:
                 k = lrs[k];
             }
             lrs[i + 1] = k == i + 1 ? 0 : translate(k, i + 1);
+        }
+        
+        // Initialize empty-element of next to zero.
+        for (size_t i = 0; i < next_.size(); i++) {
+            if (not used_trans[i])
+                next_[i] = 0;
         }
     }
     
