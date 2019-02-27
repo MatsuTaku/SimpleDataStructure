@@ -8,50 +8,103 @@
 #include "gtest/gtest.h"
 #include "sim_ds/PatternMatching.hpp"
 
-TEST(PatternMatching, Kmp_sample) {
-    std::string text = "abcabcababcababxabcabx";
-    std::string key = "abcaba";
-    std::vector<size_t> answer{3, 8};
+namespace {
+
+const std::string sample_text = "abcabcababcababxabcabx";
+
+const std::string sample_key = "abcababcaba";
+
+const std::string make_sample_text_large() {
+    std::string text = sample_text + sample_text;
+    for (size_t i = 0; i < 26; i++)
+        text += text.substr(rand() % (text.size() / 2));
+    return text;
+}
+
+const std::string sample_text_large = make_sample_text_large();
+
+const auto sample_answer_large = sim_ds::PatternMatchSimple(sample_text_large, sample_key); // Forgive me
+
+const std::vector<size_t> sample_answer{3};
     
-    auto matchies = sim_ds::PatternMatchKMP(text, key);
-    EXPECT_EQ(matchies.size(), answer.size());
-    for (size_t i = 0; i < std::min(matchies.size(), answer.size()); i++) {
-        EXPECT_EQ(matchies[i], answer[i]);
+}
+
+TEST(PatternMatching, Simple_sample) {
+    auto matchies = sim_ds::PatternMatchSimple(sample_text, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer[i]);
+    }
+}
+
+TEST(PatternMatching, Kmp_sample) {
+    auto matchies = sim_ds::PatternMatchKMP(sample_text, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer[i]);
     }
 }
 
 TEST(PatternMatching, Bm_sample) {
-    std::string text = "abcabcababcababxabcabx";
-    std::string key = "abcaba";
-    std::vector<size_t> answer{3, 8};
-    
-    auto matchies = sim_ds::PatternMatchBM(text, key);
-    EXPECT_EQ(matchies.size(), answer.size());
-    for (size_t i = 0; i < std::min(matchies.size(), answer.size()); i++) {
-        EXPECT_EQ(matchies[i], answer[i]);
+    auto matchies = sim_ds::PatternMatchBM(sample_text, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer[i]);
     }
 }
 
 TEST(PatternMatching, Bom_sample) {
-    std::string text = "abcabcababcababxabcabx";
-    std::string key = "abcaba";
-    std::vector<size_t> answer{3, 8};
-    
-    auto matchies = sim_ds::PatternMatchBOM(text, key);
-    EXPECT_EQ(matchies.size(), answer.size());
-    for (size_t i = 0; i < std::min(matchies.size(), answer.size()); i++) {
-        EXPECT_EQ(matchies[i], answer[i]);
+    auto matchies = sim_ds::PatternMatchBOM(sample_text, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer[i]);
     }
 }
 
 TEST(PatternMatching, TurboBom_sample) {
-    std::string text = "abcabcababcababxabcabx";
-    std::string key = "abcaba";
-    std::vector<size_t> answer{3, 8};
-    
-    auto matchies = sim_ds::PatternMatchTurboBOM(text, key);
-    EXPECT_EQ(matchies.size(), answer.size());
-    for (size_t i = 0; i < std::min(matchies.size(), answer.size()); i++) {
-        EXPECT_EQ(matchies[i], answer[i]);
+    auto matchies = sim_ds::PatternMatchTurboBOM(sample_text, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer[i]);
+    }
+}
+
+TEST(PatternMatching, Simple_large) {
+    auto matchies = sim_ds::PatternMatchSimple(sample_text_large, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer_large.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer_large.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer_large[i]);
+    }
+}
+
+TEST(PatternMatching, Kmp_large) {
+    auto matchies = sim_ds::PatternMatchKMP(sample_text_large, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer_large.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer_large.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer_large[i]);
+    }
+}
+
+TEST(PatternMatching, Bm_large) {
+    auto matchies = sim_ds::PatternMatchBM(sample_text_large, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer_large.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer_large.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer_large[i]);
+    }
+}
+
+TEST(PatternMatching, Bom_large) {
+    auto matchies = sim_ds::PatternMatchBOM(sample_text_large, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer_large.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer_large.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer_large[i]);
+    }
+}
+
+TEST(PatternMatching, TurboBom_large) {
+    auto matchies = sim_ds::PatternMatchTurboBOM(sample_text_large, sample_key);
+    EXPECT_EQ(matchies.size(), sample_answer_large.size());
+    for (size_t i = 0; i < std::min(matchies.size(), sample_answer_large.size()); i++) {
+        EXPECT_EQ(matchies[i], sample_answer_large[i]);
     }
 }
