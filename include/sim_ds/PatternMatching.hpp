@@ -84,8 +84,8 @@ public:
         }
     }
     
-    size_t skip(uint8_t pos) const {
-        return skip_[pos];
+    size_t skip(uint8_t type) const {
+        return skip_[type];
     }
     
 };
@@ -138,7 +138,8 @@ std::vector<size_t> PatternMatchBOM(std::string_view text, std::string_view key)
 // MARK: Turbo-BOM
 
 // Size rate to key length by KPM search on Turbo-BOM algorithm.
-constexpr float kTurboBomAlpha = 0.1;
+// Value 0.5 is considered to most practical that noticed in paper "Factor Oreacle: A New Structure for Pattern Matching".
+constexpr float kTurboBomAlpha = 0.5;
 
 std::vector<size_t> PatternMatchTurboBOM(std::string_view text, std::string_view key) {
     FactorOracle oracle(key.rbegin(), key.rend());
@@ -175,6 +176,146 @@ std::vector<size_t> PatternMatchTurboBOM(std::string_view text, std::string_view
             critpos = kmp_begin + kKmpWindowSize;
             back = kmp_begin + kKmpWindowSize - next + kWindowSize - 1;
         }
+    }
+    return matchies;
+}
+
+
+// MARK: Sunday
+
+class Sunday {
+private:
+    std::string_view key_;
+    struct Pat {
+        long long loc;
+        uint8_t c;
+    };
+    std::vector<Pat> pattern_;
+    std::vector<size_t> td1_;
+    std::vector<size_t> td2_;
+    
+public:
+    Sunday(std::string_view key) : key_(key) {
+        const size_t kKeySize = key_.size();
+        std::vector<size_t> min_shift(kKeySize);
+        for (long long i = 0; i < kKeySize; i++) {
+            long long j = i - 1;
+            for (; j >= 0; j--)
+                if (key_[j] == key_[i])
+                    break;
+            min_shift[i] = i - j;
+        }
+        auto maxshift_comp = [&](Pat& l, Pat& r) -> bool {
+            auto lms = min_shift[l.loc], rms = min_shift[r.loc];
+            return lms != rms ? lms < rms : l.loc < r.loc;
+        };
+        for (size_t i = 0; i < key_.size(); i++)
+            pattern_.push_back({static_cast<long long>(i), static_cast<uint8_t>(key[i])});
+        std::sort(pattern_.begin(), pattern_.end(), maxshift_comp);
+    }
+    
+    const Pat* ordered_pattern(size_t num) const {
+        return &pattern_[num];
+    }
+    
+    // Deltas like improved bm skip function
+    void BuildTd1() {
+        const size_t kKeySize = key_.size();
+        td1_.assign(0xFF, kKeySize + 1);
+        for (size_t i = 0; i < key_.size(); i++)
+            td1_[key_[i]] = kKeySize - i;
+    }
+    
+    size_t delta1(uint8_t type) const {
+        return td1_[type];
+    }
+    
+    // Deltas like kpm next function
+    void BuildTd2() {
+        const size_t kKeySize = key_.size();
+        auto match_shift = [&](size_t pos, long long lshift) -> size_t {
+            for (; lshift < kKeySize; lshift++) {
+                long long ppos = pos;
+                while (--ppos >= 0) {
+                    auto& pat = pattern_[ppos];
+                    long long j = pat.loc - lshift;
+                    if (j < 0)
+                        continue;
+                    if (pat.c != key_[j])
+                        break;
+                }
+                if (ppos == -1)
+                    break; // all matched
+            }
+            return lshift;
+        };
+        
+        td2_.resize(kKeySize + 1);
+        td2_[0] = 1;
+        for (size_t pos = 1; pos < kKeySize + 1; pos++) {
+            td2_[pos] = match_shift(pos, td2_[pos - 1]);
+        }
+        for (size_t pos = 0; pos < pattern_.size(); pos++) {
+            auto lshift = td2_[pos];
+            while (lshift < kKeySize) {
+                auto& pat = pattern_[pos];
+                long long i = pat.loc - lshift;
+                if (i < 0 or pat.c != key_[i])
+                    break;
+                lshift++;
+                lshift = match_shift(pos, lshift);
+            }
+            td2_[pos] = lshift;
+        }
+    }
+    
+    size_t delta2(size_t pos) const {
+        return td2_[pos];
+    }
+    
+};
+
+std::vector<size_t> PatternMatchSundayQS(std::string_view text, std::string_view key) {
+    Sunday sunday(key);
+    sunday.BuildTd1();
+    const size_t kKeySize = key.size();
+    
+    std::vector<size_t> matchies;
+    size_t i = 0;
+    while (i <= text.size() - kKeySize) {
+        size_t pos = 0;
+        auto* pat = sunday.ordered_pattern(pos);
+        while (pos < kKeySize and pat->c == text[i + pat->loc]) {
+            pos++; ++pat;
+        }
+        if (pos == kKeySize)
+            matchies.push_back(i);
+        if (i + kKeySize == text.size())
+            break;
+        i += sunday.delta1(text[i + kKeySize]);
+    }
+    return matchies;
+}
+
+std::vector<size_t> PatternMatchSundayMS(std::string_view text, std::string_view key) {
+    Sunday sunday(key);
+    sunday.BuildTd1();
+    sunday.BuildTd2();
+    const size_t kKeySize = key.size();
+    
+    std::vector<size_t> matchies;
+    size_t i = 0;
+    while (i <= text.size() - kKeySize) {
+        size_t pos = 0;
+        auto* pat = sunday.ordered_pattern(pos);
+        while (pos < kKeySize and pat->c == text[i + pat->loc]) {
+            pos++; ++pat;
+        }
+        if (pos == kKeySize)
+            matchies.push_back(i);
+        if (i + kKeySize == text.size())
+            break;
+        i += std::max(sunday.delta1(text[i + kKeySize]), sunday.delta2(pos));
     }
     return matchies;
 }
