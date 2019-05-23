@@ -176,14 +176,6 @@ public:
     std::vector<size_t> find_all(std::string_view text) const override {
         const long long kWindowSize = key_.size();
         const long long kKmpWindowSize = kWindowSize * kAlpha;
-        auto kmp_search = [&](std::string_view text, long long pos = 0) {
-            for (size_t i = 0; i < text.size(); i++) {
-                while (pos > -1 and key_[pos] != text[i])
-                    pos = kmp_.next(pos);
-                pos++;
-            }
-            return pos;
-        };
         
         std::vector<size_t> matchies;
         long long back = kWindowSize - 1;
@@ -209,6 +201,16 @@ public:
         }
         return matchies;
     }
+    
+private:
+    long long kmp_search(std::string_view text, long long pos = 0) const {
+        for (size_t i = 0; i < text.size(); i++) {
+            while (pos > -1 and key_[pos] != text[i])
+                pos = kmp_.next(pos);
+                pos++;
+        }
+        return pos;
+    };
     
 };
 
