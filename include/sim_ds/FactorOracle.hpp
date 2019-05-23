@@ -48,7 +48,6 @@ public:
     void Build() {
         const size_t kKeySize = check_.size();
         const size_t kNumStates = kKeySize + 1;
-        assert(kNumStates < 0x100000000);
         
         while (next_.size() < kNumStates - 1) {
             expand_block();
