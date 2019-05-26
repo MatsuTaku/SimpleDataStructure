@@ -12,13 +12,14 @@
 namespace sim_ds {
 namespace graph_util {
     
-const size_t kRootIndex = 0;
+constexpr size_t kRootIndex = 0;
+constexpr uint8_t kLeafChar = '\0';
     
 
 template <class NODE>
 class _Edge {
-    using node_type = NODE;
-    using Self = _Edge<node_type>;
+    using Node = NODE;
+    using Self = _Edge<Node>;
     
 private:
     std::string label_;
@@ -28,7 +29,7 @@ public:
     _Edge(std::string_view label, id_type target) : label_(label), target_(target) {}
     
     std::string_view label() const {return std::string_view(label_);}
-    id_type target() {return target_;}
+    id_type target() const {return target_;}
     
 };
 
@@ -40,7 +41,7 @@ class _Node {
     using Edge = _Edge<Self>;
     
 private:
-    std::unordered_map<uint8_t, Edge> edges_;
+    std::map<uint8_t, Edge> edges_;
     size_t item_index_;
     
 public:
@@ -57,7 +58,7 @@ public:
         return add(label, target_index);
     }
     
-    id_type target(uint8_t c) {
+    id_type target(uint8_t c) const {
         auto it = edges_.find(c);
         if (it == edges_.end())
             return kRootIndex;
@@ -73,9 +74,9 @@ public:
     bool terminal() const {return item_index() != -1;}
     
     template <class ACTION>
-    void for_each(ACTION action) const {
+    void for_each_edge(ACTION action) const {
         for (auto& e : edges_) {
-            action(e);
+            action(e.first, e.second);
         }
     }
     
@@ -97,6 +98,10 @@ public:
         container_.emplace_back();
     }
     
+    size_t size() const {
+        return container_.size();
+    }
+    
     item_type* insert(std::string_view key, item_type item) {
         size_t node = kRootIndex;
         for (uint8_t c : key) {
@@ -109,6 +114,16 @@ public:
                 node = container_.size();
                 container_.emplace_back();
             }
+        }
+        // Add leaf label as '\0'.
+        auto& n = container_[node];
+        auto target = n.target(kLeafChar);
+        if (target != kRootIndex) {
+            node = target;
+        } else {
+            n.add(kLeafChar, container_.size());
+            node = container_.size();
+            container_.emplace_back();
         }
         
         auto& terminal = container_[node];
@@ -124,52 +139,68 @@ public:
     }
     
     item_type* traverse(std::string_view key) {
+        auto item_index = _traverse(key);
+        return item_index != -1 ? &storage_[item_index] : nullptr;
+    }
+    
+    template <class NODE_ACTION>
+    void dfs(NODE_ACTION node_action) const {
+        dfs(kRootIndex, 0, node_action);
+    }
+    
+    template <class NODE_ACTION>
+    void dfs(size_t node, size_t depth, NODE_ACTION node_action) const {
+        auto& n = container_[node];
+        node_action(n, depth);
+        n.for_each_edge([&](auto c, auto& edge) {
+            dfs(edge.target(), depth+1, node_action);
+        });
+    }
+    
+    template <class NODE_ACTION>
+    void bfs(NODE_ACTION node_action) const {
+        std::queue<std::pair<size_t, size_t>> nodes;
+        nodes.emplace(kRootIndex, 0);
+        while (not nodes.empty()) {
+            auto p = nodes.front();
+            nodes.pop();
+            auto index = p.first;
+            auto depth = p.second;
+            auto& n = container_[index];
+            
+            node_action(n, depth);
+            n.for_each_edge([&](auto c, auto edge) {
+                nodes.emplace(edge.target(), depth+1);
+            });
+        }
+    }
+    
+    const Node& node(size_t id) const {
+        return container_[id];
+    }
+    
+    const Node& root() const {
+        return node(kRootIndex);
+    }
+    
+private:
+    size_t _traverse(std::string_view key) const {
         size_t node = kRootIndex;
         for (uint8_t c : key) {
             auto& n = container_[node];
             auto target = n.target(c);
             if (target == kRootIndex)
-                return nullptr;
+                return -1;
             node = target;
         }
+        auto& n = container_[node];
+        auto target = n.target('\0');
+        if (target == kRootIndex)
+            return -1;
+        node = target;
         
         auto& terminal = container_[node];
-        if (terminal.item_index() == -1) {
-            return nullptr;
-        } else {
-            return &storage_[terminal.item_index()];
-        }
-    }
-    
-    template <class NODE_ACTION, class EDGE_ACTION>
-    void dfs(NODE_ACTION node_action, EDGE_ACTION edge_action) const {
-        dfs(kRootIndex, node_action, edge_action);
-    }
-    
-    template <class NODE_ACTION, class EDGE_ACTION>
-    void dfs(size_t node, NODE_ACTION node_action, EDGE_ACTION edge_action) const {
-        auto& n = container_[node];
-        node_action(n);
-        n.for_each([&](auto& edge) {
-            edge_action(edge);
-            dfs(edge.target_index(), node_action, edge_action);
-        });
-    }
-    
-    template <class NODE_ACTION, class EDGE_ACTION>
-    void bfs(NODE_ACTION node_action, EDGE_ACTION edge_action) const {
-        std::queue<size_t> nodes;
-        nodes.push(kRootIndex);
-        while (not nodes.empty()) {
-            auto& n = container_[nodes.front()];
-            nodes.pop();
-            
-            node_action(n);
-            n.for_each([&](auto& edge) {
-                edge_action(edge);
-                nodes.push(edge.target());
-            });
-        }
+        return terminal.item_index();
     }
     
 };
