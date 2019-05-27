@@ -180,6 +180,14 @@ public:
     
     size_t size_in_bytes() const {return Base::size_in_bytes();}
     
+    void Write(std::ostream& os) const {
+        Base::Write(os);
+    }
+    
+    void Read(std::istream& is) {
+        Base::Read(is);
+    }
+    
 private:
     bool in_range(size_t index, size_t depth) const {
         assert(depth > 0);
@@ -283,6 +291,14 @@ public:
     }
     
     size_t size_in_bytes() const {return Base::size_in_bytes();}
+    
+    void Write(std::ostream& os) const {
+        Base::Write(os);
+    }
+    
+    void Read(std::istream& is) {
+        Base::Read(is);
+    }
     
 private:
     bool in_range(size_t index, size_t depth) const {
