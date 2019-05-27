@@ -11,26 +11,31 @@
 #include "basic.hpp"
 #include "graph_util.hpp"
 #include "EmptyLinkedVector.hpp"
+#include "SuccinctBitVector.hpp"
 
 namespace sim_ds {
 
 
-template <typename ValueType> class Samc;
+template <typename ValueType> class _SamcDictImpl;
 
 template <typename ValueType>
 class _SamcImpl {
+public:
     using value_type = ValueType;
     static constexpr size_t kAlphabetSize = 0x100;
+    static constexpr uint8_t kEmptyChar = 0xFF;
     
-private:
-    friend class Samc<ValueType>;
-    
+protected:
     std::vector<uint8_t> storage_;
     using code_type = std::array<value_type, kAlphabetSize>;
     std::vector<code_type> code_table_;
     std::vector<value_type> max_;
     
+    friend class _SamcDictImpl<ValueType>;
+    
 public:
+    _SamcImpl() = default;
+    
     uint8_t check(size_t index) const {return storage_[index];}
     
     size_t code(size_t depth, uint8_t c) const {return code_table_[depth][c];}
@@ -101,7 +106,7 @@ protected:
             }
             
             auto old_size = storage_.size();
-            storage_.resize(old_size + max_index + 1);
+            storage_.resize(old_size + max_index + 1, kEmptyChar);
             node_indexes.resize(old_size + max_index + 1);
             for (long long i = 0; i <= max_index; i++) {
                 if (exists[i].empty())
@@ -135,9 +140,12 @@ template <typename ValueType>
 class Samc : _SamcImpl<ValueType> {
     using Base = _SamcImpl<ValueType>;
     
+public:
     static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
     
 public:
+    Samc() = default;
+    
     template <typename T>
     Samc(const graph_util::Trie<T>& trie) : Base(trie) {}
     
@@ -165,6 +173,102 @@ private:
         assert(depth > 0);
         return index > Base::max(depth-1) and index <= Base::max(depth);
     }
+    
+    bool empty(size_t index) const {return Base::check(index) == Base::kEmptyChar;}
+    
+};
+
+    
+template <typename ValueType>
+class _SamcDictImpl : protected _SamcImpl<ValueType> {
+    using Base = _SamcImpl<ValueType>;
+    
+public:
+    static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
+    
+protected:
+    using succinct_bv_type = SuccinctBitVector<true>;
+    succinct_bv_type leaves_;
+    
+public:
+    _SamcDictImpl() = default;
+    
+    template <typename T>
+    _SamcDictImpl(const graph_util::Trie<T>& trie) : Base(trie) {
+        BitVector leaves_src(Base::storage_.size());
+        size_t depth = 1;
+        for (size_t i = 1; i < Base::storage_.size(); i++) {
+            if (Base::max(depth) < i)
+                depth++;
+            if (Base::check(i) == kLeafChar)
+                leaves_src[i] = true;
+        }
+        leaves_ = succinct_bv_type(leaves_src);
+    }
+    
+    size_t id(size_t index) const {return leaves_.rank(index);}
+    
+    size_t leaf(size_t index) const {return leaves_.select(index);}
+    
+    size_t SizeInBytes() const {return Base::SizeInBytes() + size_vec(leaves_);}
+    
+};
+
+
+template <typename ValueType>
+class SamcDict : _SamcDictImpl<ValueType> {
+    using Base = _SamcDictImpl<ValueType>;
+    
+public:
+    SamcDict() = default;
+    
+    template <typename T>
+    SamcDict(const graph_util::Trie<T>& trie) : Base(trie) {
+        
+    }
+    
+    size_t lookup(std::string_view key) const {
+        size_t node = 0;
+        size_t depth = 0;
+        for (; depth < key.size(); depth++) {
+            uint8_t c = key[depth];
+            auto target = node + Base::code(depth, c);
+            if (not in_range(target, depth+1) or
+                Base::check(target) != c) {
+                return false;
+            }
+            node = target;
+        }
+        auto terminal = node + Base::code(depth, Base::kLeafChar);
+        if (not in_range(terminal, depth+1) or
+            Base::check(terminal) != Base::kLeafChar) {
+            return -1;
+        }
+        return Base::id(terminal);
+    }
+    
+    std::string access(size_t value) const {
+        std::string text;
+        size_t node = Base::leaf(value);
+        size_t depth = std::lower_bound(Base::max_.begin(), Base::max_.end(), node) - Base::max_.begin();
+        while (depth > 0) {
+            auto c = Base::check(node);
+            node -= Base::code(--depth, c);
+            text.push_back(c);
+        }
+        assert(node == 0);
+        return std::string(text.rbegin(), text.rend()-1);
+    }
+    
+    size_t SizeInBytes() const {return Base::SizeInBytes();}
+    
+private:
+    bool in_range(size_t index, size_t depth) const {
+        assert(depth > 0);
+        return index > Base::max(depth-1) and index <= Base::max(depth);
+    }
+    
+    bool empty(size_t index) const {return Base::check(index) == Base::kEmptyChar;}
     
 };
 
