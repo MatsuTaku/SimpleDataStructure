@@ -49,6 +49,18 @@ public:
         return size;
     }
     
+    void Write(std::ostream& os) const {
+        write_vec(storage_, os);
+        write_vec(code_table_, os);
+        write_vec(max_, os);
+    }
+    
+    void Read(std::istream& is) {
+        storage_ = read_vec<uint8_t>(is);
+        code_table_ = read_vec<code_type>(is);
+        max_ = read_vec<value_type>(is);
+    }
+    
 protected:
     template <typename T>
     _SamcImpl(const graph_util::Trie<T>& trie) {
@@ -211,6 +223,16 @@ public:
     size_t leaf(size_t index) const {return leaves_.select(index);}
     
     size_t size_in_bytes() const {return Base::size_in_bytes() + leaves_.size_in_bytes();}
+    
+    void Write(std::ostream& os) const {
+        Base::Write(os);
+        leaves_.Write(os);
+    }
+    
+    void Read(std::istream& is) {
+        Base::Read(is);
+        leaves_.Read(is);
+    }
     
 };
 
