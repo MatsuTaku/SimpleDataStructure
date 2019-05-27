@@ -42,7 +42,7 @@ public:
     
     size_t max(size_t depth) const {return max_[depth];}
     
-    size_t SizeInBytes() const {
+    size_t size_in_bytes() const {
         size_t size = size_vec(storage_);
         size += size_vec(code_table_);
         size += size_vec(max_);
@@ -166,7 +166,7 @@ public:
                 Base::check(terminal) == kLeafChar);
     }
     
-    size_t SizeInBytes() const {return Base::SizeInBytes();}
+    size_t size_in_bytes() const {return Base::size_in_bytes();}
     
 private:
     bool in_range(size_t index, size_t depth) const {
@@ -210,7 +210,7 @@ public:
     
     size_t leaf(size_t index) const {return leaves_.select(index);}
     
-    size_t SizeInBytes() const {return Base::SizeInBytes() + size_vec(leaves_);}
+    size_t size_in_bytes() const {return Base::size_in_bytes() + leaves_.size_in_bytes();}
     
 };
 
@@ -260,7 +260,7 @@ public:
         return std::string(text.rbegin(), text.rend()-1);
     }
     
-    size_t SizeInBytes() const {return Base::SizeInBytes();}
+    size_t size_in_bytes() const {return Base::size_in_bytes();}
     
 private:
     bool in_range(size_t index, size_t depth) const {
