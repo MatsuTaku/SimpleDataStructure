@@ -196,7 +196,6 @@ private:
                         
     size_t shifts_of_conflicts_(uint64_t conflicts, uint64_t fields) const {
         return std::__ctz(~fields >> std::__ctz(conflicts));
-        
     }
     
 };
