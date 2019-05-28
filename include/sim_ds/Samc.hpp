@@ -74,7 +74,7 @@ protected:
         max_.emplace_back(0);
         long long max_index = 0;
         while (max_index >= 0) {
-            std::cerr << max_index << std::endl;
+            std::cerr << "block_height: " << max_index << std::endl;
             std::array<std::vector<value_type>, kAlphabetSize> indices_list;
             auto height = max_index + 1;
             for (size_t i = 0; i < height; i++) {
@@ -98,8 +98,8 @@ protected:
                 }
                 std::cerr << i << ' ';
                 
-                exists.resize(max_index + height + 65);
-                auto y_front = y_check(indices, exists);
+                exists.resize(max_index + 1 + height + 64);
+                auto y_front = y_check_(indices, exists);
                 for (auto id : indices) {
                     exists.set_value(y_front + id, i);
                 }
@@ -131,7 +131,7 @@ protected:
     }
     
 private:
-    position_type y_check(const std::vector<value_type>& indices, const EmptyLinkedVector<uint8_t>& exists) const {
+    position_type y_check_(const std::vector<value_type>& indices, const EmptyLinkedVector<uint8_t>& exists) const {
         BitVector indice_mask((size_t)indices.back()+1);
         for (auto id : indices)
             indice_mask[id] = true;
@@ -174,12 +174,9 @@ private:
                 }
                 auto conflicts = mask & hits;
                 if (conflicts) {
-                    using std::__ctz;
-                    auto shift = __ctz(~conflicts >> __ctz(conflicts));
-                    conflicts = (mask << shift) & hits;
-                    while (shift < 64 and conflicts) {
-                        shift += __ctz(~conflicts >> __ctz(conflicts));
-                        conflicts = (mask << shift) & hits;
+                    auto shift = shifts_of_conflicts_(conflicts, hits);
+                    while (shift < 64 and (conflicts = (mask << shift) & hits)) {
+                        shift += shifts_of_conflicts_(conflicts, hits);
                     }
                     return shift;
                 }
@@ -196,6 +193,11 @@ private:
         
         return gap + empty_front;
     };
+                        
+    size_t shifts_of_conflicts_(uint64_t conflicts, uint64_t fields) const {
+        return std::__ctz(~fields >> std::__ctz(conflicts));
+        
+    }
     
 };
 
@@ -256,7 +258,8 @@ private:
     
 template <typename ValueType>
 class _SamcDictImpl : protected _SamcImpl<ValueType> {
-    using Base = _SamcImpl<ValueType>;
+    using value_type = ValueType;
+    using Base = _SamcImpl<value_type>;
     
 public:
     static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
