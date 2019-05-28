@@ -112,18 +112,26 @@ public:
     void resize(size_t new_size, bool bit) {
         auto prev_size = size();
         resize(new_size);
-        for (size_t i = prev_size; i < new_size; i++)
-                operator[](i) = bit;
+        if (new_size > prev_size and bit) {
+            uint64_t mask = -1ull;
+            base_[prev_size/kBitsPerWord] |= mask << (prev_size%kBitsPerWord);
+            for (size_t i = prev_size/kBitsPerWord+1; i <= (new_size-1)/kBitsPerWord; i++)
+                base_[i] = mask;
+            if (new_size % kBitsPerWord > 0)
+                base_[(new_size-1)/kBitsPerWord] &= mask >> (kBitsPerWord - new_size%kBitsPerWord);
+        }
     }
     
     void reserve(size_t reserved_size) {
         base_.reserve(reserved_size == 0 ? 0 : (reserved_size-1) / kBitsPerWord + 1);
     }
     
-    void assign(size_t size, bool bit) {
-        resize(size);
-        for (size_t i = 0; i < size; i++)
-            operator[](i) = bit;
+    void assign(size_t new_size, bool bit) {
+        resize(new_size);
+        uint64_t mask = !bit ? 0ull : -1ull;
+        for (size_t i = 0; i < new_size/kBitsPerWord; i++)
+            base_[i] = mask;
+        base_[new_size/kBitsPerWord] = mask >> (kBitsPerWord - (new_size-1)%kBitsPerWord - 1);
     }
     
     void shrink_to_fit() {

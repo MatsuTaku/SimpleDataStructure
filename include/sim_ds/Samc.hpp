@@ -87,7 +87,8 @@ protected:
             }
             
             std::cerr << "ycheck for ";
-            EmptyLinkedVector<uint8_t> exists;
+            BitVector empties;
+            auto old_size = storage_.size();
             max_index = -1;
             code_table_.emplace_back();
             for (size_t i = 0; i < kAlphabetSize; i++) {
@@ -98,32 +99,26 @@ protected:
                 }
                 std::cerr << i << ' ';
                 
-                exists.resize(max_index + 1 + height + 64);
-                auto y_front = y_check_(indices, exists);
-                for (auto id : indices) {
-                    exists.set_value(y_front + id, i);
-                }
+                empties.resize(max_index + 1 + height, true);
+                auto y_front = y_check_(indices, empties);
                 max_index = std::max(max_index, y_front + indices.back());
                 code_table_.back()[i] = height + y_front;
+                storage_.resize(old_size + max_index + 1, kEmptyChar);
+                node_indexes.resize(old_size + max_index + 1);
+                for (auto id : indices) {
+                    auto index = y_front + id;
+                    auto abs_index = old_size + index;
+                    storage_[abs_index] = i;
+                    empties[index] = false;
+                    auto parent_index = abs_index - (height + y_front);
+                    auto parent_node = trie.node(node_indexes[parent_index]);
+                    node_indexes[abs_index] = parent_node.target(i);
+                }
             }
+            std::cout << std::endl;
             if (max_index == -1) {
                 code_table_.erase(code_table_.end()-1);
                 break;
-            }
-            
-            std::cerr << std::endl << "expand" << std::endl;
-            auto old_size = storage_.size();
-            storage_.resize(old_size + max_index + 1, kEmptyChar);
-            node_indexes.resize(old_size + max_index + 1);
-            for (size_t i = 0; i <= max_index; i++) {
-                if (exists.empty_at(i))
-                    continue;
-                auto index = old_size + i;
-                auto c = exists[i].value();
-                storage_[index] = c;
-                auto parent_index = index - code_table_.back()[c];
-                auto parent_node = trie.node(node_indexes[parent_index]);
-                node_indexes[index] = parent_node.target(c);
             }
             
             max_.push_back(storage_.size() - 1);
@@ -131,47 +126,48 @@ protected:
     }
     
 private:
-    position_type y_check_(const std::vector<value_type>& indices, const EmptyLinkedVector<uint8_t>& exists) const {
+    position_type y_check_(const std::vector<value_type>& indices, const BitVector& empties) const {
         BitVector indice_mask((size_t)indices.back()+1);
         for (auto id : indices)
             indice_mask[id] = true;
         
-        SuccinctBitVector<false> sbv(exists.bit_vector());
+        SuccinctBitVector<true> sbv(empties);
         auto num_empties = [&](size_t begin, size_t end) {
-            return sbv.rank_0(end) - sbv.rank_0(begin);
+            return sbv.rank(end) - sbv.rank(begin);
         };
         
         auto idfront = indices.front();
         auto idback = indices.back();
         auto check = [&](position_type offset) -> size_t {
-            auto empties = num_empties(offset + idfront, offset + idback+1);
-            if (idback+1 - idfront == empties) // All of values are corresponding to expanded area.
+            auto n_empties = num_empties(offset + idfront, offset + idback+1);
+            if (idback+1 - idfront == n_empties) // All of values are corresponding to expanded area.
                 return 0;
-            if (empties < indices.size()) { // Not enough to number of empty areas.
-                auto shift = indices.size() - empties;
-                shift += sbv.rank(offset + idback+1+shift) - sbv.rank(offset + idback+1);
+            if (n_empties < indices.size()) { // Not enough to number of empty areas.
+                auto shift = indices.size() - n_empties;
+                shift += sbv.rank_0(offset + idback+1+shift) - sbv.rank_0(offset + idback+1);
                 return shift;
             }
             
             auto mask_data = indice_mask.data();
-            auto exists_data = exists.bit_vector().data();
+            auto empties_data = empties.data();
             const auto insets = offset & 0x3F;
             size_t i = idfront/64;
             position_type p = offset + 64ll*i;
-            position_type pi_end = (exists.size()-1)/64+1;
+            position_type pi_end = (empties.size()-1)/64+1;
             for (; i <= idback/64; i++, p+=64) {
                 uint64_t mask = mask_data[i];
                 if (mask == 0)
                     continue;
                 uint64_t hits = 0;
                 if (p < 0) {
-                    hits = exists_data[(p/64)+1] << (64-insets);
+                    hits = empties_data[(p/64)+1] << (64-insets);
                 } else {
                     auto pi = p/64;
-                    hits = exists_data[pi] >> insets;
+                    hits = empties_data[pi] >> insets;
                     if (pi+1 < pi_end)
-                        hits |= exists_data[pi+1] << (64-insets);
+                        hits |= empties_data[pi+1] << (64-insets);
                 }
+                hits = ~hits;
                 auto conflicts = mask & hits;
                 if (conflicts) {
                     auto shift = shifts_of_conflicts_(conflicts, hits);
@@ -185,7 +181,7 @@ private:
         };
         
         const position_type gap = -(position_type)idfront;
-        position_type empty_front = exists.empty_front_index();
+        position_type empty_front = sbv.select(0);
         size_t shift;
         while ((shift = check(gap + empty_front)) > 0) {
             empty_front += shift;
