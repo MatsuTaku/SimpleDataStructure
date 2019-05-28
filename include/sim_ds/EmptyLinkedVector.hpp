@@ -10,26 +10,21 @@
 
 #include "basic.hpp"
 #include "bit_util.hpp"
+#include "BitVector.hpp"
 
 namespace sim_ds {
     
-template <class VECTOR_TYPE>
+template <class VectorType>
 class _EmptyLinkedVectorElement {
-    using vector_type = VECTOR_TYPE;
+    using vector_type = VectorType;
     using value_type = typename vector_type::value_type;
-    using element_type = uint64_t;
     using size_type = uint32_t;
-    
-    const element_type kNextMask = bit_util::width_mask<32>;
-    const element_type kPrevMask = bit_util::width_mask<31>;
-    const element_type kPrevPos = bit_util::offset_mask<32>;
-    const element_type kExistsMask = bit_util::offset_mask<63>;
-    const element_type kElementMask = bit_util::width_mask<63>;
     
 private:
     friend typename vector_type::Self;
     
-    element_type element_ = 0;
+    size_type next_ = 0;
+    size_type prev_ = 0;
     
 public:
     _EmptyLinkedVectorElement() = default;
@@ -39,37 +34,38 @@ public:
         set_prev(prev);
     }
     
-    size_t next() const {return element_ & kNextMask;}
+    size_type next() const {return next_;}
     
-    size_t prev() const {return (element_ / kPrevPos) & kPrevMask;}
+    size_type prev() const {return prev_;}
     
-    bool empty() const {return not (element_ & kExistsMask);}
-    
-    value_type value() const {return element_ & kElementMask;}
+    value_type value() const {
+        if constexpr (sizeof(value_type) <= sizeof(size_type))
+            return static_cast<value_type>(next_);
+        else
+            return static_cast<value_type>((uint64_t)next_ | (uint64_t)prev_ << 32);
+    }
     
 private:
     void set_next(size_type next) {
-        assert(empty());
-        element_ &= 0xFFFFFFFF00000000;
-        element_ |= next;
+        next_ = next;
     }
     
     void set_prev(size_type prev) {
-        assert(empty());
-        element_ &= 0x80000000FFFFFFFF;
-        element_ |= (prev & kPrevMask) * kPrevPos;
+        prev_ = prev;
     }
     
-    void set_value(element_type value) {
-        assert(empty());
-        element_ = bit_util::bextr(value, 0, 63);
-        element_ |= kExistsMask;
+    void set_value(value_type value) {
+        next_ = value & 0x00000000FFFFFFFF;
+        if constexpr (sizeof(value_type) > sizeof(size_type))
+            prev_ = (value >> 32);
+        else
+            prev_ = 0;
     }
     
 };
 
 
-template <typename T, typename Value_Traits = uint64_t(T)>
+template <typename T>
 class EmptyLinkedVector {
 public:
     using value_type = T;
@@ -79,6 +75,7 @@ public:
 private:
     size_t empty_head_ = -1;
     std::vector<element_type> container_;
+    BitVector exists_;
     
 public:
     EmptyLinkedVector() = default;
@@ -114,9 +111,10 @@ public:
             }
             container_.resize(new_size);
         }
+        exists_.resize(new_size);
     }
     
-    bool empty_at(size_t index) const {return container_[index].empty();}
+    bool empty_at(size_t index) const {return not exists_[index];}
     
     const element_type& operator[](size_t index) const {
         return container_[index];
@@ -129,8 +127,8 @@ public:
     size_t empty_front_index() const {return empty_head_;}
     
     void set_value(size_t index, value_type new_value) {
+        assert(empty_at(index));
         auto& target = operator[](index);
-        assert(target.empty());
         auto next = target.next();
         if (next == index) {
             assert(empty_head_ == index);
@@ -143,7 +141,10 @@ public:
             container_[next].set_prev(prev);
         }
         target.set_value(new_value);
+        exists_[index] = true;
     }
+    
+    const BitVector& bit_vector() const {return exists_;}
     
 };
 

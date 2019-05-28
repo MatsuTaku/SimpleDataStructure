@@ -17,7 +17,7 @@ TEST(GraphUtilTest, Trie) {
         "bac",
         "bb"
     };
-    graph_util::Trie<int> trie;
+    graph_util::Trie<int, int> trie;
     for (auto& s : set) {
         trie.insert(s, 1);
     }
@@ -35,7 +35,7 @@ TEST(GraphUtilTest, TrieDfs) {
         "bac",
         "bb"
     };
-    graph_util::Trie<int> trie;
+    graph_util::Trie<int, int> trie;
     for (auto& s : set) {
         trie.insert(s, 1);
     }
@@ -66,7 +66,7 @@ TEST(GraphUtilTest, TrieBfs) {
         "bac",
         "bb"
     };
-    graph_util::Trie<int> trie;
+    graph_util::Trie<int, int> trie;
     for (auto& s : set) {
         trie.insert(s, 1);
     }

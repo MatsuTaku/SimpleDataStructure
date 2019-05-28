@@ -144,6 +144,8 @@ public:
         return bits_.size();
     }
     
+    const auto* bits_data() const {return bits_.data();}
+    
     size_t num_blocks() const {
         return basic_block_.size() / 2;
     }

@@ -44,6 +44,12 @@ private:
 public:
     BitVector() : base_(0), size_(0) {}
     
+    BitVector(const BitVector&) = default;
+    BitVector& operator=(const BitVector&) = default;
+    
+    BitVector(BitVector&&) = default;
+    BitVector& operator=(BitVector&&) = default;
+    
     template <typename BitSet>
     BitVector(const BitSet& bits) {
         resize(bits.size());

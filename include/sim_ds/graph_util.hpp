@@ -14,60 +14,38 @@ namespace graph_util {
     
 constexpr size_t kRootIndex = 0;
 constexpr uint8_t kLeafChar = '\0';
-    
-
-template <class NODE>
-class _Edge {
-    using Node = NODE;
-    using Self = _Edge<Node>;
-    
-private:
-    std::string label_;
-    id_type target_ = kRootIndex;
-    
-public:
-    _Edge(std::string_view label, id_type target) : label_(label), target_(target) {}
-    
-    std::string_view label() const {return std::string_view(label_);}
-    id_type target() const {return target_;}
-    
-};
 
 
-template <typename ITEM_TYPE>
+template <class GraphType>
 class _Node {
-    using Item = ITEM_TYPE;
-    using Self = _Node<Item>;
-    using Edge = _Edge<Self>;
+public:
+    using graph_type = GraphType;
+    using size_type = typename graph_type::size_type;
+    
+    static constexpr size_type kItemEmpty = graph_type::kItemEmpty;
     
 private:
-    std::map<uint8_t, Edge> edges_;
-    size_t item_index_;
+    std::map<uint8_t, size_type> edges_;
+    size_type item_index_;
     
 public:
-    _Node(size_t item_index = -1) : item_index_(item_index) {}
+    _Node() : item_index_(kItemEmpty) {}
+    _Node(size_type item_index) : item_index_(item_index) {}
     
-    bool add(std::string_view label, size_t target_index) {
-        auto c = label.front();
-        return edges_.try_emplace(c, label, target_index).second;
+    bool add(uint8_t c, size_type target_index) {
+        return edges_.try_emplace(c, target_index).second;
     }
     
-    bool add(uint8_t c, size_t target_index) {
-        std::string label;
-        label.push_back(c);
-        return add(label, target_index);
-    }
-    
-    id_type target(uint8_t c) const {
+    size_type target(uint8_t c) const {
         auto it = edges_.find(c);
         if (it == edges_.end())
             return kRootIndex;
-        return it->second.target();
+        return it->second;
     }
     
-    id_type item_index() const {return item_index_;}
+    size_type item_index() const {return item_index_;}
     
-    void set_item_index(id_type item_index) {
+    void set_item_index(size_type item_index) {
         item_index_ = item_index;
     }
     
@@ -83,14 +61,18 @@ public:
 };
 
 
-template <typename ITEM_TYPE = bool>
+template <typename ItemType, typename SizeType = size_t>
 class Trie {
-    using item_type = ITEM_TYPE;
-    using Self = Trie<item_type>;
-    using Node = _Node<item_type>;
+public:
+    using item_type = ItemType;
+    using size_type = SizeType;
+    using Self = Trie<item_type, size_type>;
+    using node_type = _Node<Self>;
+    
+    static constexpr size_type kItemEmpty = std::numeric_limits<size_type>::max();
     
 private:
-    std::vector<Node> container_;
+    std::vector<node_type> container_;
     std::vector<item_type> storage_;
     
 public:
@@ -127,7 +109,7 @@ public:
         }
         
         auto& terminal = container_[node];
-        if (terminal.item_index() == -1) {
+        if (terminal.item_index() == kItemEmpty) {
             // Insert new item.
             storage_.push_back(item);
             terminal.set_item_index(storage_.size()-1);
@@ -152,8 +134,8 @@ public:
     void dfs(size_t node, size_t depth, NODE_ACTION node_action) const {
         auto& n = container_[node];
         node_action(n, depth);
-        n.for_each_edge([&](auto c, auto& edge) {
-            dfs(edge.target(), depth+1, node_action);
+        n.for_each_edge([&](auto c, auto target) {
+            dfs(target, depth+1, node_action);
         });
     }
     
@@ -169,17 +151,17 @@ public:
             auto& n = container_[index];
             
             node_action(n, depth);
-            n.for_each_edge([&](auto c, auto edge) {
-                nodes.emplace(edge.target(), depth+1);
+            n.for_each_edge([&](auto c, auto target) {
+                nodes.emplace(target, depth+1);
             });
         }
     }
     
-    const Node& node(size_t id) const {
+    const node_type& node(size_t id) const {
         return container_[id];
     }
     
-    const Node& root() const {
+    const node_type& root() const {
         return node(kRootIndex);
     }
     

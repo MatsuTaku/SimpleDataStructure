@@ -12,6 +12,7 @@
 #include "graph_util.hpp"
 #include "EmptyLinkedVector.hpp"
 #include "SuccinctBitVector.hpp"
+#include "log.hpp"
 
 namespace sim_ds {
 
@@ -22,6 +23,7 @@ template <typename ValueType>
 class _SamcImpl {
 public:
     using value_type = ValueType;
+    using position_type = long long;
     static constexpr size_t kAlphabetSize = 0x100;
     static constexpr uint8_t kEmptyChar = 0xFF;
     
@@ -62,66 +64,59 @@ public:
     }
     
 protected:
-    template <typename T>
-    _SamcImpl(const graph_util::Trie<T>& trie) {
+    template <typename T, typename S>
+    _SamcImpl(const graph_util::Trie<T, S>& trie) {
+        std::cerr << "Get trie" << std::endl;
         assert(trie.size() < std::numeric_limits<value_type>::max());
         
         std::vector<size_t> node_indexes = {graph_util::kRootIndex};
-        storage_.emplace_back('^');
+        storage_.emplace_back('^'); // root
         max_.emplace_back(0);
-        std::vector<std::bitset<kAlphabetSize>> table(1);
-        trie.root().for_each_edge([&](uint8_t c, auto e) {
-            table.back()[c] = true;
-        });
-        while (not table.empty()) {
-            EmptyLinkedVector<uint8_t> exists(table.size() * kAlphabetSize);
-            auto y_check = [&](const std::vector<size_t>& indices) {
-                long long gap = -indices.front();
-                long long front = exists.empty_front_index();
-                while (true) {
-                    size_t j = 0;
-                    for (; j < indices.size(); j++) {
-                        auto index = gap + front + indices[j];
-                        if (not exists[index].empty())
-                            break;
-                    }
-                    if (j == indices.size())
-                        break;
-                    front = exists[front].next();
-                }
-                return gap + front;
-            };
+        long long max_index = 0;
+        while (max_index >= 0) {
+            std::cerr << max_index << std::endl;
+            std::array<std::vector<value_type>, kAlphabetSize> indices_list;
+            auto height = max_index + 1;
+            for (size_t i = 0; i < height; i++) {
+                auto index = storage_.size() - height + i;
+                if (storage_[index] == kEmptyChar)
+                    continue;
+                trie.node(node_indexes[index]).for_each_edge([&](uint8_t c, auto e) {
+                    indices_list[c].push_back(i);
+                });
+            }
             
-            long long max_index = -1;
+            std::cerr << "ycheck for ";
+            EmptyLinkedVector<uint8_t> exists;
+            max_index = -1;
             code_table_.emplace_back();
             for (size_t i = 0; i < kAlphabetSize; i++) {
-                std::vector<size_t> indices;
-                for (size_t j = 0; j < table.size(); j++) {
-                    if (not table[j][i])
-                        continue;
-                    indices.push_back(j);
-                }
+                auto& indices = indices_list[i];
                 if (indices.empty()) {
                     code_table_.back()[i] = 0;
                     continue;
                 }
+                std::cerr << i << ' ';
                 
-                auto y_front = y_check(indices);
+                exists.resize(max_index + height + 65);
+                auto y_front = y_check(indices, exists);
                 for (auto id : indices) {
-                    size_t index = y_front + id;
-                    exists.set_value(index, i);
-                    max_index = std::max(max_index, (long long)index);
+                    exists.set_value(y_front + id, i);
                 }
-                auto block_gap = (max_.size() == 1 ? 1 :
-                                  max_.back() - max_[max_.size() - 2]);
-                code_table_.back()[i] = block_gap + y_front;
+                max_index = std::max(max_index, y_front + indices.back());
+                code_table_.back()[i] = height + y_front;
+            }
+            if (max_index == -1) {
+                code_table_.erase(code_table_.end()-1);
+                break;
             }
             
+            std::cerr << std::endl << "expand" << std::endl;
             auto old_size = storage_.size();
             storage_.resize(old_size + max_index + 1, kEmptyChar);
             node_indexes.resize(old_size + max_index + 1);
-            for (long long i = 0; i <= max_index; i++) {
-                if (exists[i].empty())
+            for (size_t i = 0; i <= max_index; i++) {
+                if (exists.empty_at(i))
                     continue;
                 auto index = old_size + i;
                 auto c = exists[i].value();
@@ -131,17 +126,76 @@ protected:
                 node_indexes[index] = parent_node.target(c);
             }
             
-            auto block_front = max_.back() + 1;
             max_.push_back(storage_.size() - 1);
-            table.clear();
-            for (size_t index = block_front; index < storage_.size(); index++) {
-                table.emplace_back();
-                trie.node(node_indexes[index]).for_each_edge([&](uint8_t c, auto e) {
-                    table.back()[c] = true;
-                });
-            }
         }
     }
+    
+private:
+    position_type y_check(const std::vector<value_type>& indices, const EmptyLinkedVector<uint8_t>& exists) const {
+        BitVector indice_mask((size_t)indices.back()+1);
+        for (auto id : indices)
+            indice_mask[id] = true;
+        
+        SuccinctBitVector<false> sbv(exists.bit_vector());
+        auto num_empties = [&](size_t begin, size_t end) {
+            return sbv.rank_0(end) - sbv.rank_0(begin);
+        };
+        
+        auto idfront = indices.front();
+        auto idback = indices.back();
+        auto check = [&](position_type offset) -> size_t {
+            auto empties = num_empties(offset + idfront, offset + idback+1);
+            if (idback+1 - idfront == empties) // All of values are corresponding to expanded area.
+                return 0;
+            if (empties < indices.size()) { // Not enough to number of empty areas.
+                auto shift = indices.size() - empties;
+                shift += sbv.rank(offset + idback+1+shift) - sbv.rank(offset + idback+1);
+                return shift;
+            }
+            
+            auto mask_data = indice_mask.data();
+            auto exists_data = exists.bit_vector().data();
+            const auto insets = offset & 0x3F;
+            size_t i = idfront/64;
+            position_type p = offset + 64ll*i;
+            position_type pi_end = (exists.size()-1)/64+1;
+            for (; i <= idback/64; i++, p+=64) {
+                uint64_t mask = mask_data[i];
+                if (mask == 0)
+                    continue;
+                uint64_t hits = 0;
+                if (p < 0) {
+                    hits = exists_data[(p/64)+1] << (64-insets);
+                } else {
+                    auto pi = p/64;
+                    hits = exists_data[pi] >> insets;
+                    if (pi+1 < pi_end)
+                        hits |= exists_data[pi+1] << (64-insets);
+                }
+                auto conflicts = mask & hits;
+                if (conflicts) {
+                    using std::__ctz;
+                    auto shift = __ctz(~conflicts >> __ctz(conflicts));
+                    conflicts = (mask << shift) & hits;
+                    while (shift < 64 and conflicts) {
+                        shift += __ctz(~conflicts >> __ctz(conflicts));
+                        conflicts = (mask << shift) & hits;
+                    }
+                    return shift;
+                }
+            }
+            return 0;
+        };
+        
+        const position_type gap = -(position_type)idfront;
+        position_type empty_front = exists.empty_front_index();
+        size_t shift;
+        while ((shift = check(gap + empty_front)) > 0) {
+            empty_front += shift;
+        }
+        
+        return gap + empty_front;
+    };
     
 };
 
@@ -150,16 +204,17 @@ protected:
 //     M. Fuketa, et.al. Compression of double array structure for fixed length keywords.
 template <typename ValueType>
 class Samc : _SamcImpl<ValueType> {
-    using Base = _SamcImpl<ValueType>;
-    
 public:
+    using value_type = ValueType;
+    using Base = _SamcImpl<value_type>;
+    
     static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
     
 public:
     Samc() = default;
     
-    template <typename T>
-    Samc(const graph_util::Trie<T>& trie) : Base(trie) {}
+    template <typename T, typename S>
+    Samc(const graph_util::Trie<T, S>& trie) : Base(trie) {}
     
     bool accept(std::string_view key) const {
         size_t node = 0;
@@ -213,8 +268,9 @@ protected:
 public:
     _SamcDictImpl() = default;
     
-    template <typename T>
-    _SamcDictImpl(const graph_util::Trie<T>& trie) : Base(trie) {
+    template <typename T, typename S>
+    _SamcDictImpl(const graph_util::Trie<T, S>& trie) : Base(trie) {
+        std::cerr << "Build dict" << std::endl;
         BitVector leaves_src(Base::storage_.size());
         size_t depth = 1;
         for (size_t i = 1; i < Base::storage_.size(); i++) {
@@ -247,15 +303,14 @@ public:
 
 template <typename ValueType>
 class SamcDict : _SamcDictImpl<ValueType> {
-    using Base = _SamcDictImpl<ValueType>;
-    
 public:
+    using value_type = ValueType;
+    using Base = _SamcDictImpl<value_type>;
+    
     SamcDict() = default;
     
-    template <typename T>
-    SamcDict(const graph_util::Trie<T>& trie) : Base(trie) {
-        
-    }
+    template <typename T, typename S>
+    SamcDict(const graph_util::Trie<T, S>& trie) : Base(trie) {}
     
     size_t lookup(std::string_view key) const {
         size_t node = 0;
