@@ -135,16 +135,21 @@ private:
         auto num_empties = [&](size_t begin, size_t end) {
             return sbv.rank(end) - sbv.rank(begin);
         };
+        auto num_exists = [&](size_t begin, size_t end) {
+            return sbv.rank_0(end) - sbv.rank_0(begin);
+        };
         
         auto idfront = indices.front();
         auto idback = indices.back();
         auto check = [&](position_type offset) -> size_t {
-            auto n_empties = num_empties(offset + idfront, offset + idback+1);
-            if (idback+1 - idfront == n_empties) // All of values are corresponding to expanded area.
+            auto index_front = offset + idfront;
+            auto index_end = offset + idback+1;
+            auto n_empties = num_empties(index_front, index_end);
+            if (index_end - index_front == n_empties) // All of values are corresponding to expanded area.
                 return 0;
             if (n_empties < indices.size()) { // Not enough to number of empty areas.
                 auto shift = indices.size() - n_empties;
-                shift += sbv.rank_0(offset + idback+1+shift) - sbv.rank_0(offset + idback+1);
+                shift += num_exists(index_end, index_end + shift);
                 return shift;
             }
             
@@ -189,7 +194,7 @@ private:
         
         return gap + empty_front;
     };
-                        
+    
     size_t shifts_of_conflicts_(uint64_t conflicts, uint64_t fields) const {
         return std::__ctz(~(fields >> std::__ctz(conflicts)));
     }
