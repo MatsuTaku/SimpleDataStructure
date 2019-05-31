@@ -66,7 +66,6 @@ public:
 protected:
     template <typename T, typename S>
     _SamcImpl(const graph_util::Trie<T, S>& trie) {
-        std::cerr << "Get trie" << std::endl;
         assert(trie.size() < std::numeric_limits<value_type>::max());
         
         std::vector<size_t> node_indexes = {graph_util::kRootIndex};
@@ -74,7 +73,9 @@ protected:
         max_.emplace_back(0);
         long long max_index = 0;
         while (max_index >= 0) {
-            std::cerr << "block_height: " << max_index << std::endl;
+            
+            std::cout << "block_height: " << max_index << std::endl;
+            
             std::array<std::vector<value_type>, kAlphabetSize> indices_list;
             auto height = max_index + 1;
             for (size_t i = 0; i < height; i++) {
@@ -86,7 +87,8 @@ protected:
                 });
             }
             
-            std::cerr << "ycheck for ";
+            std::cout << "ycheck for ";
+            
             BitVector empties;
             auto old_size = storage_.size();
             max_index = -1;
@@ -97,9 +99,18 @@ protected:
                     code_table_.back()[i] = 0;
                     continue;
                 }
-                std::cerr << i << ' ';
-                
+                std::cout << i << ':' << uint8_t(i) << ' ';
+#ifndef NDEBUG
+                std::cout << std::endl;
+                if(max_index >= 0)
+                    ShowAsBinary(~empties.data()[max_index/64]);
+                std::cout << "expand from: " << empties.size();
+#endif
                 empties.resize(max_index + 1 + height, true);
+#ifndef NDEBUG
+                std::cout << ", to: " << empties.size() << std::endl;
+                ShowAsBinary(~empties.data()[max_index/64]);
+#endif
                 auto y_front = y_check_(indices, empties);
                 max_index = std::max(max_index, y_front + indices.back());
                 code_table_.back()[i] = height + y_front;
@@ -108,6 +119,13 @@ protected:
                 for (auto id : indices) {
                     auto index = y_front + id;
                     auto abs_index = old_size + index;
+#ifndef NDEBUG
+                    std::cout << std::endl << "insert" << std::endl;
+                    ShowAsBinary(~empties.data()[index/64]);
+                    ShowAsBinary(1ull<<(index%64));
+#endif
+                    assert(storage_[abs_index] == kEmptyChar and
+                           empties[index]);
                     storage_[abs_index] = i;
                     empties[index] = false;
                     auto parent_index = abs_index - (height + y_front);
@@ -116,12 +134,19 @@ protected:
                 }
             }
             std::cout << std::endl;
+            
             if (max_index == -1) {
                 code_table_.erase(code_table_.end()-1);
                 break;
             }
             
             max_.push_back(storage_.size() - 1);
+            
+#ifndef NDEBUG
+            auto used = SuccinctBitVector<false>(empties).rank_0(empties.size());
+            double per_used = double(used) / empties.size() * 100;
+            std::cout << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
+#endif
         }
     }
     
@@ -135,68 +160,115 @@ private:
         auto num_empties = [&](size_t begin, size_t end) {
             return sbv.rank(end) - sbv.rank(begin);
         };
-        auto num_exists = [&](size_t begin, size_t end) {
-            return sbv.rank_0(end) - sbv.rank_0(begin);
-        };
         
         auto idfront = indices.front();
         auto idback = indices.back();
         auto check = [&](position_type offset) -> size_t {
+            assert(offset + idback < empties.size());
             auto index_front = offset + idfront;
             auto index_end = offset + idback+1;
             auto n_empties = num_empties(index_front, index_end);
             if (index_end - index_front == n_empties) // All of values are corresponding to expanded area.
                 return 0;
-            if (n_empties < indices.size()) { // Not enough to number of empty areas.
-                auto shift = indices.size() - n_empties;
-                shift += num_exists(index_end, index_end + shift);
-                return shift;
+            if (n_empties < indices.size()) { // There are not enough number of empty areas.
+                return indices.size() - n_empties;
             }
             
             auto mask_data = indice_mask.data();
             auto empties_data = empties.data();
+            const auto pi_end = (empties.size()-1)/64+1;
+            auto field_bits_at = [&](long long index) {
+                return index < pi_end ? ~empties_data[index] : 0;
+            };
             const auto insets = offset & 0x3F;
             size_t i = idfront/64;
             position_type p = offset + 64ll*i;
-            position_type pi_end = (empties.size()-1)/64+1;
             for (; i <= idback/64; i++, p+=64) {
                 uint64_t mask = mask_data[i];
                 if (mask == 0)
                     continue;
-                uint64_t hits = 0;
+                uint64_t field = 0;
                 if (p < 0) {
-                    hits = empties_data[(p/64)+1] << (64-insets);
+                    field = field_bits_at(0) << (64-insets);
                 } else {
                     auto pi = p/64;
-                    hits = empties_data[pi] >> insets;
-                    if (pi+1 < pi_end)
-                        hits |= empties_data[pi+1] << (64-insets);
+                    if (insets == 0)
+                        field = field_bits_at(pi);
+                    else
+                        field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (64-insets));
                 }
-                hits = ~hits;
-                auto conflicts = mask & hits;
+                auto conflicts = mask & field;
                 if (conflicts) {
-                    auto shift = shifts_of_conflicts_(conflicts, hits);
-                    while (shift < 64 and (conflicts = (mask << shift) & hits)) {
-                        shift += shifts_of_conflicts_(conflicts, hits);
+#ifndef NDEBUG
+                    std::cout << "conflict at:" << p << std::endl;
+                    ShowAsBinary(field);
+                    ShowAsBinary(mask);
+                    ShowAsBinary(conflicts);
+#endif
+                    auto shifts = shifts_of_conflicts_(field, mask, conflicts);
+                    while (shifts < 64 and (conflicts = (mask << shifts) & field)) {
+#ifndef NDEBUG
+                        std::cout << "shift: " << shifts << std::endl;
+                        ShowAsBinary(field);
+                        ShowAsBinary(mask << shifts);
+                        ShowAsBinary(conflicts);
+#endif
+                        shifts += shifts_of_conflicts_(field, mask << shifts, conflicts);
                     }
-                    return shift;
+#ifndef NDEBUG
+                    std::cout << "ok shift: " << shifts << std::endl;
+                    ShowAsBinary(field);
+                    ShowAsBinary(mask<<shifts);
+                    ShowAsBinary(conflicts);
+#endif
+                    return shifts;
                 }
             }
+#ifndef NDEBUG
+            std::cout << "check" << std::endl;
+            for (i = idfront/64, p = offset + 64ll*i; i <= idback/64; i++, p+=64) {
+                uint64_t mask = mask_data[i];
+                uint64_t field = 0;
+                if (p < 0) {
+                    field = field_bits_at(0) << (64-insets);
+                } else {
+                    auto pi = p/64;
+                    if (insets == 0)
+                        field = field_bits_at(pi);
+                    else
+                        field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (64-insets));
+                }
+                auto conflicts = mask & field;
+                ShowAsBinary(field);
+                ShowAsBinary(mask);
+                ShowAsBinary(conflicts);
+                std::cout << std::endl;
+                assert(not conflicts);
+            }
+#endif
             return 0;
         };
         
         const position_type gap = -(position_type)idfront;
         position_type empty_front = sbv.select(0);
-        size_t shift;
-        while ((shift = check(gap + empty_front)) > 0) {
-            empty_front += shift;
+#ifndef NDEBUG
+        ShowAsBinary(~empties.data()[empty_front/64]);
+#endif
+        size_t shifts;
+        while ((shifts = check(gap + empty_front)) > 0) {
+            empty_front += shifts;
         }
         
         return gap + empty_front;
     };
     
-    size_t shifts_of_conflicts_(uint64_t conflicts, uint64_t fields) const {
-        return std::__ctz(~(fields >> std::__ctz(conflicts)));
+    size_t shifts_of_conflicts_(uint64_t fields, uint64_t mask, uint64_t conflicts) const {
+        assert((fields & mask) == conflicts);
+        using std::__ctz, std::__clz;
+        auto conflict_front = __ctz(conflicts);
+        auto field_continuouses = __ctz(~(fields >> conflict_front));
+        auto mask_followings = __clz(~(mask << (63 - conflict_front))) - 1;
+        return field_continuouses + mask_followings;
     }
     
 };
@@ -310,6 +382,8 @@ public:
     using value_type = ValueType;
     using Base = _SamcDictImpl<value_type>;
     
+    static constexpr size_t kSearchError = -1;
+    
     SamcDict() = default;
     
     template <typename T, typename S>
@@ -321,16 +395,17 @@ public:
         for (; depth < key.size(); depth++) {
             uint8_t c = key[depth];
             auto target = node + Base::code(depth, c);
+            auto ch = Base::check(target);
             if (not in_range(target, depth+1) or
                 Base::check(target) != c) {
-                return false;
+                return kSearchError;
             }
             node = target;
         }
         auto terminal = node + Base::code(depth, Base::kLeafChar);
         if (not in_range(terminal, depth+1) or
             Base::check(terminal) != Base::kLeafChar) {
-            return -1;
+            return kSearchError;
         }
         return Base::id(terminal);
     }

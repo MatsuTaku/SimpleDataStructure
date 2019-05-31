@@ -117,8 +117,7 @@ public:
             base_[prev_size/kBitsPerWord] |= mask << (prev_size%kBitsPerWord);
             for (size_t i = prev_size/kBitsPerWord+1; i <= (new_size-1)/kBitsPerWord; i++)
                 base_[i] = mask;
-            if (new_size % kBitsPerWord > 0)
-                base_[(new_size-1)/kBitsPerWord] &= mask >> (kBitsPerWord - new_size%kBitsPerWord);
+            base_[(new_size-1)/kBitsPerWord] &= mask >> (kBitsPerWord - (new_size-1)%kBitsPerWord - 1);
         }
     }
     

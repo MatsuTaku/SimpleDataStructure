@@ -9,6 +9,7 @@
 #define log_hpp
 
 #include <cstdio>
+#include <iomanip>
 
 namespace sim_ds {
     
