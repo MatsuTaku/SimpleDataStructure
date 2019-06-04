@@ -9,6 +9,8 @@
 #define bit_tools_hpp
 
 #include "basic.hpp"
+#include "log.hpp"
+#include <boost/multiprecision/cpp_int.hpp>
 #ifdef __BMI2__
 #include <immintrin.h>
 #endif
@@ -42,6 +44,11 @@ inline constexpr mask_type OffsetMask(size_t offset) {
     assert(offset < kMaxWidthOfMask);
     return mask_type(1) << offset;
 }
+
+using boost::multiprecision::int256_t;
+using boost::multiprecision::uint256_t;
+using mask256_type = uint256_t;
+
 
 // MARK: - popcnt
 
@@ -91,6 +98,13 @@ inline uint64_t popcnt64(uint64_t x) {
     x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0Full;
     return 0x0101010101010101ull*x >> 56;
 #endif
+}
+
+inline int popcnt256(uint256_t x) {
+    return (popcnt64(uint64_t(x))) +
+            popcnt64(uint64_t(x>>64)) +
+            popcnt64(uint64_t(x>>128)) +
+            popcnt64(uint64_t(x>>192));
 }
 
 template <typename Word>
@@ -378,7 +392,75 @@ inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
     return bits_extract_len(x >> start, len);
 }
 
-    
+
+// MARK: - ctz/clz
+
+template <typename T>
+inline constexpr int ctz(T x) {
+    return std::__ctz(x);
+}
+
+inline int ctz256(uint256_t x) {
+    return popcnt256(uint256_t((x & -int256_t(x)) - 1));
+}
+
+template <typename T>
+inline constexpr int clz(T x) {
+    return std::__clz(x);
+}
+
+inline int clz256(mask256_type x) {
+#ifdef __POPCNT__
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+    x |= x >> 64;
+    x |= x >> 128;
+    return popcnt256(~x);
+#else
+    if (x == 0)
+        return 256;
+    mask256_type c = 0;
+    if (x & mask256_t(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000)) {
+        x &= mask256_t(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000)
+        c |= 128;
+    }
+    if (x & mask256_t(0xFFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF0000000000000000)) {
+        x &= mask256_t(0xFFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF0000000000000000)
+        c |= 64;
+    }
+    if (x & mask256_t(0xFFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000)) {
+        x &= mask256_t(0xFFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000)
+        c |= 32;
+    }
+    if (x & mask256_t(0xFFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000)) {
+        x &= mask256_t(0xFFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000)
+        c |= 16;
+    }
+    if (x & mask256_t(0xFF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00)) {
+        x &= mask256_t(0xFF00FF00FF00FF00FF00FF00FF00FF000FF00FF00FF00FF00FF00FF00FF00FF00)
+        c |= 8;
+    }
+    if (x & mask256_t(0xF0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0)) {
+        x &= mask256_t(0xF0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0)
+        c |= 4;
+    }
+    if (x & mask256_t(0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)) {
+        x &= mask256_t(0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)
+        c |= 2;
+    }
+    if (x & mask256_t(0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)) {
+        x &= mask256_t(0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+        c |= 1;
+    }
+    return c ^ 255;
+#endif
+}
+
+
 } // namespace sim_ds
 
 #endif /* bit_tools_hpp */

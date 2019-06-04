@@ -29,9 +29,12 @@ set(SDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB HEADERS ${SDS_INCUDE_DIR}/sim_ds.hpp ${SDS_INCLUDE_DIR}/sim_ds/*.hpp)
 
+find_package(Boost 1.53.0 COMPONENTS
+unit_test_framework iostreams system thread filesystem REQUIRED)
+
 # Build Public Library
 add_library(sim_ds STATIC ${SDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
-target_include_directories(sim_ds PUBLIC ${SDS_INCLUDE_DIR})
+target_include_directories(sim_ds PUBLIC ${SDS_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
 
 if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     enable_testing()

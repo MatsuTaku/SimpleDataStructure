@@ -10,9 +10,10 @@
 
 #include "basic.hpp"
 #include "graph_util.hpp"
-#include "EmptyLinkedVector.hpp"
+#include "bit_util.hpp"
 #include "SuccinctBitVector.hpp"
 #include "log.hpp"
+#include <boost/progress.hpp>
 
 namespace sim_ds {
 
@@ -73,8 +74,9 @@ protected:
         max_.emplace_back(0);
         long long max_index = 0;
         while (max_index >= 0) {
-            
-            std::cout << "block_height: " << max_index << std::endl;
+#ifndef NDEBUG
+            std::cerr << "block_height: " << max_index << std::endl;
+#endif
             
             std::array<std::vector<value_type>, kAlphabetSize> indices_list;
             auto height = max_index + 1;
@@ -87,8 +89,9 @@ protected:
                 });
             }
             
-            std::cout << "ycheck for ";
-            
+#ifndef NDEBUG
+            std::cerr << "ycheck for ";
+#endif
             BitVector empties;
             auto old_size = storage_.size();
             max_index = -1;
@@ -99,31 +102,19 @@ protected:
                     code_table_.back()[i] = 0;
                     continue;
                 }
-                std::cout << i << ':' << uint8_t(i) << ' ';
 #ifndef NDEBUG
-                std::cout << std::endl;
-                if(max_index >= 0)
-                    ShowAsBinary(~empties.data()[max_index/64]);
-                std::cout << "expand from: " << empties.size();
+                std::cerr << i << ':' << uint8_t(i) << ' ';
 #endif
                 empties.resize(max_index + 1 + height, true);
-#ifndef NDEBUG
-                std::cout << ", to: " << empties.size() << std::endl;
-                ShowAsBinary(~empties.data()[max_index/64]);
-#endif
                 auto y_front = y_check_(indices, empties);
                 max_index = std::max(max_index, y_front + indices.back());
+                assert(height + y_front <= std::numeric_limits<value_type>::max());
                 code_table_.back()[i] = height + y_front;
                 storage_.resize(old_size + max_index + 1, kEmptyChar);
                 node_indexes.resize(old_size + max_index + 1);
                 for (auto id : indices) {
                     auto index = y_front + id;
                     auto abs_index = old_size + index;
-#ifndef NDEBUG
-                    std::cout << std::endl << "insert" << std::endl;
-                    ShowAsBinary(~empties.data()[index/64]);
-                    ShowAsBinary(1ull<<(index%64));
-#endif
                     assert(storage_[abs_index] == kEmptyChar and
                            empties[index]);
                     storage_[abs_index] = i;
@@ -145,16 +136,23 @@ protected:
 #ifndef NDEBUG
             auto used = SuccinctBitVector<false>(empties).rank_0(empties.size());
             double per_used = double(used) / empties.size() * 100;
-            std::cout << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
+            std::cerr << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
 #endif
         }
     }
     
 private:
+    using mask_type = uint64_t;
+    static constexpr size_t kMaskWidth = 64;
+    
     position_type y_check_(const std::vector<value_type>& indices, const BitVector& empties) const {
-        BitVector indice_mask((size_t)indices.back()+1);
-        for (auto id : indices)
-            indice_mask[id] = true;
+        std::vector<mask_type> indice_mask(indices.back()/kMaskWidth+1, 0);
+        for (auto id : indices) {
+            indice_mask[id/kMaskWidth] |= 1ull << (id%kMaskWidth);
+        }
+        auto field_bits_at = [&](long long index) -> mask_type {
+            return index < (empties.size()-1)/64+1 ? ~empties.data()[index] : 0;
+        };
         
         SuccinctBitVector<true> sbv(empties);
         auto num_empties = [&](size_t begin, size_t end) {
@@ -174,100 +172,59 @@ private:
                 return indices.size() - n_empties;
             }
             
-            auto mask_data = indice_mask.data();
-            auto empties_data = empties.data();
-            const auto pi_end = (empties.size()-1)/64+1;
-            auto field_bits_at = [&](long long index) {
-                return index < pi_end ? ~empties_data[index] : 0;
-            };
-            const auto insets = offset & 0x3F;
-            size_t i = idfront/64;
-            position_type p = offset + 64ll*i;
-            for (; i <= idback/64; i++, p+=64) {
-                uint64_t mask = mask_data[i];
+            const auto insets = offset & (kMaskWidth-1);
+            size_t i = idfront/kMaskWidth;
+            position_type p = offset + kMaskWidth*i;
+            for (; i <= idback/kMaskWidth; i++, p+=kMaskWidth) {
+                auto mask = indice_mask[i];
                 if (mask == 0)
                     continue;
-                uint64_t field = 0;
+                mask_type field = 0;
                 if (p < 0) {
-                    field = field_bits_at(0) << (64-insets);
+                    field = field_bits_at(0) << (kMaskWidth-insets);
                 } else {
-                    auto pi = p/64;
+                    auto pi = p/kMaskWidth;
                     if (insets == 0)
                         field = field_bits_at(pi);
                     else
-                        field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (64-insets));
+                        field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (kMaskWidth-insets));
                 }
                 auto conflicts = mask & field;
                 if (conflicts) {
-#ifndef NDEBUG
-                    std::cout << "conflict at:" << p << std::endl;
-                    ShowAsBinary(field);
-                    ShowAsBinary(mask);
-                    ShowAsBinary(conflicts);
-#endif
-                    auto shifts = shifts_of_conflicts_(field, mask, conflicts);
-                    while (shifts < 64 and (conflicts = (mask << shifts) & field)) {
-#ifndef NDEBUG
-                        std::cout << "shift: " << shifts << std::endl;
-                        ShowAsBinary(field);
-                        ShowAsBinary(mask << shifts);
-                        ShowAsBinary(conflicts);
-#endif
-                        shifts += shifts_of_conflicts_(field, mask << shifts, conflicts);
-                    }
-#ifndef NDEBUG
-                    std::cout << "ok shift: " << shifts << std::endl;
-                    ShowAsBinary(field);
-                    ShowAsBinary(mask<<shifts);
-                    ShowAsBinary(conflicts);
-#endif
+                    size_t shifts = 0;
+                    while ((shifts += shifts_of_conflicts_(field, mask << shifts, conflicts)) < kMaskWidth and
+                           (conflicts = (mask << shifts) & field)) continue;
                     return shifts;
                 }
             }
-#ifndef NDEBUG
-            std::cout << "check" << std::endl;
-            for (i = idfront/64, p = offset + 64ll*i; i <= idback/64; i++, p+=64) {
-                uint64_t mask = mask_data[i];
-                uint64_t field = 0;
-                if (p < 0) {
-                    field = field_bits_at(0) << (64-insets);
-                } else {
-                    auto pi = p/64;
-                    if (insets == 0)
-                        field = field_bits_at(pi);
-                    else
-                        field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (64-insets));
-                }
-                auto conflicts = mask & field;
-                ShowAsBinary(field);
-                ShowAsBinary(mask);
-                ShowAsBinary(conflicts);
-                std::cout << std::endl;
-                assert(not conflicts);
-            }
-#endif
             return 0;
         };
         
         const position_type gap = -(position_type)idfront;
         position_type empty_front = sbv.select(0);
-#ifndef NDEBUG
-        ShowAsBinary(~empties.data()[empty_front/64]);
-#endif
         size_t shifts;
+#ifndef NDEBUG
+        std::cerr << std::endl;
+        boost::progress_display show_progress(empties.size()+gap-idback, std::cerr);
+#endif
         while ((shifts = check(gap + empty_front)) > 0) {
             empty_front += shifts;
+#ifndef NDEBUG
+            show_progress += shifts;
+#endif
         }
-        
+#ifndef NDEBUG
+        std::cerr << std::endl;
+#endif
         return gap + empty_front;
     };
     
-    size_t shifts_of_conflicts_(uint64_t fields, uint64_t mask, uint64_t conflicts) const {
+    size_t shifts_of_conflicts_(mask_type fields, mask_type mask, mask_type conflicts) const {
         assert((fields & mask) == conflicts);
-        using std::__ctz, std::__clz;
-        auto conflict_front = __ctz(conflicts);
-        auto field_continuouses = __ctz(~(fields >> conflict_front));
-        auto mask_followings = __clz(~(mask << (63 - conflict_front))) - 1;
+        using bit_util::ctz, bit_util::clz;
+        auto conflict_front = ctz(conflicts);
+        auto field_continuouses = ctz(~(fields >> conflict_front));
+        auto mask_followings = clz(~(mask << (kMaskWidth-1 - conflict_front))) - 1;
         return field_continuouses + mask_followings;
     }
     
@@ -357,7 +314,10 @@ public:
         leaves_ = succinct_bv_type(leaves_src);
     }
     
-    size_t id(size_t index) const {return leaves_.rank(index);}
+    size_t id(size_t index) const {
+        assert(leaves_[index] == true);
+        return leaves_.rank(index);
+    }
     
     size_t leaf(size_t index) const {return leaves_.select(index);}
     
