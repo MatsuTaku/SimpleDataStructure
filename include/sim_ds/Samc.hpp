@@ -75,7 +75,8 @@ protected:
         long long max_index = 0;
         while (max_index >= 0) {
 #ifndef NDEBUG
-            std::cerr << "block_height: " << max_index << std::endl;
+            std::cerr << "depth: " << max_.size()
+            << "block_height: " << max_index << std::endl;
 #endif
             
             std::array<std::vector<value_type>, kAlphabetSize> indices_list;
@@ -90,7 +91,7 @@ protected:
             }
             
 #ifndef NDEBUG
-            std::cerr << "ycheck for ";
+            std::cerr << "ycheck for each char..." << std::endl;;
 #endif
             BitVector empties;
             auto old_size = storage_.size();
@@ -103,11 +104,11 @@ protected:
                     continue;
                 }
 #ifndef NDEBUG
-                std::cerr << i << ':' << uint8_t(i) << ' ';
+                std::cerr << i << ':' << uint8_t(i) << ", indices_rate: " << height/indices.size() << std::endl;;
 #endif
                 empties.resize(max_index + 1 + height, true);
                 auto y_front = y_check_(indices, empties);
-                max_index = std::max(max_index, y_front + indices.back());
+                max_index = std::max(max_index, y_front + (long long)indices.back());
                 assert(height + y_front <= std::numeric_limits<value_type>::max());
                 code_table_.back()[i] = height + y_front;
                 storage_.resize(old_size + max_index + 1, kEmptyChar);
@@ -151,7 +152,7 @@ private:
             indice_mask[id/kMaskWidth] |= 1ull << (id%kMaskWidth);
         }
         auto field_bits_at = [&](long long index) -> mask_type {
-            return index < (empties.size()-1)/64+1 ? ~empties.data()[index] : 0;
+            return index < (empties.size()-1)/kMaskWidth+1 ? ~empties.data()[index] : 0;
         };
         
         SuccinctBitVector<true> sbv(empties);
@@ -163,6 +164,7 @@ private:
         auto idback = indices.back();
         auto check = [&](position_type offset) -> size_t {
             assert(offset + idback < empties.size());
+            
             auto index_front = offset + idfront;
             auto index_end = offset + idback+1;
             auto n_empties = num_empties(index_front, index_end);
@@ -172,31 +174,29 @@ private:
                 return indices.size() - n_empties;
             }
             
-            const auto insets = offset & (kMaskWidth-1);
-            size_t i = idfront/kMaskWidth;
-            position_type p = offset + kMaskWidth*i;
-            for (; i <= idback/kMaskWidth; i++, p+=kMaskWidth) {
-                auto mask = indice_mask[i];
-                if (mask == 0)
-                    continue;
-                mask_type field = 0;
-                if (p < 0) {
-                    field = field_bits_at(0) << (kMaskWidth-insets);
-                } else {
-                    auto pi = p/kMaskWidth;
-                    if (insets == 0)
-                        field = field_bits_at(pi);
-                    else
-                        field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (kMaskWidth-insets));
-                }
-                auto conflicts = mask & field;
-                if (conflicts) {
+            for (auto id : indices) {
+                if (not empties[offset + id]) {
+                    const mask_type mask = indice_mask[id/kMaskWidth];
+                    mask_type field = 0;
+                    const position_type p = offset + kMaskWidth*(id/kMaskWidth);
+                    const auto insets = offset & (kMaskWidth-1);
+                    if (p < 0) {
+                        field = field_bits_at(0) << (kMaskWidth-insets);
+                    } else {
+                        const auto pi = p/kMaskWidth;
+                        if (insets == 0)
+                            field = field_bits_at(pi);
+                        else
+                            field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (kMaskWidth-insets));
+                    }
                     size_t shifts = 0;
+                    mask_type conflicts = mask & field;
                     while ((shifts += shifts_of_conflicts_(field, mask << shifts, conflicts)) < kMaskWidth and
                            (conflicts = (mask << shifts) & field)) continue;
                     return shifts;
                 }
             }
+            
             return 0;
         };
         
@@ -205,7 +205,7 @@ private:
         size_t shifts;
 #ifndef NDEBUG
         std::cerr << std::endl;
-        boost::progress_display show_progress(empties.size()+gap-idback, std::cerr);
+        boost::progress_display show_progress(empties.size()-idback, std::cerr);
 #endif
         while ((shifts = check(gap + empty_front)) > 0) {
             empty_front += shifts;
@@ -238,6 +238,8 @@ class Samc : _SamcImpl<ValueType> {
 public:
     using value_type = ValueType;
     using Base = _SamcImpl<value_type>;
+    template <typename T, typename S>
+    using input_trie = graph_util::Trie<T, S>;
     
     static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
     
@@ -336,70 +338,72 @@ public:
 };
 
 
-template <typename ValueType>
+template <typename ValueType = size_t>
 class SamcDict : _SamcDictImpl<ValueType> {
 public:
     using value_type = ValueType;
-    using Base = _SamcDictImpl<value_type>;
+    using _base = _SamcDictImpl<value_type>;
+    template <typename T, typename S>
+    using input_trie = graph_util::Trie<T, S>;
     
     static constexpr size_t kSearchError = -1;
     
     SamcDict() = default;
     
     template <typename T, typename S>
-    SamcDict(const graph_util::Trie<T, S>& trie) : Base(trie) {}
+    SamcDict(const graph_util::Trie<T, S>& trie) : _base(trie) {}
     
     size_t lookup(std::string_view key) const {
         size_t node = 0;
         size_t depth = 0;
         for (; depth < key.size(); depth++) {
             uint8_t c = key[depth];
-            auto target = node + Base::code(depth, c);
-            auto ch = Base::check(target);
+            auto target = node + _base::code(depth, c);
+            auto ch = _base::check(target);
             if (not in_range(target, depth+1) or
-                Base::check(target) != c) {
+                _base::check(target) != c) {
                 return kSearchError;
             }
             node = target;
         }
-        auto terminal = node + Base::code(depth, Base::kLeafChar);
+        auto terminal = node + _base::code(depth, _base::kLeafChar);
         if (not in_range(terminal, depth+1) or
-            Base::check(terminal) != Base::kLeafChar) {
+            _base::check(terminal) != _base::kLeafChar) {
             return kSearchError;
         }
-        return Base::id(terminal);
+        return _base::id(terminal);
     }
     
     std::string access(size_t value) const {
         std::string text;
-        size_t node = Base::leaf(value);
-        size_t depth = std::lower_bound(Base::max_.begin(), Base::max_.end(), node) - Base::max_.begin();
+        size_t node = _base::leaf(value);
+        size_t depth = std::lower_bound(_base::max_.begin(), _base::max_.end(), node) - _base::max_.begin();
         while (depth > 0) {
-            auto c = Base::check(node);
-            node -= Base::code(--depth, c);
+            auto c = _base::check(node);
+            node -= _base::code(--depth, c);
             text.push_back(c);
         }
         assert(node == 0);
         return std::string(text.rbegin(), text.rend()-1);
     }
     
-    size_t size_in_bytes() const {return Base::size_in_bytes();}
+    size_t size_in_bytes() const {return _base::size_in_bytes();}
     
     void Write(std::ostream& os) const {
-        Base::Write(os);
+        _base::Write(os);
     }
     
     void Read(std::istream& is) {
-        Base::Read(is);
+        _base::Read(is);
     }
     
 private:
     bool in_range(size_t index, size_t depth) const {
         assert(depth > 0);
-        return index > Base::max(depth-1) and index <= Base::max(depth);
+        return index > _base::max(depth-1) and index <= _base::max(depth);
     }
     
-    bool empty(size_t index) const {return Base::check(index) == Base::kEmptyChar;}
+    bool empty(size_t index) const {return _base::check(index) == _base::kEmptyChar;}
     
 };
 
