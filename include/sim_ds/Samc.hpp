@@ -76,7 +76,7 @@ protected:
         while (max_index >= 0) {
 #ifndef NDEBUG
             std::cerr << "depth: " << max_.size()
-            << "block_height: " << max_index << std::endl;
+            << ", block_height: " << max_index << std::endl;
 #endif
             
             std::array<std::vector<value_type>, kAlphabetSize> indices_list;
@@ -380,6 +380,7 @@ public:
         size_t depth = std::lower_bound(_base::max_.begin(), _base::max_.end(), node) - _base::max_.begin();
         while (depth > 0) {
             auto c = _base::check(node);
+            assert(c != _base::kEmptyChar);
             node -= _base::code(--depth, c);
             text.push_back(c);
         }
