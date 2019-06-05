@@ -359,7 +359,6 @@ public:
         for (; depth < key.size(); depth++) {
             uint8_t c = key[depth];
             auto target = node + _base::code(depth, c);
-            auto ch = _base::check(target);
             if (not in_range(target, depth+1) or
                 _base::check(target) != c) {
                 return kSearchError;
