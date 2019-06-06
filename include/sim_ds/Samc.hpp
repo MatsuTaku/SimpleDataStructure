@@ -72,7 +72,7 @@ protected:
         std::vector<size_t> node_indexes = {graph_util::kRootIndex};
         storage_.emplace_back('^'); // root
         max_.emplace_back(0);
-        long long max_index = 0;
+        position_type max_index = 0;
         while (max_index >= 0) {
 #ifndef NDEBUG
             std::cerr << "depth: " << max_.size()
@@ -104,11 +104,11 @@ protected:
                     continue;
                 }
 #ifndef NDEBUG
-                std::cerr << i << ':' << uint8_t(i) << ", indices_rate: " << height/indices.size() << std::endl;;
+                std::cerr << i << ':' << uint8_t(i) << ", indices: " << indices.size() << std::endl;;
 #endif
                 empties.resize(max_index + 1 + height, true);
-                auto y_front = y_check_(indices, empties);
-                max_index = std::max(max_index, y_front + (long long)indices.back());
+                auto y_front = i == 0 ? -(position_type)indices.front() : y_check_(indices, empties);
+                max_index = std::max(max_index, y_front + (position_type)indices.back());
                 assert(height + y_front <= std::numeric_limits<value_type>::max());
                 code_table_.back()[i] = height + y_front;
                 storage_.resize(old_size + max_index + 1, kEmptyChar);
@@ -147,6 +147,38 @@ private:
     static constexpr size_t kMaskWidth = 64;
     
     position_type y_check_(const std::vector<value_type>& indices, const BitVector& empties) const {
+        const auto word_size = (empties.size()-1)/kMaskWidth+1;
+        auto field_bits = [&](size_t i) {
+            return i < word_size ? empties.data()[i] : 0;
+        };
+        assert((long long)empties.size() + indices.front() - indices.back()+1 > 0);
+        std::vector<mask_type> field((empties.size() + indices.front() - indices.back())/kMaskWidth+1, -1ull);
+        position_type heads = indices.front();
+        for (position_type id : indices) {
+            auto p = (id-heads) / kMaskWidth;
+            auto insets = (id-heads) % kMaskWidth;
+            if (insets == 0) {
+                for (size_t i = 0; i < field.size(); i++) {
+                    field[i] &= field_bits(p+i);
+                }
+            } else {
+                mask_type bits = field_bits(p);
+                for (size_t i = 0; i < field.size(); i++) {
+                    auto lower_mask = bits >> insets;
+                    bits = field_bits(p+i+1);
+                    field[i] &= lower_mask | (bits << (kMaskWidth - insets));
+                }
+            }
+        }
+        for (size_t i = 0; i < field.size(); i++) {
+            if (field[i] == 0)
+                continue;
+            return (position_type)kMaskWidth * i + bit_util::ctz(field[i]) - heads;
+        }
+        return empties.size() + indices.front() - indices.back(); // ERROR
+    }
+    
+    position_type y_check_legacy_(const std::vector<value_type>& indices, const BitVector& empties) const {
         std::vector<mask_type> indice_mask(indices.back()/kMaskWidth+1, 0);
         for (auto id : indices) {
             indice_mask[id/kMaskWidth] |= 1ull << (id%kMaskWidth);
@@ -237,7 +269,7 @@ template <typename ValueType>
 class Samc : _SamcImpl<ValueType> {
 public:
     using value_type = ValueType;
-    using Base = _SamcImpl<value_type>;
+    using _base = _SamcImpl<value_type>;
     template <typename T, typename S>
     using input_trie = graph_util::Trie<T, S>;
     
@@ -247,42 +279,42 @@ public:
     Samc() = default;
     
     template <typename T, typename S>
-    Samc(const graph_util::Trie<T, S>& trie) : Base(trie) {}
+    Samc(const graph_util::Trie<T, S>& trie) : _base(trie) {}
     
     bool accept(std::string_view key) const {
         size_t node = 0;
         size_t depth = 0;
         for (; depth < key.size(); depth++) {
             uint8_t c = key[depth];
-            auto target = node + Base::code(depth, c);
+            auto target = node + _base::code(depth, c);
             if (not in_range(target, depth+1) or
-                Base::check(target) != c) {
+                _base::check(target) != c) {
                 return false;
             }
             node = target;
         }
-        auto terminal = node + Base::code(depth, kLeafChar);
+        auto terminal = node + _base::code(depth, kLeafChar);
         return (in_range(terminal, depth+1) and
-                Base::check(terminal) == kLeafChar);
+                _base::check(terminal) == kLeafChar);
     }
     
-    size_t size_in_bytes() const {return Base::size_in_bytes();}
+    size_t size_in_bytes() const {return _base::size_in_bytes();}
     
     void Write(std::ostream& os) const {
-        Base::Write(os);
+        _base::Write(os);
     }
     
     void Read(std::istream& is) {
-        Base::Read(is);
+        _base::Read(is);
     }
     
 private:
     bool in_range(size_t index, size_t depth) const {
         assert(depth > 0);
-        return index > Base::max(depth-1) and index <= Base::max(depth);
+        return index > _base::max(depth-1) and index <= _base::max(depth);
     }
     
-    bool empty(size_t index) const {return Base::check(index) == Base::kEmptyChar;}
+    bool empty(size_t index) const {return _base::check(index) == _base::kEmptyChar;}
     
 };
 
@@ -290,7 +322,7 @@ private:
 template <typename ValueType>
 class _SamcDictImpl : protected _SamcImpl<ValueType> {
     using value_type = ValueType;
-    using Base = _SamcImpl<value_type>;
+    using _base = _SamcImpl<value_type>;
     
 public:
     static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
@@ -303,14 +335,14 @@ public:
     _SamcDictImpl() = default;
     
     template <typename T, typename S>
-    _SamcDictImpl(const graph_util::Trie<T, S>& trie) : Base(trie) {
+    _SamcDictImpl(const graph_util::Trie<T, S>& trie) : _base(trie) {
         std::cerr << "Build dict" << std::endl;
-        BitVector leaves_src(Base::storage_.size());
+        BitVector leaves_src(_base::storage_.size());
         size_t depth = 1;
-        for (size_t i = 1; i < Base::storage_.size(); i++) {
-            if (Base::max(depth) < i)
+        for (size_t i = 1; i < _base::storage_.size(); i++) {
+            if (_base::max(depth) < i)
                 depth++;
-            if (Base::check(i) == kLeafChar)
+            if (_base::check(i) == kLeafChar)
                 leaves_src[i] = true;
         }
         leaves_ = succinct_bv_type(leaves_src);
@@ -323,15 +355,15 @@ public:
     
     size_t leaf(size_t index) const {return leaves_.select(index);}
     
-    size_t size_in_bytes() const {return Base::size_in_bytes() + leaves_.size_in_bytes();}
+    size_t size_in_bytes() const {return _base::size_in_bytes() + leaves_.size_in_bytes();}
     
     void Write(std::ostream& os) const {
-        Base::Write(os);
+        _base::Write(os);
         leaves_.Write(os);
     }
     
     void Read(std::istream& is) {
-        Base::Read(is);
+        _base::Read(is);
         leaves_.Read(is);
     }
     
