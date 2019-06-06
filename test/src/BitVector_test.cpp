@@ -76,4 +76,6 @@ TEST(SuccinctBitVectorTest, SelectMinimal) {
     for (auto i = 0; i < selects.size(); i++)
         EXPECT_EQ(sbv.select(i), selects[i]);
     
+    for (int i = 0; i < 8; i++)
+        std::cout << bit_util::xor_idx(1, i) << std::endl;;
 }

@@ -13,7 +13,6 @@
 #include "bit_util.hpp"
 #include "SuccinctBitVector.hpp"
 #include "log.hpp"
-#include <boost/progress.hpp>
 
 namespace sim_ds {
 
@@ -235,19 +234,9 @@ private:
         const position_type gap = -(position_type)idfront;
         position_type empty_front = sbv.select(0);
         size_t shifts;
-#ifndef NDEBUG
-        std::cerr << std::endl;
-        boost::progress_display show_progress(empties.size()-idback, std::cerr);
-#endif
         while ((shifts = check(gap + empty_front)) > 0) {
             empty_front += shifts;
-#ifndef NDEBUG
-            show_progress += shifts;
-#endif
         }
-#ifndef NDEBUG
-        std::cerr << std::endl;
-#endif
         return gap + empty_front;
     };
     
