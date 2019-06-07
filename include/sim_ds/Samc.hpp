@@ -17,8 +17,6 @@
 namespace sim_ds {
 
 
-template <typename ValueType> class _SamcDictImpl;
-
 template <typename ValueType>
 class _SamcImpl {
 public:
@@ -32,8 +30,6 @@ protected:
     using code_type = std::array<value_type, kAlphabetSize>;
     std::vector<code_type> code_table_;
     std::vector<value_type> max_;
-    
-    friend class _SamcDictImpl<ValueType>;
     
 public:
     _SamcImpl() = default;
@@ -66,8 +62,6 @@ public:
 protected:
     template <typename T, typename S>
     _SamcImpl(const graph_util::Trie<T, S>& trie) {
-        assert(trie.size() < std::numeric_limits<value_type>::max());
-        
         std::vector<size_t> node_indexes = {graph_util::kRootIndex};
         storage_.emplace_back('^'); // root
         max_.emplace_back(0);
@@ -77,7 +71,6 @@ protected:
             std::cerr << "depth: " << max_.size()
             << ", block_height: " << max_index << std::endl;
 #endif
-            
             std::array<std::vector<value_type>, kAlphabetSize> indices_list;
             auto height = max_index + 1;
             for (size_t i = 0; i < height; i++) {
@@ -88,7 +81,6 @@ protected:
                     indices_list[c].push_back(i);
                 });
             }
-            
 #ifndef NDEBUG
             std::cerr << "ycheck for each char..." << std::endl;;
 #endif
@@ -103,7 +95,7 @@ protected:
                     continue;
                 }
 #ifndef NDEBUG
-                std::cerr << i << ':' << uint8_t(i) << ", indices: " << indices.size() << std::endl;;
+                std::cerr << i << ':' << uint8_t(i) << ", indices: " << indices.size() << std::endl;
 #endif
                 empties.resize(max_index + 1 + height, true);
                 auto y_front = i == 0 ? -(position_type)indices.front() : y_check_(indices, empties);
@@ -124,15 +116,11 @@ protected:
                     node_indexes[abs_index] = parent_node.target(i);
                 }
             }
-            std::cout << std::endl;
-            
             if (max_index == -1) {
                 code_table_.erase(code_table_.end()-1);
                 break;
             }
-            
             max_.push_back(storage_.size() - 1);
-            
 #ifndef NDEBUG
             auto used = SuccinctBitVector<false>(empties).rank_0(empties.size());
             double per_used = double(used) / empties.size() * 100;
