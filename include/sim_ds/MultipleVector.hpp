@@ -9,8 +9,7 @@
 #define FitValuesArray_hpp
 
 #include "basic.hpp"
-
-#include "sim_ds/calc.hpp"
+#include "calc.hpp"
 
 namespace sim_ds {
 

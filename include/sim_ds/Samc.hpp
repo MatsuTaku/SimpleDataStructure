@@ -138,29 +138,24 @@ private:
         auto field_bits = [&](size_t i) {
             return i < word_size ? empties.data()[i] : 0;
         };
-        assert((long long)empties.size() + indices.front() - indices.back()+1 > 0);
-        std::vector<mask_type> field((empties.size() + indices.front() - indices.back())/kMaskWidth+1, -1ull);
+        assert((long long)empties.size() + indices.front() - indices.back() >= 0);
+        auto field_size = (empties.size() + indices.front() - indices.back())/kMaskWidth+1;
         position_type heads = indices.front();
-        for (position_type id : indices) {
-            auto p = (id-heads) / kMaskWidth;
-            auto insets = (id-heads) % kMaskWidth;
-            if (insets == 0) {
-                for (size_t i = 0; i < field.size(); i++) {
-                    field[i] &= field_bits(p+i);
+        for (size_t i = 0; i < field_size; i++) {
+            mask_type candidates = -1ull;
+            for (auto id : indices) {
+                auto p = (id-heads) / kMaskWidth;
+                auto insets = (id-heads) % kMaskWidth;
+                if (insets == 0) {
+                    candidates &= field_bits(p+i);
+                } else {
+                    candidates &= (field_bits(p+i) >> insets) | (field_bits(p+i+1) << (kMaskWidth-insets));
                 }
-            } else {
-                mask_type bits = field_bits(p);
-                for (size_t i = 0; i < field.size(); i++) {
-                    auto lower_mask = bits >> insets;
-                    bits = field_bits(p+i+1);
-                    field[i] &= lower_mask | (bits << (kMaskWidth - insets));
-                }
+                if (candidates == 0)
+                    break;
             }
-        }
-        for (size_t i = 0; i < field.size(); i++) {
-            if (field[i] == 0)
-                continue;
-            return (position_type)kMaskWidth * i + bit_util::ctz(field[i]) - heads;
+            if (candidates)
+                return (position_type)kMaskWidth * i + bit_util::ctz(candidates) - heads;
         }
         return empties.size() + indices.front() - indices.back(); // ERROR
     }

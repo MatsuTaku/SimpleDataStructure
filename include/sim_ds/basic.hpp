@@ -27,6 +27,7 @@
 #include <chrono>
 #include <string_view>
 #include <queue>
+#include <iso646.h>
 
 namespace sim_ds {
 
