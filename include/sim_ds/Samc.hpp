@@ -16,7 +16,6 @@
 
 namespace sim_ds {
 
-
 template <typename ValueType>
 class _SamcImpl {
 public:
@@ -251,7 +250,7 @@ public:
     Samc() = default;
     
     template <typename T, typename S>
-    Samc(const graph_util::Trie<T, S>& trie) : _base(trie) {}
+    Samc(const input_trie<T, S>& trie) : _base(trie) {}
     
     bool accept(std::string_view key) const {
         size_t node = 0;
@@ -290,7 +289,7 @@ private:
     
 };
 
-    
+
 template <typename ValueType>
 class _SamcDictImpl : protected _SamcImpl<ValueType> {
     using value_type = ValueType;
@@ -342,7 +341,7 @@ public:
 };
 
 
-template <typename ValueType = size_t>
+template <typename ValueType>
 class SamcDict : _SamcDictImpl<ValueType> {
 public:
     using value_type = ValueType;
@@ -355,7 +354,7 @@ public:
     SamcDict() = default;
     
     template <typename T, typename S>
-    SamcDict(const graph_util::Trie<T, S>& trie) : _base(trie) {}
+    SamcDict(const input_trie<T, S>& trie) : _base(trie) {}
     
     size_t lookup(std::string_view key) const {
         size_t node = 0;

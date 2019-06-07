@@ -181,7 +181,6 @@ public:
         
         paths_.reserve(paths_src_.size());
         std::transform(paths_src_.begin(), paths_src_.end(), std::back_inserter(paths_), [](auto&& src) {return RankSupportBV(src);});
-        assert(malloc_zone_check(NULL));
     }
     
     DacVector(std::istream& is) {
