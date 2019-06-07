@@ -430,8 +430,9 @@ inline uint8_t sel(uint64_t x, size_t i) {
 inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
 #ifdef __BMI__
     return _bextr_u64(x, start, len);
-#endif
+#else
     return bits_extract_len(x >> start, len);
+#endif
 }
 
 
