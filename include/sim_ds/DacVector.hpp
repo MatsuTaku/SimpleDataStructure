@@ -15,7 +15,7 @@
 #include "bit_util.hpp"
 #include "calc.hpp"
 #include <stdexcept>
-#include <malloc/malloc.h>
+#include <cstdlib>
 
 namespace sim_ds {
     
