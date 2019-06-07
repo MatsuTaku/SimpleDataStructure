@@ -440,7 +440,11 @@ inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
 
 template <typename T>
 inline constexpr int ctz(T x) {
+#ifdef __GNUC__
     return std::__ctz(x);
+#else
+    return popcnt((x & -x) - 1);
+#endif
 }
 
 #ifdef SIDS_USE_BOOST
@@ -451,7 +455,48 @@ inline int ctz256(uint256_t x) {
 
 template <typename T>
 inline constexpr int clz(T x) {
+#ifdef __GNUC__
     return std::__clz(x);
+#else
+#ifdef __POPCNT__
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+    return popcnt(~x);
+#else
+    if (x == 0)
+        return 64;
+    int c = 0;
+    if (x & 0xFFFFFFFF00000000) {
+        x &= 0xFFFFFFFF00000000;
+        c |= 32;
+    }
+    if (x & 0xFFFF0000FFFF0000) {
+        x &= 0xFFFF0000FFFF0000;
+        c |= 16;
+    }
+    if (x & 0xFF00FF00FF00FF00) {
+        x &= 0xFF00FF00FF00FF00;
+        c |= 8;
+    }
+    if (x & 0xF0F0F0F0F0F0F0F0) {
+        x &= 0xF0F0F0F0F0F0F0F0;
+        c |= 4;
+    }
+    if (x & 0xCCCCCCCCCCCCCCCC) {
+        x &= 0xCCCCCCCCCCCCCCCC;
+        c |= 2;
+    }
+    if (x & 0xAAAAAAAAAAAAAAAA) {
+        x &= 0xAAAAAAAAAAAAAAAA;
+        c |= 1;
+    }
+    return c ^ 63;
+#endif
+#endif
 }
 
 #ifdef SIDS_USE_BOOST
