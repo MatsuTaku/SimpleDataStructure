@@ -44,7 +44,7 @@ inline size_t SizeFitsAsList(unsigned long long value, const Container sizes) {
 template <class Container, typename T>
 inline void bit_length_frequencies(const Container& list, std::vector<T>* result) {
     std::vector<size_t> map;
-    auto max_size = 0;
+    size_t max_size = 0;
     for (size_t i = 0; i < list.size(); i++) {
         auto size = SizeFitsInBits(list[i]);
         if (size > max_size) {
@@ -73,7 +73,7 @@ inline void cummulative_frequency_list(const Container& list, std::vector<T>* re
     
     if (should_show) {
         std::cout << "Cummulative frequency of vector" << std::endl;
-        for (int i = 0; i < cf.size(); i++)
+        for (size_t i = 0; i < cf.size(); i++)
             std::cout << "[" << i + 1 << "]: " << map[i] << std::endl;
     }
     
@@ -98,7 +98,7 @@ inline void split_positions_optimized_for_dac(const Container& list, std::vector
     for (int t = m; t >= 0; --t) {
         auto min_size = std::numeric_limits<size_t>::max();
         auto min_pos = m;
-        for (auto i = t + 1; i <= m; i++) {
+        for (size_t i = t + 1; i <= m; i++) {
             auto current_size = s[i] + cf[t] * (i - t) + additional_bit_size_of_rank(cf[t]);
             if (current_size < min_size) {
                 min_size = current_size;
@@ -120,7 +120,7 @@ inline void split_positions_optimized_for_dac(const Container& list, std::vector
     std::vector<size_t> bk;
     bk.reserve(8);
     bk.resize(L);
-    for (auto k = 0; k <= L; k++) {
+    for (size_t k = 0; k <= L; k++) {
         bk[k] = b[t];
         t = t + b[t];
     }
@@ -137,7 +137,7 @@ inline void split_positions_optimized_for_dac(const Container& list, std::vector
             return lhs.first > rhs.first;
         };
         std::vector<P> pq;
-        for (auto i = 1; i < m; i++) {
+        for (size_t i = 1; i < m; i++) {
             pq.push_back(P(cf[i - 1] - cf[i], i));
         }
         std::sort(pq.begin(), pq.end(), cmp);
@@ -153,7 +153,7 @@ inline void split_positions_optimized_for_dac(const Container& list, std::vector
         
         bk.resize(0);
         auto last_p = 0;
-        for (auto i = 0; i < sep_pos.size(); i++) {
+        for (size_t i = 0; i < sep_pos.size(); i++) {
             if (sep_pos[i]) {
                 bk.push_back(i - last_p);
                 last_p = i;

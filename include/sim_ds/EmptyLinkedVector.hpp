@@ -42,7 +42,7 @@ public:
         if constexpr (sizeof(value_type) <= sizeof(size_type))
             return static_cast<value_type>(next_);
         else
-            return static_cast<value_type>((uint64_t)next_ | (uint64_t)prev_ << 32);
+            return static_cast<value_type>(uint64_t(next_) | uint64_t(prev_) << 32);
     }
     
 private:

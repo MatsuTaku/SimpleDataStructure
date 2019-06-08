@@ -71,7 +71,7 @@ protected:
             << ", block_height: " << max_index << std::endl;
 #endif
             std::array<std::vector<value_type>, kAlphabetSize> indices_list;
-            auto height = max_index + 1;
+            size_t height = max_index + 1;
             for (size_t i = 0; i < height; i++) {
                 auto index = storage_.size() - height + i;
                 if (storage_[index] == kEmptyChar)
@@ -97,8 +97,8 @@ protected:
                 std::cerr << i << ':' << uint8_t(i) << ", indices: " << indices.size() << std::endl;
 #endif
                 empties.resize(max_index + 1 + height, true);
-                auto y_front = i == 0 ? -(position_type)indices.front() : y_check_(indices, empties);
-                max_index = std::max(max_index, y_front + (position_type)indices.back());
+                auto y_front = i == 0 ? -position_type(indices.front()) : y_check_(indices, empties);
+                max_index = std::max(max_index, y_front + position_type(indices.back()));
                 assert(height + y_front <= std::numeric_limits<value_type>::max());
                 code_table_.back()[i] = height + y_front;
                 storage_.resize(old_size + max_index + 1, kEmptyChar);
@@ -137,7 +137,7 @@ private:
         auto field_bits = [&](size_t i) {
             return i < word_size ? empties.data()[i] : 0;
         };
-        assert((long long)empties.size() + indices.front() - indices.back() >= 0);
+        assert(position_type(empties.size()) + indices.front() - indices.back() >= 0);
         auto field_size = (empties.size() + indices.front() - indices.back())/kMaskWidth+1;
         position_type heads = indices.front();
         for (size_t i = 0; i < field_size; i++) {
@@ -154,7 +154,7 @@ private:
                     break;
             }
             if (candidates)
-                return (position_type)kMaskWidth * i + bit_util::ctz(candidates) - heads;
+                return position_type(kMaskWidth) * i + bit_util::ctz(candidates) - heads;
         }
         return empties.size() + indices.front() - indices.back(); // ERROR
     }
@@ -213,14 +213,14 @@ private:
             return 0;
         };
         
-        const position_type gap = -(position_type)idfront;
+        const position_type gap = - position_type(idfront);
         position_type empty_front = sbv.select(0);
         size_t shifts;
         while ((shifts = check(gap + empty_front)) > 0) {
             empty_front += shifts;
         }
         return gap + empty_front;
-    };
+    }
     
     size_t shifts_of_conflicts_(mask_type fields, mask_type mask, mask_type conflicts) const {
         assert((fields & mask) == conflicts);

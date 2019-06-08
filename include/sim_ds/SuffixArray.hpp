@@ -139,7 +139,7 @@ void SuffixArray::BuildSA_(const string &str) {
 
 void SuffixArray::SaisStr_(vector<size_t> &saisS, const string &str) const {
     saisS.resize(str.size());
-    for (auto i = 0; i < str.size(); i++)
+    for (size_t i = 0; i < str.size(); i++)
         saisS[i] = size_t(str[i]);
     saisS.push_back(0);
 }
@@ -170,7 +170,7 @@ inline vector<bool> SuffixArray::Classified_(const vector<size_t> &str) const {
 
 inline vector<size_t> SuffixArray::FindLMSs_(const vector<bool> &slTypes) const {
     vector<size_t> lmss;
-    for (auto i = 1; i < slTypes.size(); i++) {
+    for (size_t i = 1; i < slTypes.size(); i++) {
         if (!slTypes[i - 1] && slTypes[i])
             lmss.push_back(i);
     }
@@ -271,7 +271,7 @@ inline vector<size_t> SuffixArray::Induce_(size_t maxValue, const vector<size_t>
         }
     }
     // Step2: insert Ls
-    for (auto i = 0; i < sArr.size(); i++) {
+    for (size_t i = 0; i < sArr.size(); i++) {
         auto id = (sArr)[i];
         if (id == kInf || id == 0) continue;
         auto nextId = id - 1;
@@ -300,12 +300,12 @@ inline vector<size_t> SuffixArray::Induce_(size_t maxValue, const vector<size_t>
 
 inline void SuffixArray::BuildLCP_() {
     vector<size_t> posInArr(s_arr_.size());
-    for (auto i = 0; i < s_arr_.size(); i++) {
+    for (size_t i = 0; i < s_arr_.size(); i++) {
         posInArr[s_arr_[i]] = i;
     }
     vector<size_t> lcp_arr(s_arr_.size());
     auto prevLCP = 0;
-    for (auto i = 0; i < posInArr.size(); i++) {
+    for (size_t i = 0; i < posInArr.size(); i++) {
         auto pos = posInArr[i];
         auto lcp = (pos == posInArr.size() - 1) ? 0 : CompareLCP_(i, s_arr_[pos + 1], prevLCP > 1 ? prevLCP - 1 : 0);
         lcp_arr[pos] = lcp;

@@ -40,7 +40,7 @@ public:
         for (auto i = 0; i < vec.size(); i++) {
             auto id = 1;
             auto value = vec[i];
-            for (auto depth = 0; depth < height_; depth++) {
+            for (size_t depth = 0; depth < height_; depth++) {
                 auto bit = (value >> (height_ - 1 - depth)) & 1U;
                 bv_list_src_[id - 1].push_back(bit);
                 id = (id << 1) | bit;
@@ -48,14 +48,14 @@ public:
         }
         
         bv_list_.resize(bv_list_src_.size());
-        for (auto i = 0; i < bv_list_src_.size(); i++)
+        for (size_t i = 0; i < bv_list_src_.size(); i++)
             bv_list_[i] = bv_type(bv_list_src_[i]);
     }
     
     uint8_t operator[](size_t index) const {
         uint8_t value = 0;
         auto id = 1;
-        auto depth = 0;
+        size_t depth = 0;
         size_t idx = index;
         for (; depth < height_ - 1; depth++) {
             auto& cbv = bv_list_[id - 1];
@@ -71,7 +71,7 @@ public:
     
     size_t rank(size_t index) const {
         size_t idx = index;
-        for (auto depth = 0, id = 1; depth < height_; depth++) {
+        for (size_t depth = 0, id = 1; depth < height_; depth++) {
             auto& cbv = bv_list_[id - 1];
             auto bit = cbv[idx];
             idx = !bit ? cbv.rank_0(idx) : cbv.rank_1(idx);
@@ -82,7 +82,7 @@ public:
     
     size_t rank(uint8_t c, size_t index) const {
         size_t idx = index;
-        for (auto depth = 0, id = 1; depth < height_; depth++) {
+        for (size_t depth = 0, id = 1; depth < height_; depth++) {
             auto& cbv = bv_list_[id - 1];
             auto bit = (c >> (height_ - 1 - depth)) & 1;
             assert(bit == cbv[idx]);
@@ -95,7 +95,7 @@ public:
     std::pair<uint8_t, unsigned long long> AccessAndRank(size_t index) const {
         auto value = 0;
         size_t idx = index;
-        for (auto depth = 0, id = 1; depth < height_; depth++) {
+        for (size_t depth = 0, id = 1; depth < height_; depth++) {
             auto& cbv = bv_list_[id - 1];
             auto bit = cbv[idx];
             value |= bit << (height_ - 1 - depth);

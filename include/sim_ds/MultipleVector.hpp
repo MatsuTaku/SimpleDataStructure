@@ -180,7 +180,7 @@ public:
     
     void set_element_sizes(std::vector<size_t> sizes) {
         element_table_.resize(sizes.size());
-        for (auto i = 0, pos = 0; i < sizes.size(); i++) {
+        for (size_t i = 0, pos = 0; i < sizes.size(); i++) {
             element_table_[i].size = sizes[i];
             element_table_[i].pos = pos;
             pos += sizes[i];

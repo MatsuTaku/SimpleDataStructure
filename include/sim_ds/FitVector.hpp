@@ -134,7 +134,7 @@ public:
     
     void assign(size_t size, value_type value) {
         resize(size);
-        for (auto i = 0; i < size; i++)
+        for (size_t i = 0; i < size; i++)
             operator[](i) = value;
     }
     

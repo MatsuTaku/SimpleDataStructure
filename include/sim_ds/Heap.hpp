@@ -116,7 +116,7 @@ private:
     
     bool Compare(id_type l, id_type r) {
         return Ascending ? l < r : l > r;
-    };
+    }
     
 };
 

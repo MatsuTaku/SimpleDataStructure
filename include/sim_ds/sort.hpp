@@ -31,15 +31,15 @@ public:
         
     }
     
-    size_t size() {return end_ - begin_;};
+    size_t size() {return end_ - begin_;}
     
-    Iterator itr(size_t pos) {return begin_ + (pos - 1);};
+    Iterator itr(size_t pos) {return begin_ + (pos - 1);}
     
-    bool is_leaf(size_t id) {return id > (size() / 2);};
+    bool is_leaf(size_t id) {return id > (size() / 2);}
     
-    size_t left(size_t id) {return 2 * id;};
+    size_t left(size_t id) {return 2 * id;}
     
-    size_t right(size_t id) {return 2 * id + 1;};
+    size_t right(size_t id) {return 2 * id + 1;}
     
     void Heapify(size_t id) {
         if (is_leaf(id))
@@ -58,7 +58,7 @@ public:
             std::swap(id_v, min_i_v);
             Heapify(min_i);
         }
-    };
+    }
     
 };
 

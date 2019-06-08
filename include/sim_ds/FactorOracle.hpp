@@ -19,11 +19,11 @@ class FactorOracleBaseCTAFOBuilder {
 public:
     using id_type = IdType;
     
-    const size_t kBlockSize = 0x100;
-    const id_type kEmptyValue = std::numeric_limits<id_type>::max();
+    static constexpr size_t kBlockSize = 0x100;
+    static constexpr id_type kEmptyValue = std::numeric_limits<id_type>::max();
     
 private:
-    std::string check_;
+    std::vector<uint8_t> check_;
     std::vector<id_type> base_;
     std::vector<id_type> next_;
     
@@ -35,7 +35,7 @@ private:
     friend class FactorOracleBaseCTAFO;
     
 public:
-    FactorOracleBaseCTAFOBuilder(const std::string& text) : check_(text), base_(text.size() + 1, kEmptyValue) {
+    FactorOracleBaseCTAFOBuilder(std::string_view text) : check_(text.begin(), text.end()), base_(text.size() + 1, kEmptyValue) {
         Build();
     }
     
@@ -217,18 +217,18 @@ public:
     
     using Builder = FactorOracleBaseCTAFOBuilder<id_type>;
     
-    const size_t kBlockSize = 0x100;
-    const id_type kEmptyValue = std::numeric_limits<id_type>::max();
+    static constexpr size_t kBlockSize = 0x100;
+    static constexpr id_type kEmptyValue = std::numeric_limits<id_type>::max();
     
 private:
-    std::string check_;
+    std::vector<uint8_t> check_;
     std::vector<id_type> base_;
     std::vector<id_type> next_;
     
 public:
     FactorOracleBaseCTAFO(Builder&& builder) : check_(std::move(builder.check_)), base_(std::move(builder.base_)), next_(std::move(builder.next_)) {}
     
-    FactorOracleBaseCTAFO(const std::string& text) : FactorOracleBaseCTAFO(Builder(text)) {}
+    FactorOracleBaseCTAFO(std::string_view text) : FactorOracleBaseCTAFO(Builder(text)) {}
     
     template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
               class CharTraits = std::char_traits<typename IterTraits::value_type>>

@@ -157,7 +157,7 @@ public:
         {
         std::vector<size_t> cf;
         calc::cummulative_frequency_list(vector, &cf);
-        for (auto i = 0, t = 0; i < num_layers; t += layers_unit_bits_[i], i++) {
+        for (size_t i = 0, t = 0; i < num_layers; t += layers_unit_bits_[i], i++) {
             layers_[i].reserve(cf[t]);
             if (i < num_layers - 1)
                 paths_src_[i].reserve(cf[t]);
@@ -257,10 +257,10 @@ public:
     size_t size_in_bytes() const {
         auto size = sizeof(num_layers_);
         size += size_vec(layers_unit_bits_);
-        for (auto i = 0; i < num_layers(); i++)
+        for (size_t i = 0; i < num_layers(); i++)
             size += layers_[i].size_in_bytes();
         if (num_layers() > 0)
-            for (auto i = 0; i < num_layers() - 1; i++)
+            for (size_t i = 0; i < num_layers() - 1; i++)
                 size += paths_[i].size_in_bytes();
         
         return size;
@@ -274,16 +274,16 @@ public:
         num_layers_ = read_val<size_t>(is);
         
         layers_unit_bits_.reserve(num_layers_);
-        for (auto i = 0; i < num_layers_; i++)
+        for (size_t i = 0; i < num_layers_; i++)
             layers_unit_bits_.push_back(read_val<size_t>(is));
         
         layers_.reserve(num_layers_);
-        for (auto i = 0; i < num_layers_; i++)
+        for (size_t i = 0; i < num_layers_; i++)
             layers_.push_back(Layer(is));
         
         if (num_layers_ > 1) {
             paths_.reserve(num_layers_ - 1);
-            for (auto i = 0; i < num_layers_ - 1; i++)
+            for (size_t i = 0; i < num_layers_ - 1; i++)
                 paths_.push_back(RankSupportBV(is));
         }
     }
@@ -306,16 +306,16 @@ public:
         os << "size:   " << size_bytes << endl;
         os << "sizeBits/element:   " << (float(size_bytes * 8) / size()) << endl;
         auto bitsSize = 0;
-        for (auto i = 0; i == 0 || i + 1 < num_layers(); i++)
+        for (size_t i = 0; i == 0 || i + 1 < num_layers(); i++)
             bitsSize += paths_[i].size_in_bytes();
         os << "size bits:   " << bitsSize << endl;
         auto flowSize = 0;
-        for (auto i = 0; i < num_layers(); i++)
+        for (size_t i = 0; i < num_layers(); i++)
             flowSize += layers_[i].size_in_bytes();
         os << "size flows:   " << flowSize << endl;
         os << "--- element map ---" << endl;
         os << "num_units: " << num_layers() << endl;
-        for (auto i = 0; i < num_layers(); i++)
+        for (size_t i = 0; i < num_layers(); i++)
             os << "[" << layers_unit_bits_[i] << "]"<< endl;
     }
     
