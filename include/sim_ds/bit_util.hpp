@@ -30,6 +30,8 @@ constexpr mask_type kMaskFill = std::numeric_limits<mask_type>::max();
 
 template <size_t Bits>
 inline constexpr mask_type width_mask = (1ull << Bits) - 1;
+template <>
+inline constexpr mask_type width_mask<64> = kMaskFill;
 
 inline constexpr mask_type WidthMask(size_t width) {
     assert(width <= kMaxWidthOfMask);
