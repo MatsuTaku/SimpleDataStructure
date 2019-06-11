@@ -209,8 +209,7 @@ inline int ctz(uint64_t x) {
 inline int clz(uint32_t x) {
 #ifdef __LZCNT__
     return _lzcnt_u32(x);
-#else
-#ifdef __POPCNT__
+#elif defined(__POPCNT__)
     x |= x >> 1;
     x |= x >> 2;
     x |= x >> 4;
@@ -243,14 +242,12 @@ inline int clz(uint32_t x) {
     }
     return c ^ 63;
 #endif
-#endif
 }
     
 inline int clz(uint64_t x) {
 #ifdef __LZCNT__
     return _lzcnt_u64(x);
-#else
-#ifdef __POPCNT__
+#elif defined(__POPCNT__)
     x |= x >> 1;
     x |= x >> 2;
     x |= x >> 4;
@@ -287,7 +284,6 @@ inline int clz(uint64_t x) {
         c |= 1;
     }
     return c ^ 63;
-#endif
 #endif
 }
 

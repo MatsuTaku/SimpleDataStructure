@@ -111,8 +111,8 @@ public:
     using value_type = id_type;
     using difference_type = long long;
     
-    using Layer = FitVector;
-    using RankSupportBV = SuccinctBitVector<false>;
+    using layer_type = FitVector;
+    using rank_support_bv_type = SuccinctBitVector<false>;
     
     static constexpr size_t kMaxSplits = 8;
     
@@ -121,101 +121,33 @@ public:
     }
     
 private:
-    size_t num_layers_ = 0;
-    std::vector<size_t> layers_unit_bits_ = {8, 8, 8, 8, 8, 8, 8, 8};
-    std::vector<Layer> layers_;
-    std::vector<RankSupportBV> paths_;
+    size_t num_layers_;
+    std::vector<size_t> layers_unit_bits_;
+    std::vector<layer_type> layers_;
+    std::vector<rank_support_bv_type> paths_;
     
 public:
-    DacVector() : num_layers_(0), layers_unit_bits_({8, 8, 8, 8, 8, 8, 8, 8}) {
-        layers_.assign(8, Layer(size_t(8)));
-        paths_.resize(7);
-    }
+    DacVector() : num_layers_(0), layers_unit_bits_(8, 8), layers_(8, layer_type(8)), paths_(7) {}
     
-    template <class Vector>
-    DacVector(const Vector& vector) : DacVector(vector, std::vector<size_t>{}) {}
+    template <typename T>
+    DacVector(const std::vector<T>& vector) : DacVector(vector, std::vector<size_t>{}) {}
     
-    template <class Vector, typename T>
-    DacVector(const Vector& vector, std::vector<T> unit_bit_list) {
-        // Empty vector input return with no works.
-        if (vector.empty())
-            return;
-        
-        if (unit_bit_list.empty()) {
-            calc::split_positions_optimized_for_dac(vector, &layers_unit_bits_);
-        } else {
-            layers_unit_bits_.reserve(unit_bit_list.size());
-            std::transform(unit_bit_list.begin(), unit_bit_list.end(), std::back_inserter(layers_unit_bits_), [](auto x) {return x;});
-        }
-        
-        size_t num_layers = layers_unit_bits_.size();
-        num_layers_ = num_layers;
-        layers_.reserve(num_layers);
-        std::transform(layers_unit_bits_.begin(), layers_unit_bits_.end(), std::back_inserter(layers_), [](auto unit) {return Layer(unit);});
-        
-        std::vector<BitVector> paths_src_(num_layers - 1);
-        {
-        std::vector<size_t> cf;
-        calc::cummulative_frequency_list(vector, &cf);
-        for (size_t i = 0, t = 0; i < num_layers; t += layers_unit_bits_[i], i++) {
-            layers_[i].reserve(cf[t]);
-            if (i < num_layers - 1)
-                paths_src_[i].reserve(cf[t]);
-        }
-        }
-        
-        for (auto v : vector) {
-            value_type x = v;
-            layers_[0].push_back(x & bit_util::WidthMask(layers_unit_bits_[0]));
-            x >>= layers_unit_bits_[0];
-            for (size_t depth = 1; depth < num_layers; depth++) {
-                bool exist = x > 0;
-                paths_src_[depth - 1].push_back(exist);
-                if (!exist)
-                    break;
-                auto unit_bits = layers_unit_bits_[depth];
-                layers_[depth].push_back(x & bit_util::WidthMask(unit_bits));
-                x >>= unit_bits;
-            }
-        }
-        
-        paths_.reserve(paths_src_.size());
-        std::transform(paths_src_.begin(), paths_src_.end(), std::back_inserter(paths_), [](auto&& src) {return RankSupportBV(src);});
-    }
+    template <class T, typename S>
+    explicit DacVector(const std::vector<T>& vector, const std::vector<S>& unit_bit_list);
     
-    DacVector(std::istream& is) {
+    explicit DacVector(std::istream& is) {
         Read(is);
     }
     
     // MARK: getter
     
-    size_t size() const {
-        return layers_[0].size();
-    }
+    size_t size() const {return layers_[0].size();}
     
-    bool empty() const {
-        return size() == 0;
-    }
+    bool empty() const {return size() == 0;}
     
-    size_t num_layers() const {
-        return num_layers_;
-    }
+    size_t num_layers() const {return num_layers_;}
     
-    value_type operator[](size_t index) const {
-        value_type value = layers_[0][index];
-        for (size_t depth = 1, shift_bits = layers_unit_bits_[depth - 1], i = index;
-             depth < num_layers();
-             depth++, shift_bits += layers_unit_bits_[depth - 1])
-        {
-            auto& path = paths_[depth - 1];
-            if (!path[i])
-                break;
-            i = path.rank(i);
-            value_type unit = layers_[depth][i];
-            value |= unit << shift_bits;
-        }
-        return value;
-    }
+    value_type operator[](size_t index) const;
     
     value_type at(size_t index) const {
         if (index >= size())
@@ -224,21 +156,13 @@ public:
         return operator[](index);
     }
     
-    const_iterator begin() const {
-        return const_iterator(*this, 0);
-    }
+    const_iterator begin() const {return const_iterator(*this, 0);}
     
-    const_iterator end() const {
-        return const_iterator(*this, size());
-    }
+    const_iterator end() const {return const_iterator(*this, size());}
     
-    value_type front() const {
-        return operator[](0);
-    }
+    value_type front() const {return operator[](0);}
     
-    value_type back() const {
-        return operator[](size() - 1);
-    }
+    value_type back() const {return operator[](size() - 1);}
     
     /**
      Get number of splits of element at index.
@@ -247,7 +171,7 @@ public:
     size_t depth(size_t index) const {
         size_t depth = 0;
         for (; depth < num_layers() - 1; depth++) {
-            if (!paths_[depth][index])
+            if (not paths_[depth][index])
                 break;
             index = paths_[depth].rank(index);
         }
@@ -279,12 +203,12 @@ public:
         
         layers_.reserve(num_layers_);
         for (size_t i = 0; i < num_layers_; i++)
-            layers_.push_back(Layer(is));
+            layers_.push_back(layer_type(is));
         
         if (num_layers_ > 1) {
             paths_.reserve(num_layers_ - 1);
             for (size_t i = 0; i < num_layers_ - 1; i++)
-                paths_.push_back(RankSupportBV(is));
+                paths_.push_back(rank_support_bv_type(is));
         }
     }
     
@@ -321,7 +245,73 @@ public:
     
 };
 
+template <typename T, typename S>
+DacVector::DacVector(const std::vector<T>& vector, const std::vector<S>& unit_bit_list) {
+    // Empty vector input return with no works.
+    if (vector.empty())
+        return;
     
+    if (unit_bit_list.empty()) {
+        calc::split_positions_optimized_for_dac(vector, &layers_unit_bits_);
+    } else {
+        layers_unit_bits_.reserve(unit_bit_list.size());
+        std::transform(unit_bit_list.begin(), unit_bit_list.end(), std::back_inserter(layers_unit_bits_), [](auto x) {return x;});
+    }
+    
+    size_t num_layers = layers_unit_bits_.size();
+    num_layers_ = num_layers;
+    layers_.reserve(num_layers);
+    for (auto unit : layers_unit_bits_)
+        layers_.emplace_back(unit);
+    
+    std::vector<BitVector> paths_src_(num_layers - 1);
+    { // Memory reservation
+        std::vector<size_t> cf;
+        calc::cummulative_frequency_list(vector, &cf);
+        for (size_t i = 0, t = 0; i < num_layers; t += layers_unit_bits_[i], i++) {
+            layers_[i].reserve(cf[t]);
+            if (i < num_layers - 1)
+                paths_src_[i].reserve(cf[t]);
+        }
+    }
+    
+    for (auto v : vector) {
+        value_type x = v;
+        layers_[0].push_back(x & bit_util::WidthMask(layers_unit_bits_[0]));
+        x >>= layers_unit_bits_[0];
+        for (size_t depth = 1; depth < num_layers; depth++) {
+            bool exist = x > 0;
+            paths_src_[depth - 1].push_back(exist);
+            if (not exist)
+                break;
+            auto unit_bits = layers_unit_bits_[depth];
+            layers_[depth].push_back(x & bit_util::WidthMask(unit_bits));
+            x >>= unit_bits;
+        }
+    }
+    
+    paths_.reserve(paths_src_.size());
+    for (auto&& path : paths_src_)
+        paths_.emplace_back(std::move(path));
+}
+
+DacVector::value_type DacVector::operator[](size_t index) const {
+    value_type value = layers_[0][index];
+    for (size_t depth = 1, shift_bits = layers_unit_bits_[depth - 1], i = index;
+         depth < num_layers();
+         depth++, shift_bits += layers_unit_bits_[depth - 1])
+    {
+        auto& path = paths_[depth - 1];
+        if (not path[i])
+            break;
+        i = path.rank(i);
+        value_type unit = layers_[depth][i];
+        value |= unit << shift_bits;
+    }
+    return value;
+}
+
+
 } // namespace sim_ds
 
 #endif /* DACs_hpp */

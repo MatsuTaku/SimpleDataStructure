@@ -64,8 +64,8 @@ public:
         vector_ = read_vec<id_type>(is);
     }
     
-    template<typename Vector>
-    FitVector(const Vector& vector) : FitVector(minimal_word_size(vector)) {
+    template<typename T>
+    FitVector(const std::vector<T>& vector) : FitVector(minimal_word_size(vector)) {
         if (vector.empty())
             return;
         for (auto x : vector)
@@ -74,8 +74,8 @@ public:
     
     // Used at constructor
     
-    template<typename Vector>
-    size_t minimal_word_size(const Vector& vector) const {
+    template<typename T>
+    size_t minimal_word_size(const std::vector<T>& vector) const {
         if (vector.empty())
             return 0;
         auto max_e = *std::max_element(vector.begin(), vector.end());
