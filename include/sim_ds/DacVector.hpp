@@ -166,7 +166,7 @@ public:
         
         for (auto v : vector) {
             value_type x = v;
-            layers_[0].push_back(bit_util::bits_extract_len(x, layers_unit_bits_[0]));
+            layers_[0].push_back(x & bit_util::WidthMask(layers_unit_bits_[0]));
             x >>= layers_unit_bits_[0];
             for (size_t depth = 1; depth < num_layers; depth++) {
                 bool exist = x > 0;
@@ -174,7 +174,7 @@ public:
                 if (!exist)
                     break;
                 auto unit_bits = layers_unit_bits_[depth];
-                layers_[depth].push_back(bit_util::bits_extract_len(x, unit_bits));
+                layers_[depth].push_back(x & bit_util::WidthMask(unit_bits));
                 x >>= unit_bits;
             }
         }

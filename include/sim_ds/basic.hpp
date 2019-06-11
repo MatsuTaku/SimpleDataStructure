@@ -8,26 +8,29 @@
 #ifndef basic_hpp
 #define basic_hpp
 
-#include <array>
-#include <algorithm>
-#include <cassert>
-#include <iostream>
-#include <vector>
-#include <string>
-#include <map>
-#include <unordered_map>
 #include <cstdlib>
 #include <cstdint>
+#include <cassert>
 #include <cmath>
-#include <memory>
-#include <sstream>
 #include <cstring>
+#include <algorithm>
+#include <vector>
+#include <array>
+#include <map>
+#include <unordered_map>
+#include <queue>
+#include <string>
+#include <string_view>
+#include <iostream>
+#include <sstream>
 #include <fstream>
+#include <memory>
 #include <limits>
 #include <chrono>
-#include <string_view>
-#include <queue>
+
+#ifdef _MSC_VER
 #include <iso646.h>
+#endif
 
 namespace sim_ds {
 

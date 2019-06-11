@@ -21,5 +21,10 @@
 #include "sim_ds/graph_util.hpp"
 #include "sim_ds/Samc.hpp"
 #include "sim_ds/EmptyLinkedVector.hpp"
+#include "sim_ds/bit_util.hpp"
+
+#ifdef SIDS_USE_BOOST
+#include "sim_ds/bit_util256.hpp"
+#endif
 
 #endif /* sim_ds_hpp */
