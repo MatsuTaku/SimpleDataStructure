@@ -25,8 +25,8 @@ public:
     static constexpr size_type kItemEmpty = graph_type::kItemEmpty;
     
 private:
-    std::map<uint8_t, size_type> edges_;
     size_type item_index_;
+    std::map<uint8_t, size_type> edges_;
     
 public:
     _Node() : item_index_(kItemEmpty) {}

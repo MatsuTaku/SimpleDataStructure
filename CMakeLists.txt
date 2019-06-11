@@ -29,10 +29,7 @@ endif()
 include(CheckSSE4_2)
 if(BUILTIN_POPCNT)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang|Intel")
-        target_compile_options(sim_ds INTERFACE
-            -march=native
-            $<$<CONFIG:Release>:-O3>
-            )
+        target_compile_options(sim_ds INTERFACE -msse4.2)
     endif()
 endif()
 

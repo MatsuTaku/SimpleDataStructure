@@ -13,11 +13,14 @@
 #ifdef SIDS_USE_BOOST
 #include <boost/multiprecision/cpp_int.hpp>
 #endif
+#ifdef __SSE4_2__
+#include <nmmintrin.h>
+#endif
 #ifdef __BMI2__
 #include <immintrin.h>
 #endif
-#ifdef __SSE4_2__
-#include <nmmintrin.h>
+#ifdef __BMI1__
+#include <immintrin.h>
 #endif
 
 namespace sim_ds::bit_util {
@@ -232,6 +235,136 @@ inline uint64_t popcnt100(uint64_t x) {
 #endif
 }
 
+
+// MARK: - bextr
+
+/* Bit field extract */
+inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
+#ifdef __BMI1__
+    return _bextr_u64(x, start, len);
+#else
+    return bits_extract_len(x >> start, len);
+#endif
+}
+
+
+// MARK: - ctz/clz
+
+template <typename T>
+inline constexpr int ctz(T x) {
+#ifdef __GNUC__
+    return std::__ctz(x);
+#else
+    return popcnt((x & -x) - 1);
+#endif
+}
+
+#ifdef SIDS_USE_BOOST
+inline int ctz256(uint256_t x) {
+    return popcnt256(uint256_t((x & -int256_t(x)) - 1));
+}
+#endif
+
+template <typename T>
+inline constexpr int clz(T x) {
+#ifdef __GNUC__
+    return std::__clz(x);
+#else
+#ifdef __POPCNT__
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+    return popcnt(~x);
+#else
+    if (x == 0)
+        return 64;
+    int c = 0;
+    if (x & 0xFFFFFFFF00000000) {
+        x &= 0xFFFFFFFF00000000;
+        c |= 32;
+    }
+    if (x & 0xFFFF0000FFFF0000) {
+        x &= 0xFFFF0000FFFF0000;
+        c |= 16;
+    }
+    if (x & 0xFF00FF00FF00FF00) {
+        x &= 0xFF00FF00FF00FF00;
+        c |= 8;
+    }
+    if (x & 0xF0F0F0F0F0F0F0F0) {
+        x &= 0xF0F0F0F0F0F0F0F0;
+        c |= 4;
+    }
+    if (x & 0xCCCCCCCCCCCCCCCC) {
+        x &= 0xCCCCCCCCCCCCCCCC;
+        c |= 2;
+    }
+    if (x & 0xAAAAAAAAAAAAAAAA) {
+        x &= 0xAAAAAAAAAAAAAAAA;
+        c |= 1;
+    }
+    return c ^ 63;
+#endif
+#endif
+}
+
+#ifdef SIDS_USE_BOOST
+inline int clz256(mask256_type x) {
+#ifdef __POPCNT__
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+    x |= x >> 64;
+    x |= x >> 128;
+    return popcnt256(~x);
+#else
+    if (x == 0)
+        return 256;
+    int c = 0;
+    if (x & pattern_mask256<128, 128>) {
+        x &= pattern_mask256<128, 128>;
+        c |= 128;
+    }
+    if (x & pattern_mask256<64, 64>) {
+        x &= pattern_mask256<64, 64>;
+        c |= 64;
+    }
+    if (x & pattern_mask256<32, 32>) {
+        x &= pattern_mask256<32, 32>;
+        c |= 32;
+    }
+    if (x & pattern_mask256<16, 16>) {
+        x &= pattern_mask256<16, 16>;
+        c |= 16;
+    }
+    if (x & pattern_mask256<8, 8>) {
+        x &= pattern_mask256<8, 8>;
+        c |= 8;
+    }
+    if (x & pattern_mask256<4, 4>) {
+        x &= pattern_mask256<4, 4>;
+        c |= 4;
+    }
+    if (x & pattern_mask256<2, 2>) {
+        x &= pattern_mask256<2, 2>;
+        c |= 2;
+    }
+    if (x & pattern_mask256<1, 1>) {
+        x &= pattern_mask256<1, 1>;
+        c |= 1;
+    }
+    return c ^ 255;
+#endif
+}
+#endif
+
+
 // MARK: - select
 
 constexpr uint8_t kLtSel[9][256] = {
@@ -427,132 +560,6 @@ inline uint8_t sel(uint64_t x, size_t i) {
     return ret + kLtSel[i][x & 0xFF];
 #endif
 }
-    
-/* Bit field extract */
-inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
-#ifdef __BMI__
-    return _bextr_u64(x, start, len);
-#else
-    return bits_extract_len(x >> start, len);
-#endif
-}
-
-
-// MARK: - ctz/clz
-
-template <typename T>
-inline constexpr int ctz(T x) {
-#ifdef __GNUC__
-    return std::__ctz(x);
-#else
-    return popcnt((x & -x) - 1);
-#endif
-}
-
-#ifdef SIDS_USE_BOOST
-inline int ctz256(uint256_t x) {
-    return popcnt256(uint256_t((x & -int256_t(x)) - 1));
-}
-#endif
-
-template <typename T>
-inline constexpr int clz(T x) {
-#ifdef __GNUC__
-    return std::__clz(x);
-#else
-#ifdef __POPCNT__
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-    return popcnt(~x);
-#else
-    if (x == 0)
-        return 64;
-    int c = 0;
-    if (x & 0xFFFFFFFF00000000) {
-        x &= 0xFFFFFFFF00000000;
-        c |= 32;
-    }
-    if (x & 0xFFFF0000FFFF0000) {
-        x &= 0xFFFF0000FFFF0000;
-        c |= 16;
-    }
-    if (x & 0xFF00FF00FF00FF00) {
-        x &= 0xFF00FF00FF00FF00;
-        c |= 8;
-    }
-    if (x & 0xF0F0F0F0F0F0F0F0) {
-        x &= 0xF0F0F0F0F0F0F0F0;
-        c |= 4;
-    }
-    if (x & 0xCCCCCCCCCCCCCCCC) {
-        x &= 0xCCCCCCCCCCCCCCCC;
-        c |= 2;
-    }
-    if (x & 0xAAAAAAAAAAAAAAAA) {
-        x &= 0xAAAAAAAAAAAAAAAA;
-        c |= 1;
-    }
-    return c ^ 63;
-#endif
-#endif
-}
-
-#ifdef SIDS_USE_BOOST
-inline int clz256(mask256_type x) {
-#ifdef __POPCNT__
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-    x |= x >> 64;
-    x |= x >> 128;
-    return popcnt256(~x);
-#else
-    if (x == 0)
-        return 256;
-    int c = 0;
-    if (x & pattern_mask256<128, 128>) {
-        x &= pattern_mask256<128, 128>;
-        c |= 128;
-    }
-    if (x & pattern_mask256<64, 64>) {
-        x &= pattern_mask256<64, 64>;
-        c |= 64;
-    }
-    if (x & pattern_mask256<32, 32>) {
-        x &= pattern_mask256<32, 32>;
-        c |= 32;
-    }
-    if (x & pattern_mask256<16, 16>) {
-        x &= pattern_mask256<16, 16>;
-        c |= 16;
-    }
-    if (x & pattern_mask256<8, 8>) {
-        x &= pattern_mask256<8, 8>;
-        c |= 8;
-    }
-    if (x & pattern_mask256<4, 4>) {
-        x &= pattern_mask256<4, 4>;
-        c |= 4;
-    }
-    if (x & pattern_mask256<2, 2>) {
-        x &= pattern_mask256<2, 2>;
-        c |= 2;
-    }
-    if (x & pattern_mask256<1, 1>) {
-        x &= pattern_mask256<1, 1>;
-        c |= 1;
-    }
-    return c ^ 255;
-#endif
-}
-#endif
 
 
 // MARK: - xor_idx
@@ -574,7 +581,7 @@ inline mask256_type xor_idx(mask256_type x, uint8_t y) {
     if (y & 64)
         x = (((x&pattern_mask256<64, 0>) << 64) | ((x&pattern_mask256<64, 64>) >> 64));
     if (y & 128)
-        x = (((x&pattern_mask256<128, 0>) << 128) | ((x&pattern_mask256<128, 128>) >> 128));
+        x = ((x << 128) | (x >> 128));
     return x;
 }
 #endif
