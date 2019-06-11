@@ -16,6 +16,10 @@
 
 namespace sim_ds {
 
+// SAMC (Single Array with Multi Code)
+// reference:
+//     M. Fuketa, H. Kitagawa, T. Ogawa, K. Morita, J. Aoe. Compression of double array structure for fixed length keywords. Information Processing and Management Vol 50 p796-806. 2014.
+//
 
 // MARK: - Samc
 
@@ -253,9 +257,6 @@ _SamcImpl<ValueType>::shifts_of_conflicts_(mask_type fields, mask_type mask, mas
 }
 
 
-// SAMC (Single Array with Multi CODE)
-// reference:
-//     M. Fuketa, et.al. Compression of double array structure for fixed length keywords.
 template <typename ValueType>
 class Samc : _SamcImpl<ValueType> {
 public:
