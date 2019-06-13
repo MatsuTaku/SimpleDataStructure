@@ -52,18 +52,18 @@ inline void xor_idx256(const uint64_t* x_addr, uint8_t y, uint64_t* dst_addr) {
     __m256i xx = _mm256_load_si256(reinterpret_cast<__m256i*>(dst_addr));
 #endif
     if (y & 1) {
-        auto xxl = _mm256_slli_si256(_mm256_and_si256(xx, _mm256_set1_epi64x(0x5555555555555555)), 1);
-        auto xxr = _mm256_srli_si256(_mm256_and_si256(xx, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1);
+        auto xxl = _mm256_slli_epi64(_mm256_and_si256(xx, _mm256_set1_epi64x(0x5555555555555555)), 1);
+        auto xxr = _mm256_srli_epi64(_mm256_and_si256(xx, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1);
         xx = _mm256_or_si256(xxl, xxr);
     }
     if (y & 2) {
-        auto xxl = _mm256_slli_si256(_mm256_and_si256(xx, _mm256_set1_epi64x(0x3333333333333333)), 2);
-        auto xxr = _mm256_srli_si256(_mm256_and_si256(xx, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2);
+        auto xxl = _mm256_slli_epi64(_mm256_and_si256(xx, _mm256_set1_epi64x(0x3333333333333333)), 2);
+        auto xxr = _mm256_srli_epi64(_mm256_and_si256(xx, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2);
         xx = _mm256_or_si256(xxl, xxr);
     }
     if (y & 4) {
-        auto xxl = _mm256_slli_si256(_mm256_and_si256(xx, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4);
-        auto xxr = _mm256_srli_si256(_mm256_and_si256(xx, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4);
+        auto xxl = _mm256_slli_epi64(_mm256_and_si256(xx, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4);
+        auto xxr = _mm256_srli_epi64(_mm256_and_si256(xx, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4);
         xx = _mm256_or_si256(xxl, xxr);
     }
 #if defined(__AVX512VL__) && defined(__AVX512F__)
