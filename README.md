@@ -11,7 +11,7 @@ git submodule add https://github.com/MatsuTaku/SimpleDataStructure.git
 2. In your `CMakeLists.txt` file, type like follows:
 ```CMake
 ...
-add_submodule(SimpleDataStructure)
+add_subdirectory(SimpleDataStructure)
 target_link_libraries(your_target [PUBLIC|PRIVATE|INTERFACE] sim_ds)
 ...
 ```
@@ -22,22 +22,21 @@ target_link_libraries(your_target [PUBLIC|PRIVATE|INTERFACE] sim_ds)
 - [BitVector](documents/BitVector.md)
 - [SuccinctBitVector](documents/SuccinctBitVector.md)
   - Extended binary array supporting rank/select operation.
-- [WaveletTree](documents/WaveletTree.md)
-- [DacVector](documents/DacVector.md)
+- WaveletTree
+- DacVector
   - Compressed array representation that stores each value almost as fit-bits size.
-- [Heap](documents/Heap.md)
-- String handler
-  - [SuffixArray](documents/SuffixArray.md)
-  - [FactorOracle](documents/FactorOracle.md)
-  - [Samc](documents/Samc.md)
+- Heap
+- SuffixArray
+- FactorOracle
+- Samc
 
 ### Custom data structure
-- [MultiBitVector](documents/MultiBitVector.md)
-- [EmptyLinkedVector](documents/EmptyLinkedVector.md)
+- MultiBitVector
+- EmptyLinkedVector
 
 ### Utilities
-- [bit_util](documents/bit_util.md)
-- [graph_util](documents/graph_util.md)
-- [PatternMatching](documents/PatternMatching.md)
-- [sort](documents/sort.md)
-- [graph_util](documents/graph_util.md)
+- bit_util
+- graph_util
+- PatternMatching
+- sort
+- graph_util
