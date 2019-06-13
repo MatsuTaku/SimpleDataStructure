@@ -11,7 +11,7 @@ Supporting basic operation like `std::vector<>`.
 
 **Note**
 This class is constant (immutable) structure.
-You must set bits using [BitVector](/BitVector.md) or etc before construction.
+You must set bits using [BitVector](/SimpleDataStructure/BitVector.md) or etc before construction.
 
 ## Template parameters
 ```c++

@@ -3,8 +3,8 @@
 See [repository](https://github.com/Matsutaku/SimpleDataStructure/)
 
 ## Succinct data structures
-- [BitVector](/BitVector)
-- [SuccinctBitVector](/SuccinctBitVector)
+- [BitVector](/SimpleDataStructure/BitVector)
+- [SuccinctBitVector](/SimpleDataStructure/SuccinctBitVector)
   - Extended binary array supporting rank/select operation.
 - WaveletTree
 - DacVector
