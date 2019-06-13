@@ -26,16 +26,18 @@ class SuccinctBitVector;
 - `SuccinctBitVector(sim_ds::BitVector&& bv)`
   - Same as `std::vector<bool>(size)`
 
-## Operations
-- bool operator[](size_t i)
+## Central Operations
+- `bool operator[](size_t i)`
   - return $i$th bit $\in \{0,1\}$.
-- size_t rank(size_t i)
+- `size_t rank(size_t i)`
   - return counts $1$th in $B[0, \dots, i-1)$
-- size_t select(size_t i)
+- `size_t select(size_t i)`
   - return index of $i$th 1
 
 ## Examples
 ```c++
+#include <iostream>
+#include <vector>
 #include "sim_ds/SuccinctBitVector.hpp"
 
 int main() {

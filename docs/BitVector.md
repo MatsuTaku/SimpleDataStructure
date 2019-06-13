@@ -10,12 +10,13 @@ Supporting basic operations like `std::vector<>`.
   - Like `std::vector<bool>(size)`
 - `BitVector(size_t size, bool initial_bit)`
 
-## Operations
-- bool operator[](size_t i)
+## Central Operations
+- `bool operator[](size_t i)`
   - return $i$th bit $\in \{0,1\}$.
 
 ## Examples
 ```c++
+#include <iostream>
 #include "sim_ds/BitVector.hpp"
 
 int main() {
