@@ -60,9 +60,9 @@ public:
     }
     
     void Read(std::istream& is) {
-        storage_ = read_vec<uint8_t>(is);
-        code_table_ = read_vec<code_type>(is);
-        max_ = read_vec<value_type>(is);
+        read_vec(is, storage_);
+        read_vec(is, code_table_);
+        read_vec(is, max_);
     }
     
 protected:

@@ -19,11 +19,11 @@ template <class BitSequence> class BitConstReference;
 
 template <class BitSequence>
 class BitReference {
-    using storage_type = typename BitSequence::storage_type;
-    using storage_pointer = typename BitSequence::storage_pointer;
+    using word_type = typename BitSequence::word_type;
+    using word_pointer = typename BitSequence::word_pointer;
     
-    storage_pointer seg_;
-    storage_type mask_;
+    word_pointer seg_;
+    word_type mask_;
     
     friend typename BitSequence::Self;
     
@@ -52,18 +52,18 @@ public:
     }
     
 private:
-    BitReference(storage_pointer seg, storage_type mask) : seg_(seg), mask_(mask) {}
+    BitReference(word_pointer seg, word_type mask) : seg_(seg), mask_(mask) {}
     
 };
 
 
 template <class BitSequence>
 class BitConstReference {
-    using storage_type = typename BitSequence::storage_type;
-    using storage_pointer = typename BitSequence::const_storage_pointer;
+    using word_type = typename BitSequence::word_type;
+    using word_pointer = typename BitSequence::const_word_pointer;
     
-    storage_pointer seg_;
-    storage_type mask_;
+    word_pointer seg_;
+    word_type mask_;
     
     friend typename BitSequence::Self;
     friend class BitIterator<BitSequence, true>;
@@ -80,7 +80,7 @@ public:
     }
     
 private:
-    BitConstReference(storage_pointer seg, storage_type mask) : seg_(seg), mask_(mask) {}
+    BitConstReference(word_pointer seg, word_type mask) : seg_(seg), mask_(mask) {}
     
 };
 
@@ -89,14 +89,14 @@ template <class BitSequence, bool IsConst>
 class BitIterator {
     using value_type = typename BitSequence::value_type;
     using difference_type = typename BitSequence::difference_type;
-    using storage_type = typename BitSequence::storage_type;
-    using storage_pointer = std::conditional_t<IsConst, typename BitSequence::const_storage_pointer, typename BitSequence::storage_pointer>;
+    using word_type = typename BitSequence::word_type;
+    using word_pointer = std::conditional_t<IsConst, typename BitSequence::const_word_pointer, typename BitSequence::word_pointer>;
     
     using reference = std::conditional_t<IsConst, typename BitSequence::const_reference, typename BitSequence::reference>;
     
     static constexpr size_t kBitsPerWord = BitSequence::kBitsPerWord;
     
-    storage_pointer seg_;
+    word_pointer seg_;
     size_t ctz_;
     
 public:
@@ -105,7 +105,7 @@ public:
     BitIterator(const BitIterator<BitSequence, false>& x) : seg_(x.pointer_), ctz_(x.ctz_) {}
     
     reference operator*() const {
-        return reference(seg_, storage_type(1) << ctz_);
+        return reference(seg_, word_type(1) << ctz_);
     }
     
     BitIterator& operator++() {
@@ -186,7 +186,7 @@ public:
     friend bool operator>=(const BitIterator& x, const BitIterator& y) {return !(x < y);}
     
 private:
-    BitIterator(storage_pointer pointer, size_t ctz) : seg_(pointer), ctz_(ctz) {}
+    BitIterator(word_pointer pointer, size_t ctz) : seg_(pointer), ctz_(ctz) {}
     
     friend typename BitSequence::Self;
     

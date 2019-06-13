@@ -62,9 +62,9 @@ public:
     
     void Read(std::istream& is) {
         bits_.Read(is);
-        basic_block_ = read_vec<uint64_t>(is);
+        read_vec(is, basic_block_);
         if constexpr (UseSelect)
-            select_tips_ = read_vec<uint32_t>(is);
+            read_vec(is, select_tips_);
     }
     
     void Write(std::ostream& os) const {

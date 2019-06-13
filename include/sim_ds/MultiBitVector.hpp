@@ -170,9 +170,9 @@ public:
     }
     
     void Read(std::istream &is) {
-        bits_ = read_vec<id_type>(is);
+        read_vec(is, bits_);
         for (auto &tips : rank_tips_)
-            tips = read_vec<RankTip>(is);
+            read_vec(is, tips);
     }
     
     void Write(std::ostream &os) const {

@@ -22,9 +22,9 @@ namespace sim_ds {
 class BitVector {
 public:
     using Self = BitVector;
-    using storage_type = id_type;
-    using storage_pointer = storage_type*;
-    using const_storage_pointer = const storage_type*;
+    using word_type = id_type;
+    using word_pointer = word_type*;
+    using const_word_pointer = const word_type*;
     
     static constexpr uint8_t kBitsPerWord = 64;
     
@@ -37,8 +37,10 @@ public:
     using difference_type = long long;
     using pointer = iterator;
     
+    using storage_type = aligned_vector<word_type>;
+    
 private:
-    std::vector<storage_type> base_;
+    storage_type base_;
     size_t size_;
     
 public:
@@ -141,7 +143,7 @@ public:
     
     bool empty() const {return size() == 0;}
     
-    const storage_type* data() const {return base_.data();}
+    const word_type* data() const {return base_.data();}
     
     size_t size_in_bytes() const {
         auto size = sizeof(size_t);
@@ -151,7 +153,7 @@ public:
     
     void Read(std::istream& is) {
         size_ = read_val<size_t>(is);
-        base_ = read_vec<storage_type>(is);
+        read_vec(is, base_);
     }
     
     void Write(std::ostream& os) const {

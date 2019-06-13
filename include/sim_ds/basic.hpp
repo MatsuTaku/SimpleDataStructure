@@ -32,9 +32,14 @@
 #include <iso646.h>
 #endif
 
+#include <boost/align/aligned_allocator.hpp>
+
 namespace sim_ds {
 
 using id_type = size_t;
+
+template <typename T, unsigned Alignment = 32>
+using aligned_vector = std::vector<T, boost::alignment::aligned_allocator<T, Alignment>>;
 
 class Stopwatch {
     using hrc = std::chrono::high_resolution_clock;
@@ -64,12 +69,11 @@ inline T read_val(std::istream& is) {
     return val;
 }
 
-template<typename T>
-inline std::vector<T> read_vec(std::istream& is) {
+template<typename T, class A>
+inline void read_vec(std::istream& is, std::vector<T, A>& vec) {
     auto size = read_val<size_t>(is);
-    std::vector<T> vec(size);
-    is.read(reinterpret_cast<char*>(&vec[0]), sizeof(T) * size);
-    return vec; // expect move
+    vec.resize(size);
+    is.read(reinterpret_cast<char*>(vec.data()), sizeof(T) * size);
 }
 
 inline std::string read_string(std::istream& is) {
@@ -86,8 +90,8 @@ inline void write_val(const T& val, std::ostream& os) {
     os.write(reinterpret_cast<const char*>(&val), sizeof(val));
 }
 
-template<typename T>
-inline void write_vec(const std::vector<T> &vec, std::ostream &os) {
+template<typename T, class A>
+inline void write_vec(const std::vector<T, A> &vec, std::ostream &os) {
     write_val(vec.size(), os);
     os.write(reinterpret_cast<const char*>(&vec[0]), sizeof(T) * vec.size());
 }
@@ -97,8 +101,8 @@ inline void write_string(const std::string &str, std::ostream &os) {
     os.write(reinterpret_cast<const char*>(&str[0]), sizeof(char) * str.size());
 }
 
-template<typename T>
-inline size_t size_vec(const std::vector<T>& vec) {
+template<typename T, class A>
+inline size_t size_vec(const std::vector<T, A>& vec) {
     return sizeof(T) * vec.size() + sizeof(vec.size());
 }
 

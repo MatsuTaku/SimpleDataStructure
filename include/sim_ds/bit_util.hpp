@@ -485,7 +485,41 @@ inline int sel(uint64_t x, size_t i) {
 }
 
 
-// MARK: - xor_idx
+// MARK: - swap
+
+inline uint64_t swap_pi1(uint64_t x) {
+    return ((x & 0xAAAAAAAAAAAAAAAA) >> 1) | ((x & 0x5555555555555555) << 1);
+}
+
+inline uint64_t swap_pi2(uint64_t x) {
+    return ((x & 0xCCCCCCCCCCCCCCCC) >> 2) | ((x & 0x3333333333333333) << 2);
+}
+
+inline uint64_t swap_pi4(uint64_t x) {
+    return ((x & 0xF0F0F0F0F0F0F0F0) >> 4) | ((x & 0x0F0F0F0F0F0F0F0F) << 4);
+}
+
+inline uint64_t swap_pi8(uint64_t x) {
+#ifdef __MMX__
+    __m64 xx = (__m64) x;
+    return (uint64_t) _mm_or_si64(_mm_slli_pi16(xx, 8), _mm_srli_pi16(xx, 8));
+#else
+    return ((x & 0xFF00FF00FF00FF00) >> 8) | ((x & 0x00FF00FF00FF00FF) << 8);
+#endif
+}
+
+inline uint64_t swap_pi16(uint64_t x) {
+#ifdef __MMX__
+    __m64 xx = (__m64) x;
+    return (uint64_t) _mm_or_si64(_mm_slli_pi32(xx, 16), _mm_srli_pi32(xx, 16));
+#else
+    return ((x & 0xFFFF0000FFFF0000) >> 16) | ((x & 0x0000FFFF0000FFFF) << 16);
+#endif
+}
+
+inline uint64_t swap_pi32(uint64_t x) {
+    return (x >> 32) | (x << 32);
+}
 
 
 } // namespace sim_ds

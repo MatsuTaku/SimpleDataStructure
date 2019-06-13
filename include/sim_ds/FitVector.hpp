@@ -24,9 +24,9 @@ namespace sim_ds {
 class FitVector {
 public:
     using Self = FitVector;
-    using storage_type = id_type;
-    using storage_pointer = storage_type*;
-    using const_storage_pointer = const storage_type*;
+    using word_type = id_type;
+    using word_pointer = word_type*;
+    using const_word_pointer = const word_type*;
     
     using reference = BitsReference<FitVector>;
     using const_reference = BitsConstReference<FitVector>;
@@ -39,17 +39,19 @@ public:
     
     static constexpr size_t kBitsPerWord = 8 * sizeof(id_type); // 64
     
+    using storage_type = aligned_vector<word_type>;
+    
 private:
     // * Initialized only in constructor
     size_t bits_per_element_; // const
-    storage_type mask_; // const
+    word_type mask_; // const
     // *
     
     size_t size_;
-    std::vector<storage_type> vector_;
+    storage_type storage_;
     
 public:
-    explicit FitVector(size_t unit_len = kBitsPerWord) : bits_per_element_(unit_len), mask_(bit_util::WidthMask(unit_len)), size_(0), vector_(0) {}
+    explicit FitVector(size_t unit_len = kBitsPerWord) : bits_per_element_(unit_len), mask_(bit_util::WidthMask(unit_len)), size_(0), storage_(0) {}
     
     explicit FitVector(size_t unit_len, size_t size) : FitVector(unit_len) {
         resize(size);
@@ -61,7 +63,7 @@ public:
     
     FitVector(std::istream& is) : FitVector(read_val<size_t>(is)) {
         size_ = read_val<size_t>(is);
-        vector_ = read_vec<id_type>(is);
+        read_vec(is, storage_);
     }
     
     template<typename T>
@@ -121,7 +123,7 @@ public:
     bool empty() const {return size() == 0;}
     
     void resize(size_t size) {
-        vector_.resize(size == 0 ? 0 : ((size * bits_per_element_ - 1) / kBitsPerWord) + 1);
+        storage_.resize(size == 0 ? 0 : ((size * bits_per_element_ - 1) / kBitsPerWord) + 1);
         size_ = size;
     }
     
@@ -139,7 +141,7 @@ public:
     }
     
     void reserve(size_t size) {
-        vector_.reserve(size == 0 ? 0 : ((size * bits_per_element_ - 1) / kBitsPerWord) + 1);
+        storage_.reserve(size == 0 ? 0 : ((size * bits_per_element_ - 1) / kBitsPerWord) + 1);
     }
     
     void push_back(value_type value) {
@@ -151,14 +153,14 @@ public:
     
     size_t size_in_bytes() const {
         auto size = sizeof(bits_per_element_) + sizeof(size_);
-        size += size_vec(vector_);
+        size += size_vec(storage_);
         return size;
     }
     
     void Write(std::ostream &os) const {
         write_val(bits_per_element_, os);
         write_val(size_, os);
-        write_vec(vector_, os);
+        write_vec(storage_, os);
     }
     
 private:
@@ -168,20 +170,20 @@ private:
     
     reference make_ref(size_t pos) {
         assert(pos < size());
-        return reference(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
+        return reference(storage_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
     }
     
     const_reference make_ref(size_t pos) const {
         assert(pos < size());
-        return const_reference(vector_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
+        return const_reference(storage_.data() + abs_(pos), rel_(pos), bits_per_element_, mask_);
     }
     
     iterator make_iter(size_t pos) {
-        return iterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
+        return iterator(storage_.data() + abs_(pos), rel_(pos), bits_per_element_);
     }
     
     const_iterator make_iter(size_t pos) const {
-        return const_iterator(vector_.data() + abs_(pos), rel_(pos), bits_per_element_);
+        return const_iterator(storage_.data() + abs_(pos), rel_(pos), bits_per_element_);
     }
     
 };

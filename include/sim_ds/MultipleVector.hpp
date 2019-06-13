@@ -237,9 +237,10 @@ public:
     }
     
     void LoadFrom(std::istream& is) {
-        bytes_ = read_vec<storage_type>(is);
+        read_vec(is, bytes_);
         
-        auto element_sizes = read_vec<param_type>(is);
+        std::vector<param_type> element_sizes;
+        read_vec(is, element_sizes);
         set_element_sizes(element_sizes);
     }
     

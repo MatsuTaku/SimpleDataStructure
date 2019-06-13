@@ -19,15 +19,15 @@ template <class Sequence> class BitsConstReference;
 
 template<class Sequence>
 class BitsReference {
-    using storage_type = typename Sequence::storage_type;
-    using storage_pointer = typename Sequence::storage_pointer;
+    using word_type = typename Sequence::word_type;
+    using word_pointer = typename Sequence::word_pointer;
     using value_type = typename Sequence::value_type;
     
-    storage_pointer seg_;
+    word_pointer seg_;
     size_t offset_;
     
     const size_t bits_per_element_;
-    const storage_type mask_;
+    const word_type mask_;
     
     friend typename Sequence::Self;
     friend class BitsConstReference<Sequence>;
@@ -61,10 +61,10 @@ public:
     }
     
 private:
-    BitsReference(storage_pointer seg,
+    BitsReference(word_pointer seg,
                   size_t offset,
                   size_t bits_per_element,
-                  storage_type bit_mask
+                  word_type bit_mask
                   ) : seg_(seg), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_mask) {}
     
 };
@@ -72,15 +72,15 @@ private:
 
 template<class Sequence>
 class BitsConstReference {
-    using storage_type = typename Sequence::storage_type;
-    using storage_pointer = typename Sequence::const_storage_pointer;
+    using word_type = typename Sequence::word_type;
+    using word_pointer = typename Sequence::const_word_pointer;
     using value_type = typename Sequence::value_type;
     
-    storage_pointer seg_;
+    word_pointer seg_;
     size_t offset_;
     
     const size_t bits_per_element_;
-    const storage_type mask_;
+    const word_type mask_;
     
     friend typename Sequence::Self;
     
@@ -102,10 +102,10 @@ public:
     }
     
 private:
-    BitsConstReference(storage_pointer seg,
+    BitsConstReference(word_pointer seg,
                        size_t offset,
                        size_t bits_per_element,
-                       storage_type bit_mask
+                       word_type bit_mask
                        ) : seg_(seg), offset_(offset), bits_per_element_(bits_per_element), mask_(bit_mask) {}
     
 };
@@ -121,10 +121,10 @@ public:
     static constexpr size_t kBitsPerWord = Sequence::kBitsPerWord;
     
 private:
-    using storage_type = typename Sequence::storage_type;
-    using storage_pointer = std::conditional_t<IsConst, typename Sequence::const_storage_pointer, typename Sequence::storage_pointer>;
+    using word_type = typename Sequence::word_type;
+    using word_pointer = std::conditional_t<IsConst, typename Sequence::const_word_pointer, typename Sequence::word_pointer>;
     
-    storage_pointer seg_;
+    word_pointer seg_;
     size_t start_;
     
     const size_t bits_per_entity_;
@@ -214,7 +214,7 @@ public:
     friend bool operator>=(const BitsIterator& x, const BitsIterator& y) {return !(x < y);}
     
 private:
-    BitsIterator(storage_pointer seg, size_t start, size_t bits_per_entity) : seg_(seg), start_(start), bits_per_entity_(bits_per_entity) {}
+    BitsIterator(word_pointer seg, size_t start, size_t bits_per_entity) : seg_(seg), start_(start), bits_per_entity_(bits_per_entity) {}
     
     friend typename Sequence::Self;
     
