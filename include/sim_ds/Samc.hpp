@@ -11,6 +11,7 @@
 #include "basic.hpp"
 #include "graph_util.hpp"
 #include "bit_util.hpp"
+#include "BitVector.hpp"
 #include "SuccinctBitVector.hpp"
 #include "log.hpp"
 
@@ -120,6 +121,8 @@ _SamcImpl<ValueType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
             std::cerr << i << ':' << uint8_t(i) << ", indices: " << indices.size() << std::endl;
 #endif
             empties.resize(max_index + 1 + height, true);
+//            for (size_t i = 0; i < (empties.size()-1)/64+1; i++)
+//                ShowAsBinary(*(empties.data()+i));
             auto y_front = y_check_(indices, empties);
             max_index = std::max(max_index, y_front + position_type(indices.back()));
             assert(height + y_front <= std::numeric_limits<value_type>::max());

@@ -88,17 +88,20 @@ private:
 template <class _Bv, bool _IsConst,
           typename _Bv::word_type>
 class BitIterator {
+public:
     using value_type = typename _Bv::value_type;
     using difference_type = typename _Bv::difference_type;
+    using reference = std::conditional_t<_IsConst, typename _Bv::const_reference, typename _Bv::reference>;
+    using pointer = std::conditional_t<_IsConst, typename _Bv::const_pointer, typename _Bv::pointer>;
+    using iterator_category = std::random_access_iterator_tag;
+private:
     using word_type = typename _Bv::word_type;
     using word_pointer = std::conditional_t<_IsConst, typename _Bv::const_word_pointer, typename _Bv::word_pointer>;
-    
-    using reference = std::conditional_t<_IsConst, typename _Bv::const_reference, typename _Bv::reference>;
     
     static constexpr size_t kBitsPerWord = _Bv::kBitsPerWord;
     
     word_pointer seg_;
-    unsigned ctz_;
+    size_t ctz_;
     
 public:
     BitIterator() : seg_(nullptr), ctz_(0) {}
