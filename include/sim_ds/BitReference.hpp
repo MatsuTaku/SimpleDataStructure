@@ -13,22 +13,22 @@
 namespace sim_ds {
 
 
-template <class BitSequence, bool IsConst> class BitIterator;
-template <class BitSequence> class BitConstReference;
+template <class _Bv, bool IsConst, typename _Bv::word_type = 0> class BitIterator;
+template <class _Bv> class BitConstReference;
 
 
-template <class BitSequence>
+template <class _Bv>
 class BitReference {
-    using word_type = typename BitSequence::word_type;
-    using word_pointer = typename BitSequence::word_pointer;
+    using word_type = typename _Bv::word_type;
+    using word_pointer = typename _Bv::word_pointer;
     
     word_pointer seg_;
     word_type mask_;
     
-    friend typename BitSequence::Self;
+    friend typename _Bv::_self;
     
-    friend class BitConstReference<BitSequence>;
-    friend class BitIterator<BitSequence, false>;
+    friend class BitConstReference<_Bv>;
+    friend class BitIterator<_Bv, false>;
     
 public:
     operator bool() const {
@@ -47,8 +47,8 @@ public:
         return operator=(static_cast<bool>(x));
     }
     
-    BitIterator<BitSequence, false> operator&() const {
-        return BitIterator<BitSequence, false>(seg_, static_cast<size_t>(std::__ctz(mask_)));
+    BitIterator<_Bv, false> operator&() const {
+        return BitIterator<_Bv, false>(seg_, static_cast<size_t>(std::__ctz(mask_)));
     }
     
 private:
@@ -57,26 +57,26 @@ private:
 };
 
 
-template <class BitSequence>
+template <class _Bv>
 class BitConstReference {
-    using word_type = typename BitSequence::word_type;
-    using word_pointer = typename BitSequence::const_word_pointer;
+    using word_type = typename _Bv::word_type;
+    using word_pointer = typename _Bv::const_word_pointer;
     
     word_pointer seg_;
     word_type mask_;
     
-    friend typename BitSequence::Self;
-    friend class BitIterator<BitSequence, true>;
+    friend typename _Bv::_self;
+    friend class BitIterator<_Bv, true>;
     
 public:
-    BitConstReference(const BitReference<BitSequence>& x) : seg_(x.seg_), mask_(x.mask_) {}
+    BitConstReference(const BitReference<_Bv>& x) : seg_(x.seg_), mask_(x.mask_) {}
     
     operator bool() const {
         return static_cast<bool>(*seg_ & mask_);
     }
     
-    BitIterator<BitSequence, true> operator&() const {
-        return BitIterator<BitSequence, true>(seg_, static_cast<size_t>(__ctz(mask_)));
+    BitIterator<_Bv, true> operator&() const {
+        return BitIterator<_Bv, true>(seg_, static_cast<size_t>(__ctz(mask_)));
     }
     
 private:
@@ -85,24 +85,30 @@ private:
 };
 
 
-template <class BitSequence, bool IsConst>
+template <class _Bv, bool _IsConst,
+          typename _Bv::word_type>
 class BitIterator {
-    using value_type = typename BitSequence::value_type;
-    using difference_type = typename BitSequence::difference_type;
-    using word_type = typename BitSequence::word_type;
-    using word_pointer = std::conditional_t<IsConst, typename BitSequence::const_word_pointer, typename BitSequence::word_pointer>;
+    using value_type = typename _Bv::value_type;
+    using difference_type = typename _Bv::difference_type;
+    using word_type = typename _Bv::word_type;
+    using word_pointer = std::conditional_t<_IsConst, typename _Bv::const_word_pointer, typename _Bv::word_pointer>;
     
-    using reference = std::conditional_t<IsConst, typename BitSequence::const_reference, typename BitSequence::reference>;
+    using reference = std::conditional_t<_IsConst, typename _Bv::const_reference, typename _Bv::reference>;
     
-    static constexpr size_t kBitsPerWord = BitSequence::kBitsPerWord;
+    static constexpr size_t kBitsPerWord = _Bv::kBitsPerWord;
     
     word_pointer seg_;
-    size_t ctz_;
+    unsigned ctz_;
     
 public:
     BitIterator() : seg_(nullptr), ctz_(0) {}
     
-    BitIterator(const BitIterator<BitSequence, false>& x) : seg_(x.pointer_), ctz_(x.ctz_) {}
+    BitIterator(const BitIterator<_Bv, false>& x) : seg_(x.seg_), ctz_(x.ctz_) {}
+    BitIterator& operator=(const BitIterator<_Bv, false>& x) {
+        seg_ = x.seg_;
+        ctz_ = x.ctz_;
+        return *this;
+    }
     
     reference operator*() const {
         return reference(seg_, word_type(1) << ctz_);
@@ -169,15 +175,15 @@ public:
     
     friend BitIterator operator+(size_t difference, const BitIterator& x) {return x + difference;}
     
-    friend difference_type operator-(const BitIterator& x, const BitIterator& y) {return (x.pointer_ - y.pointer_) * kBitsPerWord + static_cast<difference_type>(x.ctz_ - y.ctz_);}
+    friend difference_type operator-(const BitIterator& x, const BitIterator& y) {return (x.seg_ - y.seg_) * kBitsPerWord + x.ctz_ - y.ctz_;}
     
     reference operator[](difference_type difference) const {return *(*this + difference);}
     
-    friend bool operator==(const BitIterator& x, const BitIterator& y) {return x.pointer_ == y.pointer_ and x.ctz_ == y.ctz_;}
+    friend bool operator==(const BitIterator& x, const BitIterator& y) {return x.seg_ == y.seg_ and x.ctz_ == y.ctz_;}
     
     friend bool operator!=(const BitIterator& x, const BitIterator& y) {return !(x == y);}
     
-    friend bool operator<(const BitIterator& x, const BitIterator& y) {return x.pointer_ < y.pointer_ or (x.pointer_ == y.pointer_ and x.ctz_ < y.ctz_);}
+    friend bool operator<(const BitIterator& x, const BitIterator& y) {return x.seg_ < y.seg_ or (x.seg_ == y.seg_ and x.ctz_ < y.ctz_);}
     
     friend bool operator>(const BitIterator& x, const BitIterator& y) {return y < x;}
     
@@ -188,7 +194,7 @@ public:
 private:
     BitIterator(word_pointer pointer, size_t ctz) : seg_(pointer), ctz_(ctz) {}
     
-    friend typename BitSequence::Self;
+    friend typename _Bv::_self;
     
 };
 

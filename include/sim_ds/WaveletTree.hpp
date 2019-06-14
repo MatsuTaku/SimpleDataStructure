@@ -49,7 +49,7 @@ public:
         
         bv_list_.resize(bv_list_src_.size());
         for (size_t i = 0; i < bv_list_src_.size(); i++)
-            bv_list_[i] = bv_type(bv_list_src_[i]);
+            bv_list_[i] = bv_type(std::move(bv_list_src_[i]));
     }
     
     uint8_t operator[](size_t index) const {

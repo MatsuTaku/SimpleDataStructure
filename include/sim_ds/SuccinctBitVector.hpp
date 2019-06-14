@@ -29,8 +29,9 @@ public:
     
     explicit SuccinctBitVector(BitVector&& bits);
     
-    template <class BitSequence>
-    SuccinctBitVector(const BitSequence& bits) : SuccinctBitVector(BitVector(bits)) {}
+    SuccinctBitVector(const BitVector& bits) : SuccinctBitVector(BitVector(bits)) {}
+    
+    SuccinctBitVector(std::initializer_list<bool> bits) : SuccinctBitVector(BitVector(bits)) {}
     
     SuccinctBitVector(std::istream& is) {
         Read(is);

@@ -12,7 +12,7 @@
 using namespace sim_ds;
 
 TEST(BitVectorTest, Convert) {
-    std::vector<bool> bits(0xFFFFFF);
+    std::vector<bool> bits(0x1000000);
     for (auto i = 0; i < bits.size(); i++)
         bits[i] = rand() % 2;
     
@@ -23,7 +23,7 @@ TEST(BitVectorTest, Convert) {
 }
 
 TEST(SuccinctBitVectorTest, Rank) {
-    const auto size = 0xFFFFFF;
+    const auto size = 0x1000000;
     std::vector<bool> bits(size);
     std::vector<size_t> ranks(size);
     size_t count = 0;
@@ -43,7 +43,7 @@ TEST(SuccinctBitVectorTest, Rank) {
 }
 
 TEST(SuccinctBitVectorTest, Select) {
-    const auto size = 0xFFFFFF;
+    const auto size = 0x1000000;
     std::vector<bool> bits(size);
     std::vector<size_t> selects;
     for (auto i = 0; i < bits.size();) {
