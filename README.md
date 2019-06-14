@@ -4,7 +4,18 @@ This library supporting cmake build environment.
 
 **We welcome to your contacts and contributions.**
 
+## Dependencies
+- Boost - https://www.boost.org/
+
 ## Usage
+### At first
+Yout must setup dependencies.
+
+If you are using ***Homebrew***, you can setup with command as follow:
+```bash
+brew install boost
+```
+
 ### As CMake library examples
 1. Add your git repository as submodule like follows:
 ```bash
