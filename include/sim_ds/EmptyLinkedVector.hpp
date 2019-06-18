@@ -72,8 +72,10 @@ public:
     using Self = EmptyLinkedVector<value_type>;
     using element_type = _EmptyLinkedVectorElement<Self>;
     
+    static constexpr size_t kInitialEmptyHead = std::numeric_limits<size_t>::max();
+    
 private:
-    size_t empty_head_ = -1;
+    size_t empty_head_ = kInitialEmptyHead;
     std::vector<element_type> container_;
     BitVector exists_;
     
@@ -87,7 +89,7 @@ public:
     
     void resize(size_t new_size) {
         if (new_size > size()) {
-            if (empty_head_ != -1) {
+            if (empty_head_ != kInitialEmptyHead) {
                 auto& empty_back = operator[](operator[](empty_head_).prev());
                 empty_back.set_next(container_.size());
             } else {
@@ -105,7 +107,7 @@ public:
         } else if (new_size < size()) {
             if (empty_head_ >= size())
                 empty_head_ = -1;
-            if (empty_head_ != -1) {
+            if (empty_head_ != kInitialEmptyHead) {
                 operator[](empty_head_).set_prev(operator[](size()).prev());
                 operator[](operator[](empty_head_).prev()).set_next(empty_head_);
             }
@@ -132,7 +134,7 @@ public:
         auto next = target.next();
         if (next == index) {
             assert(empty_head_ == index);
-            empty_head_ = -1;
+            empty_head_ = kInitialEmptyHead;
         } else {
             if (index == empty_head_)
                 empty_head_ = next;

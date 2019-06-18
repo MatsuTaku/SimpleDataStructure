@@ -40,8 +40,7 @@ TEST(MultipleVectorTest, Convert) {
     auto next_src = rand_vector(size, 32);
     auto check_src = rand_vector(size, 8);
     
-    MultipleVector fva;
-    fva.set_element_sizes({4, 1});
+    MultipleVector fva{4, 1};
     fva.resize(size);
     
     for (auto i = 0; i < size; i++) {
@@ -67,9 +66,8 @@ TEST(MultipleVectorTest, Operator) {
     auto next_src = rand_vector(size, 32);
     auto check_src = rand_vector(size, 8);
     
-    MultipleVector fva;
+    MultipleVector fva{4, 1};
     Wrapper wrapper(fva);
-    fva.set_element_sizes({4, 1});
     fva.resize(size);
     
     for (auto i = 0; i < size; i++) {

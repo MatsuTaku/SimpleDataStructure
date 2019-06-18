@@ -142,7 +142,10 @@ public:
     
     using param_type = size_t;
     struct Element {
-        param_type pos, size;
+        param_type pos;
+        param_type size;
+        Element() = default;
+        Element(param_type pos, param_type size) : pos(pos), size(size) {}
     };
     using table_type = std::vector<Element>;
     
@@ -178,12 +181,23 @@ protected:
 public:
     MultipleVector() = default;
     
-    void set_element_sizes(std::vector<size_t> sizes) {
-        element_table_.resize(sizes.size());
-        for (size_t i = 0, pos = 0; i < sizes.size(); i++) {
-            element_table_[i].size = sizes[i];
-            element_table_[i].pos = pos;
-            pos += sizes[i];
+    template <typename T>
+    MultipleVector(std::initializer_list<T> sizes) {
+        size_t pos = 0;
+        element_table_.reserve(sizes.size());
+        for (auto size : sizes) {
+            element_table_.emplace_back(pos, size);
+            pos += size;
+        }
+    }
+    
+    template <typename T>
+    void set_element_sizes(std::vector<T> sizes) {
+        size_t pos = 0;
+        element_table_.reserve(sizes.size());
+        for (auto size : sizes) {
+            element_table_.emplace_back(pos, size);
+            pos += size;
         }
     }
     
