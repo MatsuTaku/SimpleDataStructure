@@ -93,7 +93,7 @@ protected:
                 while (seg < back.seg_) {
                     *(seg++) = mask_fill;
                 }
-                *back.seg_ |= compl (mask_fill << end.ctz_);
+                *back.seg_ |= end.ctz_ > 0 ? compl (mask_fill << end.ctz_) : mask_fill;
             } else {
                 *begin.seg_ |= ((mask_fill << begin.ctz_) bitand
                                 (mask_fill >> eclz));
@@ -105,7 +105,7 @@ protected:
                 while (seg < back.seg_) {
                     *(seg++) = _word_type(0);
                 }
-                *back.seg_ &= mask_fill << end.ctz_;
+                *back.seg_ &= end.ctz_ > 0 ? mask_fill << end.ctz_ : _word_type(0);
             } else {
                 *begin.seg_ &= compl ((mask_fill << begin.ctz_) bitand
                                       (mask_fill >> eclz));

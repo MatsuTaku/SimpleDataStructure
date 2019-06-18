@@ -153,7 +153,8 @@ public:
         if (difference >= 0) {
             seg_ += (ctz_ + difference) / kBitsPerWord;
         } else {
-            seg_ += static_cast<difference_type>(-difference - kBitsPerWord + ctz_ + 1) / static_cast<difference_type>(kBitsPerWord);
+            seg_ += static_cast<difference_type>(difference - kBitsPerWord + ctz_ + 1)
+                  / static_cast<difference_type>(kBitsPerWord);
         }
         difference &= kBitsPerWord - 1;
         ctz_ = static_cast<size_t>((difference + ctz_) % kBitsPerWord);

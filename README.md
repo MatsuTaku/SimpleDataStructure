@@ -28,6 +28,11 @@ add_subdirectory(SimpleDataStructure)
 target_link_libraries(your_target [PUBLIC|PRIVATE|INTERFACE] sim_ds)
 ...
 ```
+#### If you are using Windows...
+You have to set BOOST_ROOT to your boost library path.
+```CMake
+set(BOOST_ROOT /path/to/boost_version/)
+```
 
 ## Documents
 
