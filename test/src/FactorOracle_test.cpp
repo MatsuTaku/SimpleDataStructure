@@ -32,9 +32,9 @@ TEST(FactorOracleTest, full_exploration_small) {
 TEST(FactorOracleTest, full_exploration_large) {
     std::string text;
     const size_t SIZE = 0xFFFF;
-    const std::string alphabets = "abc";
+    const std::string alphabets = "abcd";
     for (size_t i = 0; i < SIZE; i++) {
-        text.push_back(alphabets[rand() % 3]);
+        text.push_back(alphabets[rand() % 4]);
     }
     sim_ds::FactorOracle fo(text);
     std::string_view text_view(text);

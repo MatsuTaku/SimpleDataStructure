@@ -360,7 +360,6 @@ public:
 template <typename ValueType>
 template <typename T, typename S>
 _SamcDictImpl<ValueType>::_SamcDictImpl(const graph_util::Trie<T, S>& trie) : _base(trie) {
-    std::cerr << "Build dict" << std::endl;
     BitVector leaves_src(_base::storage_.size());
     size_t depth = 1;
     for (size_t i = 1; i < _base::storage_.size(); i++) {

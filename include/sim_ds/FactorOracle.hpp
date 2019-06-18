@@ -46,14 +46,19 @@ public:
     }
     
     void Build() {
+        std::cerr << "Build FO" << std::endl;
         const size_t kKeySize = check_.size();
         const size_t kNumStates = kKeySize + 1;
         
+        std::cerr << " expand block" << std::endl;
+        int cnt = 0;
         while (next_.size() < kNumStates - 1) {
+            std::cerr << ++cnt << std::endl;
             expand_block();
         }
         std::vector<id_type> lrs(kNumStates);
         
+        std::cerr << " edging" << std::endl;
         // Add letters on-line algorithm
         set_next(0, 0);
         for (size_t i = 0; i < kKeySize; i++) {
@@ -66,6 +71,7 @@ public:
             lrs[i + 1] = k == i + 1 ? 0 : translate(k, i + 1);
         }
         
+        std::cerr << " clear" << std::endl;
         // Initialize empty-element of next to zero.
         for (size_t i = 0; i < next_.size(); i++) {
             if (not used_trans_[i])
@@ -271,8 +277,9 @@ public:
     
     FactorOracle(const std::string& text) : Base(text) {}
     
-    template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
-              class CharTraits = std::char_traits<typename IterTraits::value_type>>
+    template <class InputIter,
+              typename IterTraits = std::iterator_traits<InputIter>,
+              typename CharTraits = std::char_traits<typename IterTraits::value_type>>
     FactorOracle(InputIter begin, InputIter end) : Base(begin, end) {}
     
     bool image(size_t& state, uint8_t c) const {
