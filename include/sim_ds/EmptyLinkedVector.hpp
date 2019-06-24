@@ -146,6 +146,24 @@ public:
         exists_[index] = true;
     }
     
+    void erase(size_t index) {
+        assert(not empty_at(index));
+        if (empty_head_ == kInitialEmptyHead) {
+            exists_[index] = false;
+            operator[](index).set_next(index);
+            operator[](index).set_prev(index);
+            empty_head_ = index;
+        } else {
+            auto front = empty_head_;
+            auto back = operator[](front).prev();
+            operator[](back).set_next(index);
+            operator[](front).set_prev(index);
+            exists_[index] = false;
+            operator[](index).set_next(front);
+            operator[](index).set_prev(back);
+        }
+    }
+    
     const BitVector& bit_vector() const {return exists_;}
     
 };
