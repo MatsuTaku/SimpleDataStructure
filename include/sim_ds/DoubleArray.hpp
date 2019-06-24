@@ -54,7 +54,6 @@ public:
     _index_type check() const {return check_;}
     
     void set_check(_index_type check) {
-        assert(check < 1ull << kIndexBits);
         check_ = check;
     }
     
@@ -67,7 +66,6 @@ public:
     _index_type base() const {return base_;}
     
     void set_base(_index_type base) {
-        assert(base < 1ull << kIndexBits);
         base_ = base;
     }
     
@@ -212,43 +210,24 @@ public:
     
     static constexpr _char_type kLeafChar = graph_util::kLeafChar;
     
-    static constexpr _index_type kEmptyFlag = 1ull << (sizeof(_index_type) * 8 - 1);
-    static constexpr _char_type kEmptyChar = 0xFF;
+    static constexpr _index_type kEmptyFlag = _unit_type::kEmptyFlag;
+    static constexpr _char_type kEmptyChar = _unit_type::kEmptyChar;
     
-    static constexpr unsigned kBlockSize = 0x100;
+    static constexpr unsigned kBlockSize = _block_type::kBlockSize;
     static constexpr _index_type kInitialEmptyBlockHead = std::numeric_limits<_index_type>::max();
+    
+    static constexpr size_t kIndexBits = _unit_type::kIndexBits;
     
     using _input_trie = graph_util::Trie<char>;
     
 protected:
     _index_type empty_block_head_;
     std::vector<_block_type> container_;
+    std::vector<_char_type> tail_;
     
     _DoubleArrayCommon() : empty_block_head_(kInitialEmptyBlockHead) {}
     
     virtual ~_DoubleArrayCommon() = default;
-    
-    void _arrange_trie(const _input_trie& trie, size_t node_i, _index_type index) {
-        auto node = trie.node(node_i);
-        if (node.terminal())
-            return;
-        std::vector<_char_type> children;
-        node.for_each_edge([&](_char_type c, auto e) {
-            children.push_back(c);
-        });
-        auto target_base = _find_base(children);
-        _set_base_child(index, target_base, children.front());
-        for (size_t i = 0; i < children.size(); i++) {
-            _char_type c = children[i];
-            auto next = target_base xor c;
-            _setup(next);
-            _set_check_sibling(next, index, children[(i+1) % children.size()]);
-        }
-        _confirm_block(target_base/kBlockSize);
-        for (_char_type c : children) {
-            _arrange_trie(trie, node.target(c), target_base xor c);
-        }
-    }
     
     size_t _size_in_bytes() const {
         return sizeof(empty_block_head_) + size_vec(container_);
@@ -392,6 +371,20 @@ protected:
         assert(not _empty(node));
         _set_base(node, base);
         _set_child(node, child);
+    }
+    
+    _index_type _tail_index(_index_type node) const {
+        assert(_leaf(node));
+        return _base(node) & compl(kEmptyFlag);
+    }
+    
+    void _set_tail_index(_index_type node, _index_type tail_index) {
+        assert(_leaf(node));
+        _set_base(node, tail_index | kEmptyFlag);
+    }
+    
+    std::string_view _suffix_in_tail(_index_type tail_index) const {
+        return std::string_view((char*)tail_.data() + tail_index);
     }
     
     // Must call after thaw target element.
@@ -587,18 +580,31 @@ protected:
         return next;
     }
     
-    _index_type _insert_key(_index_type node, std::string_view key) {
-        if (not key.empty()) {
-            node = _insert_trans(node, key.front());
-            
-            for (size_t i = 1; i < key.size(); i++) {
-                uint8_t c = key[i];
-                node = _grow(node, _find_base({c}), c);
-            }
-            return _grow(node, _find_base({kLeafChar}), kLeafChar);
+    _index_type _insert_suffix(std::string_view suffix) {
+        _index_type index = tail_.size();
+        for (_char_type c : suffix)
+            tail_.push_back(c);
+        tail_.push_back(kLeafChar);
+        return index;
+    }
+    
+    void _insert_in_bc(_index_type node, std::string_view suffix) {
+        if (suffix.size() > 0) {
+            node = _insert_trans(node, suffix.front());
+            auto tail_index = _insert_suffix(suffix.size() > 1 ? suffix.substr(1) : "");
+            _set_tail_index(node, tail_index);
         } else {
-            return _insert_trans(node, kLeafChar);
+            node = _insert_trans(node, kLeafChar);
         }
+    }
+    
+    void _insert_in_tail(_index_type node, _index_type tail_pos, std::string_view suffix) {
+        auto tail_index = _tail_index(node);
+        while (tail_index < tail_.size() and tail_index <= tail_pos) {
+            auto c = tail_[tail_index++];
+            node = _grow(node, _find_base({c}), c);
+        }
+        _insert_in_bc(node, suffix);
     }
     
 };
@@ -629,10 +635,6 @@ protected:
         _expand();
         _common::_setup(kRootIndex);
         _common::_set_check_sibling(kRootIndex, 0, 0); // set root
-    }
-    
-    _DoubleArrayBase(const _input_trie& trie) : _DoubleArrayBase() {
-        _common::_arrange_trie(trie, graph_util::kRootIndex, kRootIndex);
     }
     
     virtual ~_DoubleArrayBase() = default;
@@ -771,10 +773,6 @@ protected:
         _common::_set_check_sibling(kRootIndex, 0, 0); // set root
     }
     
-    _DoubleArrayBase(const _input_trie& trie) : _DoubleArrayBase() {
-        _common::_arrange_trie(trie, graph_util::kRootIndex, kRootIndex);
-    }
-    
     virtual ~_DoubleArrayBase() = default;
     
     size_t _size_in_bytes() const {
@@ -787,22 +785,26 @@ protected:
             _common::_expand();
             b = _common::empty_block_head_;
         }
-        while (true) {
-            auto& block = _common::_block(b);
-            alignas(32) uint64_t field[4];
-            bit_util::set256_epi1(1, field);
-            for (auto c : children) {
-                bit_util::mask_xor_idx_and256(field, _common::_block(b).field_ptr(), c, field);
-            }
-            auto ctz = bit_util::ctz256(field);
-            if (ctz < kBlockSize) {
-                return kBlockSize * b + ctz;
-            }
-            if (block.next() == _common::empty_block_head_) {
-                _common::_expand();
-                b = _common::_block(b).next();
-            } else {
-                b = block.next();
+        if (children.size() == 1) {
+            return kBlockSize * b + (bit_util::ctz256(_common::_block(b).field_ptr()) xor children.front());
+        } else {
+            while (true) {
+                auto& block = _common::_block(b);
+                alignas(32) uint64_t field[4];
+                bit_util::set256_epi1(1, field);
+                for (auto c : children) {
+                    bit_util::mask_xor_idx_and256(field, _common::_block(b).field_ptr(), c, field);
+                }
+                auto ctz = bit_util::ctz256(field);
+                if (ctz < kBlockSize) {
+                    return kBlockSize * b + ctz;
+                }
+                if (block.next() == _common::empty_block_head_) {
+                    _common::_expand();
+                    b = _common::_block(b).next();
+                } else {
+                    b = block.next();
+                }
             }
         }
         throw "Not found base!";
@@ -814,55 +816,88 @@ protected:
 template <typename IndexType, bool LegacyBuild = false>
 class DoubleArray : private _DoubleArrayBase<IndexType, LegacyBuild> {
     using _base = _DoubleArrayBase<IndexType, LegacyBuild>;
+    using _self = DoubleArray<IndexType, LegacyBuild>;
 public:
     using input_trie = typename _base::_input_trie;
     using index_type = typename _base::_index_type;
     using char_type = typename _base::_char_type;
     
+    static constexpr index_type kRootIndex = _base::kRootIndex;
     static constexpr char_type kLeafChar = graph_util::kLeafChar;
     
     DoubleArray() = default;
-    
-    DoubleArray(const input_trie& trie) : _base(trie) {}
     
     DoubleArray(std::vector<std::string>& key_set) {
         std::sort(key_set.begin(), key_set.end());
         for (std::string_view s : key_set)
             insert(s);
+        rebuild();
     }
     
     ~DoubleArray() = default;
+    
+    DoubleArray& rebuild() {
+        DoubleArray new_da;
+        new_da._arrange_da(*this, kRootIndex, kRootIndex);
+        *this = new_da;
+        return *this;
+    }
     
     size_t size_in_bytes() const {
         return _base::_size_in_bytes();
     }
     
     void insert(std::string_view key) {
-        index_type node = 0;
-        for (size_t i = 0; i < key.size(); i++) {
-            char_type c = key[i];
-            if (not _transition(node, c)) {
-                node = _base::_insert_key(node, key.substr(i));
+        index_type node = kRootIndex;
+        size_t pos = 0;
+        for (; pos < key.size(); pos++) {
+            if (_base::_leaf(node)) {
+                break;
+            }
+            if (not _transition(node, key[pos])) {
+                _base::_insert_in_bc(node, key.substr(pos));
                 return;
             }
         }
-        if (not _transition(node, kLeafChar)) {
-            node = _base::_insert_key(node, "");
-            return;
+        if (_base::_leaf(node)) {
+            auto tail_index = _base::_tail_index(node);
+            for (; pos < key.size(); pos++, tail_index++) {
+                if (tail_index >= _base::tail_.size() or _base::tail_[tail_index] != key[pos]) {
+                    _base::_insert_in_tail(node, tail_index, key.substr(pos));
+                    return;
+                }
+            }
+            if (_base::tail_[tail_index] != kLeafChar) {
+                _base::_insert_in_tail(node, tail_index, "");
+            }
+        } else {
+            if (not _transition(node, kLeafChar)) {
+                _base::_insert_in_bc(node, "");
+            }
         }
     }
     
     bool accept(std::string_view key) const {
-        index_type node = 0;
-        for (char_type c : key) {
-            if (not _transition(node, c)) {
+        index_type node = kRootIndex;
+        size_t pos = 0;
+        for (; pos < key.size(); pos++) {
+            if (_leaf(node)) {
+                break;
+            }
+            if (not _transition(node, key[pos])) {
                 return false;
             }
         }
-        if (not _transition(node, kLeafChar)) {
-            return false;
+        if (_leaf(node)) {
+            auto tail_index = _tail_index(node);
+            for (; pos < key.size(); pos++, tail_index++) {
+                if (_base::tail_[tail_index] != key[pos])
+                    return false;
+            }
+            return _base::tail_[tail_index] == kLeafChar;
+        } else {
+            return _transition(node, kLeafChar);
         }
-        return true;
     }
     
     void print_for_debug() const {
@@ -884,12 +919,39 @@ private:
     bool _transition(index_type& node, char_type c) const {
         if (_base::_leaf(node))
             return false;
+        assert(not _base::_leaf(node));
         auto next = _base::_base(node) xor c;
         if (_base::_empty(next) or
             _base::_check(next) != node)
             return false;
         node = next;
         return true;
+    }
+    
+    void _arrange_da(const _self& da, index_type node, index_type co_node) {
+        if (da._base::_leaf(node)) {
+            auto tail_index = _base::_insert_suffix(da._base::_suffix_in_tail(da._base::_tail_index(node)));
+            _base::_set_tail_index(co_node, tail_index);
+        } else {
+            std::vector<char_type> children;
+            da._base::_for_each_children(node, [&](auto child, auto) {
+                children.push_back(child);
+            });
+            auto new_base = _base::_find_base(children);
+            _base::_set_base_child(co_node, new_base, children.front());
+            for (size_t i = 0; i < children.size(); i++) {
+                auto c = children[i];
+                auto next = new_base xor c;
+                _base::_setup(next);
+                _base::_set_check_sibling(next, co_node, children[(i+1)%children.size()]);
+            }
+            _base::_confirm_block(new_base/_base::kBlockSize);
+            for (auto c : children) {
+                auto target = node;
+                da._transition(target, c);
+                _arrange_da(da, target, new_base xor c);
+            }
+        }
     }
     
 };

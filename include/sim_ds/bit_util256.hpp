@@ -106,19 +106,16 @@ inline void mask_xor_idx_and256(const uint64_t* x_addr, const uint64_t* y_addr, 
     __m256i yy = _mm256_load_si256(reinterpret_cast<const __m256i*>(y_addr));
 #endif
     if (mask & 1) {
-        auto yyl = _mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x5555555555555555)), 1);
-        auto yyr = _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1);
-        yy = _mm256_or_si256(yyl, yyr);
+        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x5555555555555555)), 1),
+                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1));
     }
     if (mask & 2) {
-        auto yyl = _mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x3333333333333333)), 2);
-        auto yyr = _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2);
-        yy = _mm256_or_si256(yyl, yyr);
+        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x3333333333333333)), 2),
+                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2));
     }
     if (mask & 4) {
-        auto yyl = _mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4);
-        auto yyr = _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4);
-        yy = _mm256_or_si256(yyl, yyr);
+        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4),
+                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4));
     }
 #if defined(__AVX512VL__) && defined(__AVX512F__)
     if (mask & 8)
@@ -203,19 +200,16 @@ inline void mask_xor_idx_andu256(const uint64_t* x_addr, const uint64_t* y_addr,
     __m256i yy = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(y_addr));
 #endif
     if (mask & 1) {
-        auto yyl = _mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x5555555555555555)), 1);
-        auto yyr = _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1);
-        yy = _mm256_or_si256(yyl, yyr);
+        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x5555555555555555)), 1),
+                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1));
     }
     if (mask & 2) {
-        auto yyl = _mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x3333333333333333)), 2);
-        auto yyr = _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2);
-        yy = _mm256_or_si256(yyl, yyr);
+        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x3333333333333333)), 2),
+                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2));
     }
     if (mask & 4) {
-        auto yyl = _mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4);
-        auto yyr = _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4);
-        yy = _mm256_or_si256(yyl, yyr);
+        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4),
+                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4));
     }
 #if defined(__AVX512VL__) && defined(__AVX512F__)
     if (mask & 8)
