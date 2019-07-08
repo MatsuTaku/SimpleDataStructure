@@ -48,6 +48,13 @@ inline bool is_zero256(const uint64_t* x_addr) {
     }
     return true;
 }
+    
+#ifdef __AVX2__
+inline bool is_zero256_intrinsics(__m256i x) {
+    int iszero_mask = _mm256_movemask_epi8(_mm256_cmpeq_epi64(x, _mm256_set1_epi64x(0)));
+    return iszero_mask == 0xFFFFFFFF;
+}
+#endif
 
 
 // MARK: - popcnt
@@ -75,101 +82,97 @@ inline int clz256(const uint64_t* x_addr) {
 }
 
 
-// MARK: - xor_idx
+// MARK: - xor_map
 
-// Input addres alignment must be 32 bytes only if using intrinsics.
-inline void mask_xor_idx_and256(const uint64_t* x_addr, const uint64_t* y_addr, uint8_t mask, uint64_t* dst_addr) {
-#if defined(__AVX2__)
-#if defined(__AVX512VL__) && defined(__AVX512F__)
-    __m256i yy = _mm256_load_epi64(y_addr);
-#else
-    __m256i yy = _mm256_load_si256(reinterpret_cast<const __m256i*>(y_addr));
-#endif
-    if (mask & 1) {
-        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x5555555555555555)), 1),
-                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1));
-    }
-    if (mask & 2) {
-        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x3333333333333333)), 2),
-                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2));
-    }
-    if (mask & 4) {
-        yy = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4),
-                             _mm256_srli_epi64(_mm256_and_si256(yy, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4));
-    }
-#if defined(__AVX512VL__) && defined(__AVX512F__)
-    if (mask & 8)
-        yy = _mm256_permutexvar_epi8(_mm256_set_epi8(30, 31, 28, 29, 26, 27, 24, 25, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1), yy);
-    if (mask & 16)
-        yy = _mm256_permutexvar_epi16(_mm256_set_epi16(14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1), yy);
-    if (mask & 32)
-        yy = _mm256_permutexvar_epi32(_mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1), yy);
-    if (mask & 64)
-        yy = _mm256_permutexvar_epi64(_mm256_set_epi64(2, 3, 0, 1), yy);
-    if (mask & 128)
-        yy = _mm256_permutexvar_epi128(_mm256_set_epi128(0, 1), yy);
-    _mm256_store_epi64(dst_addr, _mm256_and_si256(yy, _mm256_load_epi64(x_addr)));
-#else
-    if (mask & 8)
-        yy = _mm256_or_si256(_mm256_srli_epi16(yy, 8), _mm256_slli_epi16(yy, 8));
-    if (mask & 16)
-        yy = _mm256_or_si256(_mm256_srli_epi32(yy, 16), _mm256_slli_epi32(yy, 16));
-    if (mask & 32)
-        yy = _mm256_permutevar8x32_epi32(yy, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
-    if (mask & 64)
-        yy = _mm256_permute4x64_epi64(yy, 0b10110001);
-    if (mask & 128)
-        yy = _mm256_permute2x128_si256(yy, yy, 0x21);
-    _mm256_store_si256(reinterpret_cast<__m256i*>(dst_addr), _mm256_and_si256(yy, _mm256_load_si256(reinterpret_cast<const __m256i*>(x_addr))));
-#endif
-    
-#else
-    uint64_t temp[4];
+void xor_map(const uint64_t* x_addr, uint8_t mask, uint64_t* dst_addr) {
     for (int i = 0; i < 4; i++)
-        temp[i] = *(y_addr+i);
+        *(dst_addr+i) = *(x_addr+i);
     if (mask & 1) {
-        for (auto& x : temp) {
+        for (int i = 0; i < 4; i++) {
+            auto& x = *(dst_addr+i);
             x = ((x & 0x5555555555555555) << 1) | ((x & 0xAAAAAAAAAAAAAAAA) >> 1);
         }
     }
     if (mask & 2) {
-        for (auto& x : temp) {
+        for (int i = 0; i < 4; i++) {
+            auto& x = *(dst_addr+i);
             x = ((x & 0x3333333333333333) << 2) | ((x & 0xCCCCCCCCCCCCCCCC) >> 2);
         }
     }
     if (mask & 4) {
-        for (auto& x : temp) {
+        for (int i = 0; i < 4; i++) {
+            auto& x = *(dst_addr+i);
             x = ((x & 0x0F0F0F0F0F0F0F0F) << 4) | ((x & 0xF0F0F0F0F0F0F0F0) >> 4);
         }
     }
     if (mask & 8) {
-        for (auto& x : temp) {
+        for (int i = 0; i < 4; i++) {
+            auto& x = *(dst_addr+i);
             x = ((x & 0x00FF00FF00FF00FF) << 8) | ((x & 0xFF00FF00FF00FF00) >> 8);
         }
     }
     if (mask & 16) {
-        for (auto& x : temp) {
+        for (int i = 0; i < 4; i++) {
+            auto& x = *(dst_addr+i);
             x = ((x & 0x0000FFFF0000FFFF) << 16) | ((x & 0xFFFF0000FFFF0000) >> 16);
         }
     }
     if (mask & 32) {
-        for (auto& x : temp) {
+        for (int i = 0; i < 4; i++) {
+            auto& x = *(dst_addr+i);
             x = (x << 32) | (x >> 32);
         }
     }
     if (mask & 64) {
-        std::swap(temp[0], temp[1]);
-        std::swap(temp[2], temp[3]);
+        std::swap(*(dst_addr+0), *(dst_addr+1));
+        std::swap(*(dst_addr+2), *(dst_addr+3));
     }
     if (mask & 128) {
-        std::swap(temp[0], temp[2]);
-        std::swap(temp[1], temp[3]);
+        std::swap(*(dst_addr+0), *(dst_addr+2));
+        std::swap(*(dst_addr+1), *(dst_addr+3));
     }
-    for (int i = 0; i < 4; i++) {
-        *(dst_addr+i) = *(x_addr+i) bitand temp[i];
-    }
-#endif
 }
+    
+#if defined(__AVX2__)
+__m256i xor_map_intrinsics(__m256i x, uint8_t mask) {
+    if (mask & 1) {
+        x = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(x, _mm256_set1_epi64x(0x5555555555555555)), 1),
+                            _mm256_srli_epi64(_mm256_and_si256(x, _mm256_set1_epi64x(0xAAAAAAAAAAAAAAAA)), 1));
+    }
+    if (mask & 2) {
+        x = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(x, _mm256_set1_epi64x(0x3333333333333333)), 2),
+                            _mm256_srli_epi64(_mm256_and_si256(x, _mm256_set1_epi64x(0xCCCCCCCCCCCCCCCC)), 2));
+    }
+    if (mask & 4) {
+        x = _mm256_or_si256(_mm256_slli_epi64(_mm256_and_si256(x, _mm256_set1_epi64x(0x0F0F0F0F0F0F0F0F)), 4),
+                            _mm256_srli_epi64(_mm256_and_si256(x, _mm256_set1_epi64x(0xF0F0F0F0F0F0F0F0)), 4));
+    }
+#if defined(__AVX512VL__) && defined(__AVX512F__)
+    if (mask & 8)
+        x = _mm256_permutexvar_epi8(_mm256_set_epi8(30, 31, 28, 29, 26, 27, 24, 25, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1), x);
+    if (mask & 16)
+        x = _mm256_permutexvar_epi16(_mm256_set_epi16(14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1), x);
+    if (mask & 32)
+        x = _mm256_permutexvar_epi32(_mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1), x);
+    if (mask & 64)
+        x = _mm256_permutexvar_epi64(_mm256_set_epi64(2, 3, 0, 1), x);
+    if (mask & 128)
+        x = _mm256_permutexvar_epi128(_mm256_set_epi128(0, 1), x);
+#else
+    if (mask & 8)
+        x = _mm256_or_si256(_mm256_srli_epi16(x, 8), _mm256_slli_epi16(x, 8));
+    if (mask & 16)
+        x = _mm256_or_si256(_mm256_srli_epi32(x, 16), _mm256_slli_epi32(x, 16));
+    if (mask & 32)
+        x = _mm256_permutevar8x32_epi32(x, _mm256_set_epi32(6, 7, 4, 5, 2, 3, 0, 1));
+    if (mask & 64)
+        x = _mm256_permute4x64_epi64(x, 0b10110001);
+    if (mask & 128)
+        x = _mm256_permute2x128_si256(x, x, 0x21);
+#endif
+    return x;
+}
+#endif
 
 } // namespace bit_util
 } // namespace sim_ds
