@@ -20,7 +20,7 @@ namespace sim_ds {
 
 
 template <class IndexType>
-class _DoubleArrayUnit {
+class _DoubleArrayBCUnit {
 public:
     using _index_type = IndexType;
     using _char_type = uint8_t;
@@ -41,9 +41,9 @@ private:
     _char_type child_ : kCharBits;
     
 public:
-    _DoubleArrayUnit() : check_(kEmptyFlag), sibling_(kEmptyChar), base_(kEmptyFlag), child_(kEmptyChar) {}
+    _DoubleArrayBCUnit() : check_(kEmptyFlag), sibling_(kEmptyChar), base_(kEmptyFlag), child_(kEmptyChar) {}
     
-    ~_DoubleArrayUnit() = default;
+    ~_DoubleArrayBCUnit() = default;
     
     void init() {
         check_ = kEmptyFlag;
@@ -320,12 +320,12 @@ private:
 
 
 template <typename IndexType>
-class _DoubleArrayCommon {
+class _DoubleArrayBCImpl {
 public:
-    using _self = _DoubleArrayCommon<IndexType>;
+    using _self = _DoubleArrayBCImpl<IndexType>;
     using _index_type = IndexType;
     using _char_type = uint8_t;
-    using _unit_type = _DoubleArrayUnit<IndexType>;
+    using _unit_type = _DoubleArrayBCUnit<IndexType>;
     using _inset_type = uint8_t;
     using _block_word_type = uint64_t;
     using _block_pointer = _block_word_type*;
@@ -357,14 +357,14 @@ protected:
     std::vector<_unit_type> container_;
     std::vector<_char_type> tail_;
     
-    _DoubleArrayCommon() : general_block_head_(kInitialEmptyBlockHead), personal_block_head_(kInitialEmptyBlockHead) {
+    _DoubleArrayBCImpl() : general_block_head_(kInitialEmptyBlockHead), personal_block_head_(kInitialEmptyBlockHead) {
         _expand();
         _setup(kRootIndex);
         _set_check_sibling(kRootIndex, 0, 0); // set root
         _consume_block(_block_index_of(kRootIndex), 1);
     }
     
-    virtual ~_DoubleArrayCommon() = default;
+    virtual ~_DoubleArrayBCImpl() = default;
     
     size_t _size_in_bytes() const {
         return sizeof(general_block_head_) + size_vec(basic_block_) + size_vec(container_) + size_vec(tail_);
@@ -386,7 +386,7 @@ protected:
         return _block_const_reference(basic_block_.data() + kBlockQBytes * block);
     }
     
-    virtual void _expand() {
+    void _expand() {
         if (container_.size() >= (1ull << (kIndexBits-1))) {
             throw "Index out-of-range! You should set large byte-size of template parameter.";
         }
@@ -493,9 +493,17 @@ protected:
         }
     }
     
-    _index_type _check(_index_type index) const {
-        return container_[index].check();
+    void _setup(size_t index) {
+        _freeze(index);
+        container_[index].init();
     }
+    
+    void _erase(size_t index) {
+        container_[index].init();
+        _thaw(index);
+    }
+    
+    _index_type _check(_index_type index) const {return container_[index].check();}
     
     void _set_check(size_t index, _index_type check) {
         container_[index].set_check(check);
@@ -515,25 +523,19 @@ protected:
         _set_sibling(index, sibling);
     }
     
-    _index_type _base(_index_type node) const {
-        return container_[node].base();
-    }
+    _index_type _base(_index_type node) const {return container_[node].base();}
     
     void _set_base(_index_type node, _index_type base) {
         container_[node].set_base(base);
     }
     
-    _char_type _child(_index_type node) const {
-        return container_[node].child();
-    }
+    _char_type _child(_index_type node) const {return container_[node].child();}
     
     void _set_child(_index_type node, _char_type c) {
         container_[node].set_child(c);
     }
     
-    bool _is_leaf(_index_type node) const {
-        return _base(node) bitand kEmptyFlag;
-    }
+    bool _is_leaf(_index_type node) const {return _base(node) bitand kEmptyFlag;}
     
     void _set_base_child(_index_type node, _index_type base, _char_type child) {
         assert(not _empty(node));
@@ -553,16 +555,6 @@ protected:
     
     std::string_view _suffix_in_tail(_index_type tail_index) const {
         return std::string_view((char*)tail_.data() + tail_index);
-    }
-    
-    void _setup(size_t index) {
-        _freeze(index);
-        container_[index].init();
-    }
-    
-    void _erase(size_t index) {
-        container_[index].init();
-        _thaw(index);
     }
     
     void _freeze_block_in_general(_index_type block) {
@@ -700,148 +692,21 @@ protected:
         return cnt;
     }
     
-    virtual _index_type _find_base(const std::vector<_char_type>& children) = 0;
+    _index_type _new_base(_char_type c) const {
+        return _num_elements() xor c;
+    }
     
-    // MARK: Dynamic construction methods
-    
-    _index_type _grow(_index_type node, _index_type base, _char_type c) {
+    void _insert_nodes(_index_type node, std::vector<_char_type>& children, _index_type base) {
         if (base >= _num_elements())
             _expand();
-        assert(_is_leaf(node));
-        auto next = base xor c;
-        assert(_empty(next));
-        _set_base_child(node, base, c);
-        _setup(next);
-        _set_check_sibling(next, node, c);
-        _consume_block(base/kBlockSize, 1);
-        return next;
-    }
-    
-    struct _moving_luggage {
-        _index_type base;
-        uint8_t child;
-        _moving_luggage(_index_type base, uint8_t child) : base(base), child(child) {}
-    };
-    
-    struct _shelter {
-        _index_type node;
-        std::vector<_char_type> children;
-        std::vector<_moving_luggage> luggages;
-    };
-    
-    void _evacuate(_index_type node, _shelter& shelter) {
-        shelter.node = node;
-        auto base = _base(node);
-        _for_each_children(node, [&](auto child, auto) {
-            shelter.children.push_back(child);
-            auto index = base xor child;
-            shelter.luggages.emplace_back(_base(index), _child(index));
-            _erase(index);
-        });
-        _refill_block(_block_index_of(base), shelter.children.size());
-    }
-    
-    _index_type _move_nodes(_shelter& shelter, _index_type new_base,
-                            _index_type monitoring_node = kRootIndex) {
-        if (new_base >= _num_elements())
-            _expand();
-        auto old_base = _base(shelter.node);
-        _set_base(shelter.node, new_base);
-        for (size_t i = 0; i < shelter.children.size(); i++) {
-            auto child = shelter.children[i];
-            auto sibling = shelter.children[(i+1)%shelter.children.size()];
-            auto old_next = old_base xor child;
-            auto new_next = new_base xor child;
-            _setup(new_next);
-            _set_check_sibling(new_next, shelter.node, sibling);
-            auto next_base = shelter.luggages[i].base;
-            if (not (next_base & kEmptyFlag)) { // In BC
-                auto grand_first_child = shelter.luggages[i].child;
-                _set_base_child(new_next, next_base, grand_first_child);
-                for (auto grand_child = grand_first_child; ; ) {
-                    _set_check(next_base xor grand_child, new_next);
-                    auto sibling = _sibling(next_base xor grand_child);
-                    if (sibling == grand_first_child)
-                        break;
-                    grand_child = sibling;
-                }
-            } else { // In tail
-                _set_tail_index(new_next, next_base bitand compl kEmptyFlag);
-            }
-            if (old_next == monitoring_node) {
-                monitoring_node = new_next;
-            }
+        _set_base_child(node, base, children.front());
+        for (size_t i = 0; i < children.size(); i++) {
+            auto c = children[i];
+            auto next = base xor c;
+            _setup(next);
+            _set_check_sibling(next, node, children[(i+1)%children.size()]);
         }
-        _consume_block(new_base/kBlockSize, shelter.children.size());
-        
-        return monitoring_node;
-    }
-    
-    _index_type _solve_collision(_index_type node, _char_type c) {
-        auto base = _base(node);
-        auto conflicting_index = base xor c;
-        auto competitor = _check(conflicting_index);
-        if (conflicting_index != kRootIndex and
-            _num_of_children(competitor) <= _num_of_children(node)) {
-            _shelter shelter;
-            _evacuate(competitor, shelter);
-            _freeze(conflicting_index);
-            auto new_base = _find_base(shelter.children);
-            _thaw(conflicting_index);
-            node = _move_nodes(shelter, new_base, node);
-        } else {
-            _shelter shelter;
-            _evacuate(node, shelter);
-            shelter.children.push_back(c);
-            auto new_base = _find_base(shelter.children);
-            shelter.children.pop_back();
-            _move_nodes(shelter, new_base);
-        }
-        return node;
-    }
-    
-    _index_type _insert_trans(_index_type node, _char_type c) {
-        if (_is_leaf(node)) {
-            return _grow(node, _find_base({c}), c);
-        }
-        auto base = _base(node);
-        if (not _empty(base xor c)) {
-            node = _solve_collision(node, c);
-            base = _base(node);
-        }
-        auto next = base xor c;
-        assert(_empty(next));
-        _setup(next);
-        _set_check(next, node);
-        // Insert c to siblings link
-        auto first_child = _child(node);
-        assert(c != first_child);
-        if (c < first_child) {
-            _set_child(node, c);
-            _set_sibling(next, first_child);
-            for (auto child = first_child; ; ) {
-                auto sibling = _sibling(base xor child);
-                if (sibling == first_child) {
-                    _set_sibling(base xor child, c);
-                    break;
-                }
-                child = sibling;
-            }
-        } else {
-            for (auto child = first_child; ; ) {
-                auto sibling = _sibling(base xor child);
-                if (sibling > c or sibling == first_child) {
-                    _set_sibling(base xor child, c);
-                    _set_sibling(next, sibling);
-                    break;
-                }
-                child = sibling;
-            }
-        }
-        
-        _consume_block(base/kBlockSize, 1);
-        
-        return next;
+        _consume_block(_block_index_of(base), children.size());
     }
     
     _index_type _insert_suffix(std::string_view suffix) {
@@ -852,26 +717,103 @@ protected:
         return index;
     }
     
+    virtual _index_type _find_base(const std::vector<_char_type>& children) {
+        if (children.size() == 1 and personal_block_head_ != kInitialEmptyBlockHead) {
+            _index_type pbh = personal_block_head_;
+            return (kBlockSize * pbh + _block_at(pbh).empty_head()) xor children.front();
+        }
+        
+        if (general_block_head_ == kInitialEmptyBlockHead) {
+            return _new_base(children.front());
+        }
+        _index_type b = general_block_head_;
+        while (true) {
+            auto block = _block_at(b);
+            assert(block.link_enabled());
+            if (block.num_empties() >= children.size()) {
+                const auto offset = kBlockSize * b;
+                for (auto index = offset + block.empty_head(); ; ) {
+                    _index_type n = index xor children.front();
+                    bool skip = false;
+                    for (_char_type c : children) {
+                        if (not _empty(n xor c)) {
+                            skip = true;
+                            break;
+                        }
+                    }
+                    if (not skip) {
+                        return n;
+                    }
+                    if (_next(index) == block.empty_head())
+                        break;
+                    index = offset + _next(index);
+                }
+            }
+            auto new_b = block.next();
+            if (new_b == general_block_head_) {
+                return _new_base(children.front());
+            }
+            _error_block(b);
+            b = new_b;
+        }
+        throw "Not found base!";
+    }
+    
+};
+
+
+template <typename IndexType>
+class _DynamicDoubleArrayBCImpl : protected _DoubleArrayBCImpl<IndexType> {
+public:
+    using _static_impl = _DoubleArrayBCImpl<IndexType>;
+    using _index_type = typename _static_impl::_index_type;
+    using _char_type = typename _static_impl::_char_type;
+    
+    using _static_impl::kBlockSize;
+    using _static_impl::kEmptyFlag;
+    using _static_impl::kRootIndex;
+    using _static_impl::kInitialEmptyBlockHead;
+    using _static_impl::kLeafChar;
+    using _static_impl::kEmptyChar;
+    
+protected:
+    _DynamicDoubleArrayBCImpl() : _static_impl() {}
+    
+    virtual ~_DynamicDoubleArrayBCImpl() = default;
+    
+    _index_type _grow(_index_type node, _index_type base, _char_type c) {
+        if (base >= _static_impl::_num_elements())
+            _static_impl::_expand();
+        assert(_static_impl::_is_leaf(node));
+        auto next = base xor c;
+        assert(_static_impl::_empty(next));
+        _static_impl::_set_base_child(node, base, c);
+        _static_impl::_setup(next);
+        _static_impl::_set_check_sibling(next, node, c);
+        _static_impl::_consume_block(base/kBlockSize, 1);
+        return next;
+    }
+    
     void _insert_in_bc(_index_type node, std::string_view suffix) {
         if (suffix.size() > 0) {
             node = _insert_trans(node, suffix.front());
-            auto tail_index = _insert_suffix(suffix.size() > 1 ? suffix.substr(1) : "");
-            _set_tail_index(node, tail_index);
+            auto tail_index = _static_impl::_insert_suffix(suffix.size() > 1 ? suffix.substr(1) : "");
+            _static_impl::_set_tail_index(node, tail_index);
         } else {
             node = _insert_trans(node, kLeafChar);
         }
     }
     
     void _insert_in_tail(_index_type node, _index_type tail_pos, std::string_view suffix) {
-        auto tail_index = _tail_index(node);
-        if (tail_index < tail_.size()) {
+        auto tail_index = _static_impl::_tail_index(node);
+        if (tail_index < _static_impl::tail_.size()) {
             while (tail_index < tail_pos) {
-                auto c = tail_[tail_index++];
-                node = _grow(node, _find_base({c}), c);
+                auto c = _static_impl::tail_[tail_index++];
+                node = _grow(node, this->_find_base({c}), c);
             }
-            auto c = tail_[tail_index];
-            auto next = _grow(node, _find_base({c}), c);
-            _set_tail_index(next, tail_index+1);
+            auto c = _static_impl::tail_[tail_index];
+            auto next = _grow(node, this->_find_base({c}), c);
+            _static_impl::_set_tail_index(next, tail_index+1);
         }
         _insert_in_bc(node, suffix);
     }
@@ -914,20 +856,110 @@ protected:
         _reduce();
     }
     
+private:
+    struct _moving_luggage {
+        _index_type base;
+        uint8_t child;
+        _moving_luggage(_index_type base, uint8_t child) : base(base), child(child) {}
+    };
+    
+    struct _shelter {
+        _index_type node;
+        std::vector<_char_type> children;
+        std::vector<_moving_luggage> luggages;
+    };
+    
+    void _evacuate(_index_type node, _shelter& shelter) {
+        shelter.node = node;
+        auto base = _static_impl::_base(node);
+        _static_impl::_for_each_children(node, [&](auto child, auto) {
+            shelter.children.push_back(child);
+            auto index = base xor child;
+            shelter.luggages.emplace_back(_static_impl::_base(index), _static_impl::_child(index));
+            _static_impl::_erase(index);
+        });
+        _static_impl::_refill_block(_static_impl::_block_index_of(base), shelter.children.size());
+    }
+    
+    void _update_node(_index_type index, _index_type check, _index_type sibling, _index_type base, _index_type child) {
+        assert(_static_impl::_empty(index));
+        _static_impl::_setup(index);
+        _static_impl::_set_check_sibling(index, check, sibling);
+        if (not (base & kEmptyFlag)) { // In BC
+            _static_impl::_set_base_child(index, base, child);
+            for (auto c = child; ; ) {
+                auto cur_index = base xor c;
+                _static_impl::_set_check(cur_index, index);
+                auto sibling = _static_impl::_sibling(cur_index);
+                if (sibling == child)
+                    break;
+                c = sibling;
+            }
+        } else { // In TAIL
+            _static_impl::_set_tail_index(index, base bitand compl kEmptyFlag);
+        }
+    }
+    
+    _index_type _move_nodes(_shelter& shelter, _index_type new_base,
+                            _index_type monitoring_node = kRootIndex) {
+        if (new_base >= _static_impl::_num_elements())
+            _static_impl::_expand();
+        auto old_base = _static_impl::_base(shelter.node);
+        _static_impl::_set_base(shelter.node, new_base);
+        for (size_t i = 0; i < shelter.children.size(); i++) {
+            auto child = shelter.children[i];
+            auto sibling = shelter.children[(i+1)%shelter.children.size()];
+            auto new_next = new_base xor child;
+            _update_node(new_next, shelter.node, sibling, shelter.luggages[i].base, shelter.luggages[i].child);
+            if ((old_base xor child) == monitoring_node) {
+                monitoring_node = new_next;
+            }
+        }
+        _static_impl::_consume_block(_static_impl::_block_index_of(new_base), shelter.children.size());
+        
+        return monitoring_node;
+    }
+    
+    void _compress_nodes(_shelter& shelter, _index_type target_base) {
+        auto old_base = _base(shelter.node);
+        _set_base(shelter.node, target_base);
+        std::vector<_shelter> shelters;
+        for (size_t i = 0; i < shelter.children.size(); i++) {
+            auto child = shelter.children[i];
+            auto sibling = shelter.children[(i+1)%shelter.children.size()];
+            auto new_next = target_base xor child;
+            if (not _empty(new_next)) {
+                // Evacuate already placed siblings membering element at conflicting index to shelter.
+                shelters.emplace_back();
+                auto conflicting_node = _check(new_next);
+                _evacuate(conflicting_node, shelters.back());
+            }
+            _update_node(new_next, shelter.node, sibling, shelter.luggages[i].base, shelter.luggages[i].child);
+        }
+        _consume_block(_block_index_of(target_base), shelter.children.size());
+        
+        // Compress sheltered siblings recursively.
+        for (auto& sht : shelters) {
+            _compress_nodes(sht.check, sht.children, sht.luggages, _find_compression_target(sht.children));
+        }
+        
+        return;
+    }
+    
     _index_type _find_compression_target(std::vector<_char_type>& siblings) const {
-        if (siblings.size() == 1 and personal_block_head_ != kInitialEmptyBlockHead) {
-            _index_type pbh = personal_block_head_;
+        if (siblings.size() == 1 and _static_impl::personal_block_head_ != kInitialEmptyBlockHead) {
+            _index_type pbh = _static_impl::personal_block_head_;
             return (kBlockSize * pbh + _block_at(pbh).empty_head()) xor siblings.front();
         }
-        if (general_block_head_ == kInitialEmptyBlockHead) {
-            return _num_elements();
+        if (_static_impl::general_block_head_ == kInitialEmptyBlockHead) {
+            return _static_impl::_num_elements();
         }
-        _index_type b = general_block_head_;
+        _index_type b = _static_impl::general_block_head_;
         while (true) {
-            if (b == _block_index_of(_num_elements()-1)) {
-                b = _block_at(_block_index_of(_num_elements()-1)).next();
-                if (b == general_block_head_)
-                    return _num_elements();
+            if (b == _block_index_of(_static_impl::_num_elements()-1)) {
+                b = _block_at(_block_index_of(_static_impl::_num_elements()-1)).next();
+                if (b == _static_impl::general_block_head_)
+                    return _static_impl::_num_elements();
                 continue;
             }
             auto block = _block_at(b);
@@ -951,60 +983,16 @@ protected:
                     break;
                 index = offset + _next(index);
             }
-            if (block.next() == general_block_head_) {
-                return _num_elements();
+            if (block.next() == _static_impl::general_block_head_) {
+                return _static_impl::_num_elements();
             }
             b = block.next();
         }
     }
     
-    void _compress_nodes(_shelter& shelter, _index_type target_base) {
-        auto old_base = _base(shelter.node);
-        _set_base(shelter.node, target_base);
-        std::vector<_shelter> shelters;
-        
-        for (size_t i = 0; i < shelter.children.size(); i++) {
-            auto child = shelter.children[i];
-            auto sibling = shelter.children[(i+1)%shelter.children.size()];
-            auto old_next = old_base xor child;
-            auto new_next = target_base xor child;
-            if (not _empty(new_next)) {
-                // Evacuate already placed siblings membering element at conflicting index to shelter.
-                shelters.emplace_back();
-                auto conflicting_node = _check(new_next);
-                _evacuate(conflicting_node, shelters.back());
-            }
-            // Set given elements to target base.
-            _setup(new_next);
-            _set_check_sibling(new_next, shelter.node, sibling);
-            auto next_base = shelter.luggages[i].base;
-            if (not (next_base & kEmptyFlag)) { // In BC
-                auto grand_first_child = shelter.luggages[i].child;
-                _set_base_child(new_next, next_base, grand_first_child);
-                for (auto grand_child = grand_first_child; ; ) {
-                    _set_check(next_base xor grand_child, new_next);
-                    auto sibling = _sibling(next_base xor grand_child);
-                    if (sibling == grand_first_child)
-                        break;
-                    grand_child = sibling;
-                }
-            } else { // In tail
-                _set_tail_index(new_next, next_base bitand compl kEmptyFlag);
-            }
-        }
-        _consume_block(_block_index_of(target_base), shelter.children.size());
-        
-        // Compress sheltered siblings recursively.
-        for (auto& sht : shelters) {
-            _compress_nodes(sht.check, sht.children, sht.luggages, _find_compression_target(sht.children));
-        }
-        
-        return;
-    }
-    
     void _reduce() {
         using bit_util::ctz256;
-        for (_index_type b = _block_index_of(_num_elements()-1); b > 0; b--) {
+        for (_index_type b = _block_index_of(_static_impl::_num_elements()-1); b > 0; b--) {
             for (size_t ctz = ctz256(_block_at(b).field_ptr()); ctz < 256; ctz = ctz256(_block_at(b).field_ptr())) {
                 std::vector<_char_type> children;
                 auto parent = _check(kBlockSize*b+ctz);
@@ -1023,149 +1011,148 @@ protected:
                 });
                 _compress_nodes(parent, children, luggages, compression_target);
             }
-            _shrink();
+            _static_impl::_shrink();
         }
+    }
+    
+    _index_type _solve_collision(_index_type node, _char_type c) {
+        auto base = _static_impl::_base(node);
+        auto conflicting_index = base xor c;
+        auto competitor = _static_impl::_check(conflicting_index);
+        if (conflicting_index != kRootIndex and
+            _static_impl::_num_of_children(competitor) <= _static_impl::_num_of_children(node)) {
+            _shelter shelter;
+            _evacuate(competitor, shelter);
+            _static_impl::_freeze(conflicting_index);
+            auto new_base = this->_find_base(shelter.children);
+            _static_impl::_thaw(conflicting_index);
+            node = _move_nodes(shelter, new_base, node);
+        } else {
+            _shelter shelter;
+            _evacuate(node, shelter);
+            shelter.children.push_back(c);
+            auto new_base = this->_find_base(shelter.children);
+            shelter.children.pop_back();
+            _move_nodes(shelter, new_base);
+        }
+        return node;
+    }
+    
+    _index_type _insert_trans(_index_type node, _char_type c) {
+        if (_static_impl::_is_leaf(node)) {
+            return _grow(node, _static_impl::_find_base({c}), c);
+        }
+        auto base = _static_impl::_base(node);
+        if (not _static_impl::_empty(base xor c)) {
+            node = _solve_collision(node, c);
+            base = _static_impl::_base(node);
+        }
+        auto next = base xor c;
+        assert(_static_impl::_empty(next));
+        _static_impl::_setup(next);
+        _static_impl::_set_check(next, node);
+        // Insert c to siblings link
+        auto first_child = _static_impl::_child(node);
+        assert(c != first_child);
+        if (c < first_child) {
+            _static_impl::_set_child(node, c);
+            _static_impl::_set_sibling(next, first_child);
+            for (auto child = first_child; ; ) {
+                auto sibling = _static_impl::_sibling(base xor child);
+                if (sibling == first_child) {
+                    _static_impl::_set_sibling(base xor child, c);
+                    break;
+                }
+                child = sibling;
+            }
+        } else {
+            for (auto child = first_child; ; ) {
+                auto sibling = _static_impl::_sibling(base xor child);
+                if (sibling > c or sibling == first_child) {
+                    _static_impl::_set_sibling(base xor child, c);
+                    _static_impl::_set_sibling(next, sibling);
+                    break;
+                }
+                child = sibling;
+            }
+        }
+        
+        _static_impl::_consume_block(base/kBlockSize, 1);
+        
+        return next;
     }
     
 };
 
 
-template <typename IndexType, bool LegacyBuild>
-class _DoubleArrayBase;
-
-
 template <typename IndexType>
-class _DoubleArrayBase<IndexType, true> : protected _DoubleArrayCommon<IndexType> {
+class _BitOperationalDynamicDoubleArrayBCImpl : protected _DynamicDoubleArrayBCImpl<IndexType> {
 public:
-    using _common = _DoubleArrayCommon<IndexType>;
-    using _index_type = typename _common::_index_type;
-    using _char_type = typename _common::_char_type;
+    using _base_impl = _DynamicDoubleArrayBCImpl<IndexType>;
+    using _index_type = typename _base_impl::_index_type;
+    using _char_type = typename _base_impl::_char_type;
     
-    static constexpr unsigned kBlockSize = _common::kBlockSize;
-    static constexpr _index_type kInitialEmptyBlockHead = _common::kInitialEmptyBlockHead;
+    using _base_impl::kBlockSize;
+    using _base_impl::kInitialEmptyBlockHead;
     
 protected:
-    _DoubleArrayBase() : _common() {}
+    _BitOperationalDynamicDoubleArrayBCImpl() : _base_impl() {}
     
-    virtual ~_DoubleArrayBase() = default;
-    
-    _index_type _new_base(_char_type c) const {
-        return _common::_num_elements() xor c;
-    }
+    virtual ~_BitOperationalDynamicDoubleArrayBCImpl() = default;
     
     _index_type _find_base(const std::vector<_char_type>& children) override {
-        if (children.size() == 1 and _common::personal_block_head_ != kInitialEmptyBlockHead) {
-            _index_type pbh = _common::personal_block_head_;
-            return (kBlockSize * pbh + _common::_block_at(pbh).empty_head()) xor children.front();
+        if (children.size() == 1 and _base_impl::personal_block_head_ != kInitialEmptyBlockHead) {
+            _index_type pbh = _base_impl::personal_block_head_;
+            return (kBlockSize * pbh + _base_impl::_block_at(pbh).empty_head()) xor children.front();
         }
         
-        if (_common::general_block_head_ == kInitialEmptyBlockHead) {
-            return _new_base(children.front());
-        }
-        _index_type b = _common::general_block_head_;
-        while (true) {
-            auto block = _common::_block_at(b);
-            assert(block.link_enabled());
-            if (block.num_empties() >= children.size()) {
-                const auto offset = kBlockSize * b;
-                for (auto index = offset + block.empty_head(); ; ) {
-                    _index_type n = index xor children.front();
-                    bool skip = false;
-                    for (_char_type c : children) {
-                        if (not _common::_empty(n xor c)) {
-                            skip = true;
-                            break;
-                        }
+        if (_base_impl::general_block_head_ != kInitialEmptyBlockHead) {
+            size_t b = _base_impl::general_block_head_;
+            while (true) {
+                auto block = _base_impl::_block_at(b);
+                if (block.num_empties() >= children.size()) {
+                    assert(block.error_count() < _base_impl::kErrorThreshold);
+                    auto ctz = da_util::xcheck_in_da_block(block.field_ptr(), children);
+                    if (ctz < kBlockSize) {
+                        return kBlockSize * b + ctz;
                     }
-                    if (not skip) {
-                        return n;
-                    }
-                    if (_common::_next(index) == block.empty_head())
-                        break;
-                    index = offset + _common::_next(index);
                 }
-            }
-            auto new_b = block.next();
-            if (new_b == _common::general_block_head_) {
-                return _new_base(children.front());
-            }
-            _common::_error_block(b);
-            b = new_b;
-        }
-        throw "Not found base!";
-    }
-    
-};
-
-
-template <typename IndexType>
-class _DoubleArrayBase<IndexType, false> : protected _DoubleArrayCommon<IndexType> {
-public:
-    using _common = _DoubleArrayCommon<IndexType>;
-    using _index_type = typename _common::_index_type;
-    using _char_type = typename _common::_char_type;
-    
-    static constexpr unsigned kBlockSize = _common::kBlockSize;
-    static constexpr _index_type kInitialEmptyBlockHead = _common::kInitialEmptyBlockHead;
-    
-protected:
-    _DoubleArrayBase() : _common() {}
-    
-    virtual ~_DoubleArrayBase() = default;
-    
-    _index_type _new_base() const {
-        return _common::_num_elements();
-    }
-    
-    _index_type _find_base(const std::vector<_char_type>& children) override {
-        if (children.size() == 1 and _common::personal_block_head_ != kInitialEmptyBlockHead) {
-            _index_type pbh = _common::personal_block_head_;
-            return (kBlockSize * pbh + _common::_block_at(pbh).empty_head()) xor children.front();
-        }
-        
-        if (_common::general_block_head_ == kInitialEmptyBlockHead) {
-            return _new_base();
-        }
-        size_t b = _common::general_block_head_;
-        while (true) {
-            auto block = _common::_block_at(b);
-            if (block.num_empties() >= children.size()) {
-                assert(block.error_count() < _common::kErrorThreshold);
-                auto ctz = da_util::xcheck_in_da_block(block.field_ptr(), children);
-                if (ctz < kBlockSize) {
-                    return kBlockSize * b + ctz;
+                auto new_b = block.next();
+                if (new_b == _base_impl::general_block_head_) {
+                    break;
                 }
+                assert(b != block.next());
+                assert(_base_impl::_block_at(new_b).error_count() < _base_impl::kErrorThreshold);
+                _base_impl::_error_block(b);
+                b = new_b;
             }
-            auto new_b = block.next();
-            if (new_b == _common::general_block_head_) {
-                return _new_base();
-            }
-            assert(b != block.next());
-            assert(_common::_block_at(new_b).error_count() < _common::kErrorThreshold);
-            _common::_error_block(b);
-            b = new_b;
         }
-        throw "Not found base!";
+        return _base_impl::_new_base(children.front());
     }
     
 };
 
 
 template <typename IndexType, bool LegacyBuild = false>
-class DoubleArray : private _DoubleArrayBase<IndexType, LegacyBuild> {
-    using _base = _DoubleArrayBase<IndexType, LegacyBuild>;
+class DoubleArray :
+    private std::conditional_t<LegacyBuild,
+                               _DynamicDoubleArrayBCImpl<IndexType>,
+                               _BitOperationalDynamicDoubleArrayBCImpl<IndexType>> {
+    using _impl = std::conditional_t<LegacyBuild,
+                                     _DynamicDoubleArrayBCImpl<IndexType>,
+                                     _BitOperationalDynamicDoubleArrayBCImpl<IndexType>>;
     using _self = DoubleArray<IndexType, LegacyBuild>;
 public:
     using input_trie = typename graph_util::Trie<char>;
-    using index_type = typename _base::_index_type;
-    using char_type = typename _base::_char_type;
+    using index_type = typename _impl::_index_type;
+    using char_type = typename _impl::_char_type;
     
-    static constexpr index_type kRootIndex = _base::kRootIndex;
+    static constexpr index_type kRootIndex = _impl::kRootIndex;
     static constexpr char_type kLeafChar = graph_util::kLeafChar;
     
-    static constexpr size_t kBlockSize = _base::kBlockSize;
+    static constexpr size_t kBlockSize = _impl::kBlockSize;
     
-    DoubleArray() : _base() {}
+    DoubleArray() : _impl() {}
     
     template <typename StrIter,
               typename Traits = std::iterator_traits<StrIter>>
@@ -1190,41 +1177,41 @@ public:
     }
     
     size_t size_in_bytes() const {
-        return _base::_size_in_bytes();
+        return _impl::_size_in_bytes();
     }
     
     void insert(std::string_view key) {
         index_type node = kRootIndex;
         size_t pos = 0;
         for (; pos < key.size(); pos++) {
-            if (_base::_is_leaf(node)) {
+            if (_impl::_is_leaf(node)) {
                 break;
             }
             if (not _transition(node, key[pos])) {
-                _base::_insert_in_bc(node, key.substr(pos));
+                _impl::_insert_in_bc(node, key.substr(pos));
                 return;
             }
         }
-        if (_base::_is_leaf(node)) {
-            auto tail_index = _base::_tail_index(node);
+        if (_impl::_is_leaf(node)) {
+            auto tail_index = _impl::_tail_index(node);
             for (; pos < key.size(); pos++, tail_index++) {
-                if (tail_index >= _base::tail_.size() or
-                    _base::tail_[tail_index] != char_type(key[pos])) {
+                if (tail_index >= _impl::tail_.size() or
+                    _impl::tail_[tail_index] != char_type(key[pos])) {
                     char_type e,cc;
-                    if (tail_index < _base::tail_.size()) {
-                        e = _base::tail_[tail_index];
+                    if (tail_index < _impl::tail_.size()) {
+                        e = _impl::tail_[tail_index];
                         cc = key[pos];
                     }
-                    _base::_insert_in_tail(node, tail_index, key.substr(pos));
+                    _impl::_insert_in_tail(node, tail_index, key.substr(pos));
                     return;
                 }
             }
-            if (_base::tail_[tail_index] != kLeafChar) {
-                _base::_insert_in_tail(node, tail_index, "");
+            if (_impl::tail_[tail_index] != kLeafChar) {
+                _impl::_insert_in_tail(node, tail_index, "");
             }
         } else {
             if (not _transition(node, kLeafChar)) {
-                _base::_insert_in_bc(node, "");
+                _impl::_insert_in_bc(node, "");
             }
         }
     }
@@ -1243,14 +1230,14 @@ public:
         if (_leaf(node)) {
             auto tail_index = _tail_index(node);
             for (; pos < key.size(); pos++, tail_index++) {
-                if (_base::tail_[tail_index] != key[pos])
+                if (_impl::tail_[tail_index] != key[pos])
                     return false;
             }
-            if (_base::tail_[tail_index] == kLeafChar)
-                _base::_delete_leaf(node);
+            if (_impl::tail_[tail_index] == kLeafChar)
+                _impl::_delete_leaf(node);
         } else {
             if (_transition(node, kLeafChar))
-                _base::_delete_leaf(node);
+                _impl::_delete_leaf(node);
         }
         return true;
     }
@@ -1269,10 +1256,10 @@ public:
         if (_leaf(node)) {
             auto tail_index = _tail_index(node);
             for (; pos < key.size(); pos++, tail_index++) {
-                if (_base::tail_[tail_index] != key[pos])
+                if (_impl::tail_[tail_index] != key[pos])
                     return false;
             }
-            return _base::tail_[tail_index] == kLeafChar;
+            return _impl::tail_[tail_index] == kLeafChar;
         } else {
             return _transition(node, kLeafChar);
         }
@@ -1281,57 +1268,44 @@ public:
     void print_for_debug() const {
         std::cout << "------------ Double-array implementation ------------" << std::endl;
         std::cout << "\tindex] \texists, \tcheck, \tsibling, \tbase, \tchild"  << std::endl;
-        for (size_t i = 0; i < _base::storage_.size(); i++) {
+        for (size_t i = 0; i < _impl::storage_.size(); i++) {
             if (i % 0x100 == 0)
                 std::cout << std::endl;
-            auto empty =_base::_empty(i);
+            auto empty =_impl::_empty(i);
             if (empty) {
                 std::cout << "\t\t"<<i<<"] \t"<<0<< std::endl;
             } else {
-                std::cout << "\t\t"<<i<<"] \t"<<1<<", \t"<<_base::_check(i)<<", \t"<<_base::_sibling(i)<<", \t"<<_base::_base(i)<<", \t"<<_base::_child(i)<< std::endl;
+                std::cout << "\t\t"<<i<<"] \t"<<1<<", \t"<<_impl::_check(i)<<", \t"<<_impl::_sibling(i)<<", \t"<<_impl::_base(i)<<", \t"<<_impl::_child(i)<< std::endl;
             }
         }
     }
     
 private:
     bool _transition(index_type& node, char_type c) const {
-        if (_base::_is_leaf(node))
+        if (_impl::_is_leaf(node))
             return false;
-        assert(not _base::_is_leaf(node));
-        auto next = _base::_base(node) xor c;
-        if (_base::_empty(next) or
-            _base::_check(next) != node)
+        assert(not _impl::_is_leaf(node));
+        auto next = _impl::_base(node) xor c;
+        if (_impl::_empty(next) or
+            _impl::_check(next) != node)
             return false;
         node = next;
         return true;
     }
     
-    void _insert_nodes(index_type node, std::vector<char_type>& children, index_type base) {
-        if (base >= _base::_num_elements())
-            _base::_expand();
-        _base::_set_base_child(node, base, children.front());
-        for (size_t i = 0; i < children.size(); i++) {
-            auto c = children[i];
-            auto next = base xor c;
-            _base::_setup(next);
-            _base::_set_check_sibling(next, node, children[(i+1)%children.size()]);
-        }
-        _base::_consume_block(_base::_block_index_of(base), children.size());
-    }
-    
     void _arrange_da(const _self& da, index_type node, index_type co_node) {
-        if (da._base::_is_leaf(node)) {
-            auto tail_index = _base::_insert_suffix(da._base::_suffix_in_tail(da._base::_tail_index(node)));
-            _base::_set_tail_index(co_node, tail_index);
+        if (da._impl::_is_leaf(node)) {
+            auto tail_index = _impl::_insert_suffix(da._impl::_suffix_in_tail(da._impl::_tail_index(node)));
+            _impl::_set_tail_index(co_node, tail_index);
             return;
         }
         std::vector<char_type> children;
-        da._base::_for_each_children(node, [&](auto child, auto) {
+        da._impl::_for_each_children(node, [&](auto child, auto) {
             children.push_back(child);
         });
         
-        auto new_base = _base::_find_base(children);
-        _insert_nodes(co_node, children, new_base);
+        auto new_base = _impl::_find_base(children);
+        _impl::_insert_nodes(co_node, children, new_base);
         for (auto c : children) {
             auto target = node;
             da._transition(target, c);
@@ -1349,8 +1323,8 @@ private:
             children.push_back(c);
         });
         
-        auto new_base = _base::_find_base(children);
-        _insert_nodes(co_node, children, new_base);
+        auto new_base = _impl::_find_base(children);
+        _impl::_insert_nodes(co_node, children, new_base);
         for (size_t i = 0; i < children.size(); i++) {
             auto c = children[i];
             auto next = new_base xor c;
@@ -1364,11 +1338,11 @@ private:
         if ((*begin).size() < depth)
             return;
         if (end-begin == 1) {
-            auto tail_index = _base::_insert_suffix((*begin).size() > depth ? std::string_view((const char*)&(*begin) + depth) : "");
-            _base::_set_tail_index(co_node, tail_index);
+            auto tail_index = _impl::_insert_suffix((*begin).size() > depth ? std::string_view((const char*)&(*begin) + depth) : "");
+            _impl::_set_tail_index(co_node, tail_index);
             return;
         }
-            
+        
         std::vector<char_type> children;
         std::vector<StrIter> iters = {begin};
         char_type prev_c = (*begin).size() <= depth ? kLeafChar : (*begin)[depth];
@@ -1386,8 +1360,8 @@ private:
         children.push_back((*(end-1))[depth]);
         iters.push_back(end);
         
-        auto new_base = _base::_find_base(children);
-        _insert_nodes(co_node, children, new_base);
+        auto new_base = _impl::_find_base(children);
+        _impl::_insert_nodes(co_node, children, new_base);
         for (size_t i = 0; i < children.size(); i++) {
             auto c = children[i];
             auto next = new_base xor c;

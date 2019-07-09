@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <numeric>
 #include <algorithm>
 #include <vector>
 #include <array>
