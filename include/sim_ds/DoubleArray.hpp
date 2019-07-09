@@ -290,7 +290,7 @@ private:
 
 template <class _Dac>
 class _DoubleArrayBlockLegacyConstReference : public _DoubleArrayBlockConstReference<_Dac> {
-    using _base = _DoubleArrayBlockReference<_Dac>;
+    using _base = _DoubleArrayBlockConstReference<_Dac>;
     using _index_type = typename _base::_index_type;
     using _block_word_type = typename _base::_block_word_type;
     using _block_pointer = typename _base::_block_pointer;
@@ -326,12 +326,13 @@ public:
     using _index_type = IndexType;
     using _char_type = uint8_t;
     using _unit_type = _DoubleArrayUnit<IndexType>;
+    using _inset_type = uint8_t;
     using _block_word_type = uint64_t;
     using _block_pointer = _block_word_type*;
     using _const_block_pointer = const _block_word_type*;
     
-    using _block_reference = _DoubleArrayBlockReference<_self>;
-    using _block_const_reference = _DoubleArrayBlockConstReference<_self>;
+    using _block_reference = _DoubleArrayBlockLegacyReference<_self>;
+    using _block_const_reference = _DoubleArrayBlockLegacyConstReference<_self>;
     
     static constexpr _index_type kRootIndex = 0;
     static constexpr _char_type kLeafChar = graph_util::kLeafChar;
@@ -356,7 +357,12 @@ protected:
     std::vector<_unit_type> container_;
     std::vector<_char_type> tail_;
     
-    _DoubleArrayCommon() : general_block_head_(kInitialEmptyBlockHead), personal_block_head_(kInitialEmptyBlockHead) {}
+    _DoubleArrayCommon() : general_block_head_(kInitialEmptyBlockHead), personal_block_head_(kInitialEmptyBlockHead) {
+        _expand();
+        _setup(kRootIndex);
+        _set_check_sibling(kRootIndex, 0, 0); // set root
+        _consume_block(_block_index_of(kRootIndex), 1);
+    }
     
     virtual ~_DoubleArrayCommon() = default;
     
@@ -371,12 +377,12 @@ protected:
     _index_type _block_index_of(_index_type index) const {return index/kBlockSize;}
     
     _block_reference _block_at(_index_type block) {
-        assert(block < basic_block_.size());
+        assert(block < _num_blocks());
         return _block_reference(basic_block_.data() + kBlockQBytes * block);
     }
     
     _block_const_reference _block_at(_index_type block) const {
-        assert(block < basic_block_.size());
+        assert(block < _num_blocks());
         return _block_const_reference(basic_block_.data() + kBlockQBytes * block);
     }
     
@@ -386,8 +392,9 @@ protected:
         }
         container_.resize(container_.size() + kBlockSize);
         
-        auto back = _num_blocks();
+        // Append blocks linking
         basic_block_.resize(basic_block_.size() + kBlockQBytes);
+        auto back = _num_blocks() - 1;
         if (general_block_head_ == kInitialEmptyBlockHead) {
             _block_at(back).init(back, back);
             general_block_head_ = back;
@@ -397,149 +404,93 @@ protected:
             _block_at(prev).set_next(back);
             _block_at(back).init(prev, general_block_head_);
         }
+        
+        // Link elements in appended block
+        auto front = container_.size() - kBlockSize;
+        auto inset_back = kBlockSize - 1;
+        _set_prev(front, inset_back);
+        _set_next(front, 1);
+        for (size_t i = 1; i < inset_back; i++) {
+            _set_prev(front+i, i-1);
+            _set_next(front+i, i+1);
+        }
+        _set_prev(front+inset_back, inset_back-1);
+        _set_next(front+inset_back, 0);
     }
     
-    void _freeze_block_in_general(_index_type block) {
-        assert(_block_at(block).error_count() < kErrorThreshold);
-        auto next = _block_at(block).next();
-        if (next == block) {
-            assert(general_block_head_ == block);
-            general_block_head_ = kInitialEmptyBlockHead;
+    void _shrink() {
+        if (_num_blocks() == 1)
             return;
-        }
-        auto prev = _block_at(block).prev();
-        assert(prev != block);
-        _block_at(next).set_prev(prev);
-        _block_at(prev).set_next(next);
-        if (block == general_block_head_) {
-            general_block_head_ = next;
-        }
-    }
-    
-    void _freeze_block_in_personal(_index_type block) {
-        assert(_block_at(block).error_count() >= kErrorThreshold);
-        auto next = _block_at(block).next();
-        if (next == block) {
-            assert(personal_block_head_ == block);
-            personal_block_head_ = kInitialEmptyBlockHead;
-            return;
-        }
-        auto prev = _block_at(block).prev();
-        assert(prev != block);
-        _block_at(next).set_prev(prev);
-        _block_at(prev).set_next(next);
-        if (block == personal_block_head_) {
-            personal_block_head_ = next;
-        }
-    }
-    
-    void _modify_block_to_general(_index_type block) {
-        if (general_block_head_ == kInitialEmptyBlockHead) {
-            _block_at(block).set_next(block);
-            _block_at(block).set_prev(block);
-            general_block_head_ = block;
-        } else {
-            auto tail = _block_at(general_block_head_).prev();
-            assert(tail != block);
-            _block_at(general_block_head_).set_prev(block);
-            _block_at(tail).set_next(block);
-            _block_at(block).set_next(general_block_head_);
-            _block_at(block).set_prev(tail);
-        }
-    }
-    
-    void _modify_block_to_personal(_index_type block) {
-        if (personal_block_head_ == kInitialEmptyBlockHead) {
-            _block_at(block).set_next(block);
-            _block_at(block).set_prev(block);
-            personal_block_head_ = block;
-        } else {
-            auto tail = _block_at(personal_block_head_).prev();
-            _block_at(personal_block_head_).set_prev(block);
-            _block_at(tail).set_next(block);
-            _block_at(block).set_next(personal_block_head_);
-            _block_at(block).set_prev(tail);
-        }
-    }
-    
-#ifndef NDEBUG
-    void check_circuit(_index_type block, long banned = -1, long hit = -1) const {
-        if (block == kInitialEmptyBlockHead)
-            return;
-        auto initial_b = block;
-        std::set<_index_type> sets;
-        assert(block != banned);
-        bool hits = hit == -1;
-        hits |= block == hit;
-        sets.insert(block);
-        while (_block_at(block).next() != initial_b) {
-            block = _block_at(block).next();
-            assert(sets.find(block) == sets.end() and
-                   block != banned);
-            hits |= block == hit;
-            sets.insert(block);
-        }
-        assert(hits);
-        hits = hit == -1 or block == hit;
-        sets = {block};
-        while (_block_at(block).prev() != initial_b) {
-            block = _block_at(block).prev();
-            assert(sets.find(block) == sets.end() and
-                   block != banned);
-            hits |= block == hit;
-            sets.insert(block);
-        }
-        assert(hits);
-        return;
-    }
-#endif
-    
-    void _error_block(_index_type block) {
-        assert(_block_at(block).error_count() < kErrorThreshold);
-        if (_block_at(block).error_count() + 1 >= kErrorThreshold) {
-            _freeze_block_in_general(block);
-            _modify_block_to_personal(block);
-        }
-        _block_at(block).errored();
-    }
-    
-    void _consume_block(_index_type block, size_t num) {
-        auto b = _block_at(block);
-        b.consume(num);
-        if (b.filled()) {
-            if (b.error_count() >= kErrorThreshold) {
-                _freeze_block_in_personal(block);
-            } else {
-                _freeze_block_in_general(block);
-            }
-        }
-    }
-    
-    void _refill_block(_index_type block, size_t num) {
-        if (num == 0)
-            return;
-        if (_block_at(block).filled()) {
-            _modify_block_to_general(block);
-        } else if (_block_at(block).error_count() >= kErrorThreshold) {
-            _freeze_block_in_personal(block);
-            _modify_block_to_general(block);
-        }
-        _block_at(block).error_reset();
-        _block_at(block).refill(num);
+        assert(_block_at(_num_elements()-1).num_empties() == kBlockSize);
+        container_.resize(container_.size() - kBlockSize);
+        basic_block_.resize(basic_block_.size() - kBlockQBytes);
     }
     
     bool _empty(size_t index) const {
         return _block_at(_block_index_of(index)).empty_element_at(index%kBlockSize);
     }
     
-    virtual void _freeze(size_t index) {
+    _index_type _next(size_t index) const {
         assert(_empty(index));
+        return _base(index) bitand compl(kEmptyFlag);
+    }
+    
+    void _set_next(size_t index, _inset_type next) {
+        assert(_empty(index));
+        _set_base(index, next bitor kEmptyFlag);
+    }
+    
+    _index_type _prev(size_t index) const {
+        assert(_empty(index));
+        return _check(index) bitand compl(kEmptyFlag);
+    }
+    
+    void _set_prev(size_t index, _inset_type prev) {
+        assert(_empty(index));
+        _set_check(index, prev bitor kEmptyFlag);
+    }
+    
+    void _freeze(size_t index) {
+        assert(_empty(index));
+        // Delete empty-elements linking
+        auto next = _next(index);
+        auto prev = _prev(index);
+        auto block_index = _block_index_of(index);
+        auto offset = kBlockSize * (block_index);
+        _set_prev(offset+next, prev);
+        _set_next(offset+prev, next);
+        auto b = _block_at(block_index);
+        auto inset = index % kBlockSize;
+        if (next == inset) {
+            b.disable_link();
+        } else if (inset == b.empty_head()) {
+            b.set_empty_head(next);
+        }
+        
         _block_at(_block_index_of(index)).freeze_element_at(index%kBlockSize);
     }
     
-    virtual void _thaw(size_t index) {
+    void _thaw(size_t index) {
         assert(not _empty(index));
-        _block_at(_block_index_of(index)).thaw_element_at(index%kBlockSize);
+        auto block_index = _block_index_of(index);
+        _block_at(block_index).thaw_element_at(index%kBlockSize);
+        
+        // Append empty-elements linking
+        auto b = _block_at(block_index);
+        auto inset = index % kBlockSize;
+        if (not b.link_enabled()) {
+            _set_next(index, inset);
+            _set_prev(index, inset);
+            b.set_empty_head(inset);
+        } else {
+            auto offset = kBlockSize * (block_index);
+            auto head = b.empty_head();
+            auto tail = _prev(offset+head);
+            _set_next(offset+tail, inset);
+            _set_prev(offset+head, inset);
+            _set_next(index, head);
+            _set_prev(index, tail);
+        }
     }
     
     _index_type _check(_index_type index) const {
@@ -614,6 +565,103 @@ protected:
         _thaw(index);
     }
     
+    void _freeze_block_in_general(_index_type block) {
+        assert(_block_at(block).error_count() < kErrorThreshold);
+        auto next = _block_at(block).next();
+        if (next == block) {
+            assert(general_block_head_ == block);
+            general_block_head_ = kInitialEmptyBlockHead;
+            return;
+        }
+        auto prev = _block_at(block).prev();
+        assert(prev != block);
+        _block_at(next).set_prev(prev);
+        _block_at(prev).set_next(next);
+        if (block == general_block_head_) {
+            general_block_head_ = next;
+        }
+    }
+    
+    void _freeze_block_in_personal(_index_type block) {
+        assert(_block_at(block).error_count() >= kErrorThreshold);
+        auto next = _block_at(block).next();
+        if (next == block) {
+            assert(personal_block_head_ == block);
+            personal_block_head_ = kInitialEmptyBlockHead;
+            return;
+        }
+        auto prev = _block_at(block).prev();
+        assert(prev != block);
+        _block_at(next).set_prev(prev);
+        _block_at(prev).set_next(next);
+        if (block == personal_block_head_) {
+            personal_block_head_ = next;
+        }
+    }
+    
+    void _modify_block_to_general(_index_type block) {
+        if (general_block_head_ == kInitialEmptyBlockHead) {
+            _block_at(block).set_next(block);
+            _block_at(block).set_prev(block);
+            general_block_head_ = block;
+        } else {
+            auto tail = _block_at(general_block_head_).prev();
+            assert(tail != block);
+            _block_at(general_block_head_).set_prev(block);
+            _block_at(tail).set_next(block);
+            _block_at(block).set_next(general_block_head_);
+            _block_at(block).set_prev(tail);
+        }
+    }
+    
+    void _modify_block_to_personal(_index_type block) {
+        if (personal_block_head_ == kInitialEmptyBlockHead) {
+            _block_at(block).set_next(block);
+            _block_at(block).set_prev(block);
+            personal_block_head_ = block;
+        } else {
+            auto tail = _block_at(personal_block_head_).prev();
+            _block_at(personal_block_head_).set_prev(block);
+            _block_at(tail).set_next(block);
+            _block_at(block).set_next(personal_block_head_);
+            _block_at(block).set_prev(tail);
+        }
+    }
+    
+    void _error_block(_index_type block) {
+        assert(_block_at(block).error_count() < kErrorThreshold);
+        if (_block_at(block).error_count() + 1 >= kErrorThreshold) {
+            _freeze_block_in_general(block);
+            _modify_block_to_personal(block);
+        }
+        _block_at(block).errored();
+    }
+    
+    void _consume_block(_index_type block, size_t num) {
+        auto b = _block_at(block);
+        b.consume(num);
+        if (b.filled()) {
+            if (b.error_count() >= kErrorThreshold) {
+                _freeze_block_in_personal(block);
+            } else {
+                _freeze_block_in_general(block);
+            }
+        }
+    }
+    
+    void _refill_block(_index_type block, size_t num) {
+        if (num == 0)
+            return;
+        if (_block_at(block).filled()) {
+            _modify_block_to_general(block);
+        } else if (_block_at(block).error_count() >= kErrorThreshold) {
+            _freeze_block_in_personal(block);
+            _modify_block_to_general(block);
+        }
+        _block_at(block).error_reset();
+        _block_at(block).refill(num);
+    }
+    
     template <class Action>
     void _for_each_children(_index_type node, Action action) {
         assert(not _is_leaf(node));
@@ -657,6 +705,8 @@ protected:
     // MARK: Dynamic construction methods
     
     _index_type _grow(_index_type node, _index_type base, _char_type c) {
+        if (base >= _num_elements())
+            _expand();
         assert(_is_leaf(node));
         auto next = base xor c;
         assert(_empty(next));
@@ -673,23 +723,40 @@ protected:
         _moving_luggage(_index_type base, uint8_t child) : base(base), child(child) {}
     };
     
-    _index_type _move_nodes(_index_type node,
-                            std::vector<_char_type>& children,
-                            std::vector<_moving_luggage>& luggages,
-                            _index_type new_base,
+    struct _shelter {
+        _index_type node;
+        std::vector<_char_type> children;
+        std::vector<_moving_luggage> luggages;
+    };
+    
+    void _evacuate(_index_type node, _shelter& shelter) {
+        shelter.node = node;
+        auto base = _base(node);
+        _for_each_children(node, [&](auto child, auto) {
+            shelter.children.push_back(child);
+            auto index = base xor child;
+            shelter.luggages.emplace_back(_base(index), _child(index));
+            _erase(index);
+        });
+        _refill_block(_block_index_of(base), shelter.children.size());
+    }
+    
+    _index_type _move_nodes(_shelter& shelter, _index_type new_base,
                             _index_type monitoring_node = kRootIndex) {
-        auto old_base = _base(node);
-        _set_base(node, new_base);
-        for (size_t i = 0; i < children.size(); i++) {
-            auto child = children[i];
-            auto sibling = children[(i+1)%children.size()];
+        if (new_base >= _num_elements())
+            _expand();
+        auto old_base = _base(shelter.node);
+        _set_base(shelter.node, new_base);
+        for (size_t i = 0; i < shelter.children.size(); i++) {
+            auto child = shelter.children[i];
+            auto sibling = shelter.children[(i+1)%shelter.children.size()];
             auto old_next = old_base xor child;
             auto new_next = new_base xor child;
             _setup(new_next);
-            _set_check_sibling(new_next, node, sibling);
-            auto next_base = luggages[i].base;
+            _set_check_sibling(new_next, shelter.node, sibling);
+            auto next_base = shelter.luggages[i].base;
             if (not (next_base & kEmptyFlag)) { // In BC
-                auto grand_first_child = luggages[i].child;
+                auto grand_first_child = shelter.luggages[i].child;
                 _set_base_child(new_next, next_base, grand_first_child);
                 for (auto grand_child = grand_first_child; ; ) {
                     _set_check(next_base xor grand_child, new_next);
@@ -705,7 +772,7 @@ protected:
                 monitoring_node = new_next;
             }
         }
-        _consume_block(new_base/kBlockSize, children.size());
+        _consume_block(new_base/kBlockSize, shelter.children.size());
         
         return monitoring_node;
     }
@@ -716,46 +783,19 @@ protected:
         auto competitor = _check(conflicting_index);
         if (conflicting_index != kRootIndex and
             _num_of_children(competitor) <= _num_of_children(node)) {
-            auto competitor_base = _base(competitor);
-#ifndef NDEBUG
-            bool hit = false;
-#endif
-            std::vector<_char_type> children;
-            std::vector<_moving_luggage> luggages;
-            _for_each_children(competitor, [&](auto child, auto) {
-                children.push_back(child);
-                auto next = competitor_base xor child;
-                luggages.emplace_back(_base(next), _child(next));
-                _erase(next);
-#ifndef NDEBUG
-                hit |= next == conflicting_index;
-#endif
-            });
-#ifndef NDEBUG
-            assert(hit);
-#endif
+            _shelter shelter;
+            _evacuate(competitor, shelter);
             _freeze(conflicting_index);
-            auto block_i = competitor_base/kBlockSize;
-            _refill_block(block_i, children.size()-1);
-            auto new_base = _find_base(children);
+            auto new_base = _find_base(shelter.children);
             _thaw(conflicting_index);
-            assert(_block_at(block_i).empty_element_at(conflicting_index%256));
-            _refill_block(block_i, 1);
-            node = _move_nodes(competitor, children, luggages, new_base, node);
+            node = _move_nodes(shelter, new_base, node);
         } else {
-            std::vector<_char_type> children;
-            std::vector<_moving_luggage> luggages;
-            _for_each_children(node, [&](auto child, auto) {
-                children.push_back(child);
-                auto next = base xor child;
-                luggages.emplace_back(_base(next), _child(next));
-                _erase(next);
-            });
-            _refill_block(base/kBlockSize, children.size());
-            children.push_back(c);
-            auto new_base = _find_base(children);
-            children.pop_back();
-            _move_nodes(node, children, luggages, new_base);
+            _shelter shelter;
+            _evacuate(node, shelter);
+            shelter.children.push_back(c);
+            auto new_base = _find_base(shelter.children);
+            shelter.children.pop_back();
+            _move_nodes(shelter, new_base);
         }
         return node;
     }
@@ -773,6 +813,7 @@ protected:
         assert(_empty(next));
         _setup(next);
         _set_check(next, node);
+        // Insert c to siblings link
         auto first_child = _child(node);
         assert(c != first_child);
         if (c < first_child) {
@@ -841,6 +882,7 @@ protected:
         do {
             _index_type prev = _check(node);
             counts_children = _num_of_children(prev);
+            // Erase current char from siblings link.
             auto base = _base(prev);
             _char_type first_child = _child(prev);
             if ((base xor first_child) == node) {
@@ -865,14 +907,104 @@ protected:
                     child = sibling;
                 }
             }
+            
             _erase(node);
             node = prev;
         } while (node != kRootIndex and counts_children == 1);
+        _reduce();
+    }
+    
+    _index_type _find_compression_target(std::vector<_char_type>& siblings) const {
+        if (siblings.size() == 1 and personal_block_head_ != kInitialEmptyBlockHead) {
+            _index_type pbh = personal_block_head_;
+            return (kBlockSize * pbh + _block_at(pbh).empty_head()) xor siblings.front();
+        }
+        if (general_block_head_ == kInitialEmptyBlockHead) {
+            return _num_elements();
+        }
+        _index_type b = general_block_head_;
+        while (true) {
+            if (b == _block_index_of(_num_elements()-1)) {
+                b = _block_at(_block_index_of(_num_elements()-1)).next();
+                if (b == general_block_head_)
+                    return _num_elements();
+                continue;
+            }
+            auto block = _block_at(b);
+            assert(block.link_enabled());
+            const auto offset = kBlockSize * b;
+            for (auto index = offset + block.empty_head(); ; ) {
+                _index_type n = index xor siblings.front();
+                bool skip = false;
+                for (_char_type c : siblings) {
+                    auto target = n xor c;
+                    if (not _empty(target) and
+                        _num_of_children(_check(target)) >= siblings.size()) {
+                        skip = true;
+                        break;
+                    }
+                }
+                if (not skip) {
+                    return n;
+                }
+                if (_next(index) == block.empty_head())
+                    break;
+                index = offset + _next(index);
+            }
+            if (block.next() == general_block_head_) {
+                return _num_elements();
+            }
+            b = block.next();
+        }
+    }
+    
+    void _compress_nodes(_shelter& shelter, _index_type target_base) {
+        auto old_base = _base(shelter.node);
+        _set_base(shelter.node, target_base);
+        std::vector<_shelter> shelters;
+        
+        for (size_t i = 0; i < shelter.children.size(); i++) {
+            auto child = shelter.children[i];
+            auto sibling = shelter.children[(i+1)%shelter.children.size()];
+            auto old_next = old_base xor child;
+            auto new_next = target_base xor child;
+            if (not _empty(new_next)) {
+                // Evacuate already placed siblings membering element at conflicting index to shelter.
+                shelters.emplace_back();
+                auto conflicting_node = _check(new_next);
+                _evacuate(conflicting_node, shelters.back());
+            }
+            // Set given elements to target base.
+            _setup(new_next);
+            _set_check_sibling(new_next, shelter.node, sibling);
+            auto next_base = shelter.luggages[i].base;
+            if (not (next_base & kEmptyFlag)) { // In BC
+                auto grand_first_child = shelter.luggages[i].child;
+                _set_base_child(new_next, next_base, grand_first_child);
+                for (auto grand_child = grand_first_child; ; ) {
+                    _set_check(next_base xor grand_child, new_next);
+                    auto sibling = _sibling(next_base xor grand_child);
+                    if (sibling == grand_first_child)
+                        break;
+                    grand_child = sibling;
+                }
+            } else { // In tail
+                _set_tail_index(new_next, next_base bitand compl kEmptyFlag);
+            }
+        }
+        _consume_block(_block_index_of(target_base), shelter.children.size());
+        
+        // Compress sheltered siblings recursively.
+        for (auto& sht : shelters) {
+            _compress_nodes(sht.check, sht.children, sht.luggages, _find_compression_target(sht.children));
+        }
+        
+        return;
     }
     
     void _reduce() {
         using bit_util::ctz256;
-        for (_index_type b = _block_index_of(container_.size()-1); b > 0; b--)
+        for (_index_type b = _block_index_of(_num_elements()-1); b > 0; b--) {
             for (size_t ctz = ctz256(_block_at(b).field_ptr()); ctz < 256; ctz = ctz256(_block_at(b).field_ptr())) {
                 std::vector<_char_type> children;
                 auto parent = _check(kBlockSize*b+ctz);
@@ -880,8 +1012,8 @@ protected:
                 _for_each_children(parent, [&](auto child, auto) {
                     children.push_back(child);
                 });
-                auto new_base = _find_base(children);
-                if (_block_index_of(new_base) >= b)
+                auto compression_target = _find_compression_target(children);
+                if (_block_index_of(compression_target) >= b)
                     return;
                 std::vector<_moving_luggage> luggages;
                 _for_each_children(parent, [&](auto child, auto) {
@@ -889,7 +1021,9 @@ protected:
                     luggages.emplace_back(_base(next), _child(next));
                     _erase(next);
                 });
-                _mode_nodes(parent, children, luggages, new_base);
+                _compress_nodes(parent, children, luggages, compression_target);
+            }
+            _shrink();
         }
     }
     
@@ -903,157 +1037,58 @@ class _DoubleArrayBase;
 template <typename IndexType>
 class _DoubleArrayBase<IndexType, true> : protected _DoubleArrayCommon<IndexType> {
 public:
-    using _self = _DoubleArrayBase<IndexType, true>;
     using _common = _DoubleArrayCommon<IndexType>;
     using _index_type = typename _common::_index_type;
     using _char_type = typename _common::_char_type;
-    using _inset_type = uint8_t;
     
-    using _block_word_type = typename _common::_block_word_type;
-    using _block_pointer = typename _common::_block_pointer;
-    using _const_block_pointer = typename _common::_const_block_pointer;
-    
-    using _block_reference = _DoubleArrayBlockLegacyReference<_self>;
-    using _const_block_reference = _DoubleArrayBlockLegacyConstReference<_self>;
-    
-    static constexpr _index_type kRootIndex = _common::kRootIndex;
-    
-    static constexpr size_t kBlockQBytes = _common::kBlockQBytes;
     static constexpr unsigned kBlockSize = _common::kBlockSize;
     static constexpr _index_type kInitialEmptyBlockHead = _common::kInitialEmptyBlockHead;
     
 protected:
-    _DoubleArrayBase() : _common() {
-        _expand();
-        _common::_setup(kRootIndex);
-        _common::_set_check_sibling(kRootIndex, 0, 0); // set root
-        _common::_consume_block(_common::_block_index_of(kRootIndex), 1);
-    }
+    _DoubleArrayBase() : _common() {}
     
     virtual ~_DoubleArrayBase() = default;
     
-    size_t _size_in_bytes() const {
-        return _common::_size_in_bytes();
-    }
-    
-    _block_reference _block_at(_index_type block) {
-        return _block_reference(_common::basic_block_.data() + kBlockQBytes * block);
-    }
-    
-    _const_block_reference _block_at(_index_type block) const {
-        return _const_block_reference(_common::basic_block_.data() + kBlockQBytes * block);
-    }
-    
-    _index_type _next(size_t index) const {
-        assert(_common::_empty(index));
-        return _common::_base(index) bitand compl(_common::kEmptyFlag);
-    }
-    
-    void _set_next(size_t index, _inset_type next) {
-        assert(_common::_empty(index));
-        _common::_set_base(index, next bitor _common::kEmptyFlag);
-    }
-    
-    _index_type _prev(size_t index) const {
-        assert(_common::_empty(index));
-        return _common::_check(index) bitand compl(_common::kEmptyFlag);
-    }
-    
-    void _set_prev(size_t index, _inset_type prev) {
-        assert(_common::_empty(index));
-        _common::_set_check(index, prev bitor _common::kEmptyFlag);
-    }
-    
-    void _freeze(size_t index) override {
-        auto next = _next(index);
-        auto prev = _prev(index);
-        auto offset = kBlockSize * (_common::_block_index_of(index));
-        _set_prev(offset+next, prev);
-        _set_next(offset+prev, next);
-        auto b = _block_at(_common::_block_index_of(index));
-        auto inset = index % kBlockSize;
-        if (next == inset) {
-            b.disable_link();
-        } else if (inset == b.empty_head()) {
-            b.set_empty_head(next);
-        }
-        
-        _common::_freeze(index);
-    }
-    
-    void _thaw(size_t index) override {
-        _common::_thaw(index);
-        
-        auto b = _block_at(_common::_block_index_of(index));
-        auto inset = index % kBlockSize;
-        if (not b.link_enabled()) {
-            _set_next(index, inset);
-            _set_prev(index, inset);
-            b.set_empty_head(inset);
-        } else {
-            auto offset = kBlockSize * (_common::_block_index_of(index));
-            auto head = b.empty_head();
-            auto tail = _prev(offset+head);
-            _set_next(offset+tail, inset);
-            _set_prev(offset+head, inset);
-            _set_next(index, head);
-            _set_prev(index, tail);
-        }
-    }
-    
-    void _expand() override {
-        auto front = _common::_num_elements();
-        _common::_expand();
-        _block_at(front/kBlockSize).set_empty_head(0);
-        // empty-element linking
-        auto inset_back = kBlockSize - 1;
-        _set_prev(front, inset_back);
-        _set_next(front, 1);
-        for (size_t i = 1; i < inset_back; i++) {
-            _set_prev(front+i, i-1);
-            _set_next(front+i, i+1);
-        }
-        _set_prev(front+inset_back, inset_back-1);
-        _set_next(front+inset_back, 0);
+    _index_type _new_base(_char_type c) const {
+        return _common::_num_elements() xor c;
     }
     
     _index_type _find_base(const std::vector<_char_type>& children) override {
         if (children.size() == 1 and _common::personal_block_head_ != kInitialEmptyBlockHead) {
-            _index_type pb = _common::personal_block_head_;
-            auto block = _block_at(pb);
-            auto offset = kBlockSize * pb;
-            auto index = offset + block.empty_head();
-            return index xor children.front();
+            _index_type pbh = _common::personal_block_head_;
+            return (kBlockSize * pbh + _common::_block_at(pbh).empty_head()) xor children.front();
         }
         
         if (_common::general_block_head_ == kInitialEmptyBlockHead) {
-            _expand();
+            return _new_base(children.front());
         }
         _index_type b = _common::general_block_head_;
         while (true) {
-            auto block = _block_at(b);
+            auto block = _common::_block_at(b);
             assert(block.link_enabled());
-            const auto offset = kBlockSize * b;
-            for (auto index = offset + block.empty_head(); ; ) {
-                _index_type n = index xor children.front();
-                bool skip = false;
-                for (_char_type c : children) {
-                    if (not _common::_empty(n xor c)) {
-                        skip = true;
-                        break;
+            if (block.num_empties() >= children.size()) {
+                const auto offset = kBlockSize * b;
+                for (auto index = offset + block.empty_head(); ; ) {
+                    _index_type n = index xor children.front();
+                    bool skip = false;
+                    for (_char_type c : children) {
+                        if (not _common::_empty(n xor c)) {
+                            skip = true;
+                            break;
+                        }
                     }
+                    if (not skip) {
+                        return n;
+                    }
+                    if (_common::_next(index) == block.empty_head())
+                        break;
+                    index = offset + _common::_next(index);
                 }
-                if (not skip) {
-                    return n;
-                }
-                if (_next(index) == block.empty_head())
-                    break;
-                index = offset + _next(index);
             }
-            if (_block_at(b).next() == _common::general_block_head_) {
-                _expand();
+            auto new_b = block.next();
+            if (new_b == _common::general_block_head_) {
+                return _new_base(children.front());
             }
-            auto new_b = _block_at(b).next();
             _common::_error_block(b);
             b = new_b;
         }
@@ -1066,71 +1101,47 @@ protected:
 template <typename IndexType>
 class _DoubleArrayBase<IndexType, false> : protected _DoubleArrayCommon<IndexType> {
 public:
-    using _self = _DoubleArrayBase<IndexType, false>;
     using _common = _DoubleArrayCommon<IndexType>;
     using _index_type = typename _common::_index_type;
     using _char_type = typename _common::_char_type;
-    using _block_word_type = typename _common::_block_word_type;
-    using _block_pointer = typename _common::_block_pointer;
-    using _const_block_pointer = typename _common::_const_block_pointer;
     
-    using _block_reference = _DoubleArrayBlockReference<_self>;
-    using _const_block_reference = _DoubleArrayBlockConstReference<_self>;
-    
-    static constexpr _index_type kRootIndex = _common::kRootIndex;
-    
-    static constexpr size_t kBlockQBytes = _common::kBlockQBytes;
     static constexpr unsigned kBlockSize = _common::kBlockSize;
     static constexpr _index_type kInitialEmptyBlockHead = _common::kInitialEmptyBlockHead;
     
 protected:
-    _DoubleArrayBase() : _common() {
-        _common::_expand();
-        _common::_setup(kRootIndex);
-        _common::_set_check_sibling(kRootIndex, 0, 0); // set root
-        _common::_consume_block(_common::_block_index_of(kRootIndex), 1);
-    }
+    _DoubleArrayBase() : _common() {}
     
     virtual ~_DoubleArrayBase() = default;
     
-    size_t _size_in_bytes() const {
-        return _common::_size_in_bytes();
-    }
-    
-    _block_reference _block_at(_index_type block) {
-        return _block_reference(_common::basic_block_.data() + kBlockQBytes * block);
-    }
-    
-    _const_block_reference _block_at(_index_type block) const {
-        return _const_block_reference(_common::basic_block_.data() + kBlockQBytes * block);
+    _index_type _new_base() const {
+        return _common::_num_elements();
     }
     
     _index_type _find_base(const std::vector<_char_type>& children) override {
         if (children.size() == 1 and _common::personal_block_head_ != kInitialEmptyBlockHead) {
-            auto b = _common::personal_block_head_;
-            auto block = _block_at(b);
-            auto offset = kBlockSize * b;
-            auto ctz = bit_util::ctz256(block.field_ptr());
-            return (offset + ctz) xor children.front();
+            _index_type pbh = _common::personal_block_head_;
+            return (kBlockSize * pbh + _common::_block_at(pbh).empty_head()) xor children.front();
         }
         
         if (_common::general_block_head_ == kInitialEmptyBlockHead) {
-            _common::_expand();
-            assert(_common::general_block_head_ != kInitialEmptyBlockHead);
+            return _new_base();
         }
         size_t b = _common::general_block_head_;
         while (true) {
-            assert(_block_at(b).error_count() < _common::kErrorThreshold);
-            auto ctz = da_util::xcheck_in_da_block(_block_at(b).field_ptr(), children);
-            if (ctz < kBlockSize) {
-                return kBlockSize * b + ctz;
+            auto block = _common::_block_at(b);
+            if (block.num_empties() >= children.size()) {
+                assert(block.error_count() < _common::kErrorThreshold);
+                auto ctz = da_util::xcheck_in_da_block(block.field_ptr(), children);
+                if (ctz < kBlockSize) {
+                    return kBlockSize * b + ctz;
+                }
             }
-            if (_block_at(b).next() == _common::general_block_head_) {
-                _common::_expand();
+            auto new_b = block.next();
+            if (new_b == _common::general_block_head_) {
+                return _new_base();
             }
-            assert(b != _block_at(b).next());
-            auto new_b = _block_at(b).next();
-            assert(_block_at(new_b).error_count() < _common::kErrorThreshold);
+            assert(b != block.next());
+            assert(_common::_block_at(new_b).error_count() < _common::kErrorThreshold);
             _common::_error_block(b);
             b = new_b;
         }
@@ -1295,6 +1306,19 @@ private:
         return true;
     }
     
+    void _insert_nodes(index_type node, std::vector<char_type>& children, index_type base) {
+        if (base >= _base::_num_elements())
+            _base::_expand();
+        _base::_set_base_child(node, base, children.front());
+        for (size_t i = 0; i < children.size(); i++) {
+            auto c = children[i];
+            auto next = base xor c;
+            _base::_setup(next);
+            _base::_set_check_sibling(next, node, children[(i+1)%children.size()]);
+        }
+        _base::_consume_block(_base::_block_index_of(base), children.size());
+    }
+    
     void _arrange_da(const _self& da, index_type node, index_type co_node) {
         if (da._base::_is_leaf(node)) {
             auto tail_index = _base::_insert_suffix(da._base::_suffix_in_tail(da._base::_tail_index(node)));
@@ -1307,15 +1331,7 @@ private:
         });
         
         auto new_base = _base::_find_base(children);
-        _base::_set_base_child(co_node, new_base, children.front());
-        for (size_t i = 0; i < children.size(); i++) {
-            auto c = children[i];
-            auto next = new_base xor c;
-            _base::_setup(next);
-            _base::_set_check_sibling(next, co_node, children[(i+1)%children.size()]);
-        }
-        auto block_i = new_base/kBlockSize;
-        _base::_consume_block(block_i, children.size());
+        _insert_nodes(co_node, children, new_base);
         for (auto c : children) {
             auto target = node;
             da._transition(target, c);
@@ -1334,14 +1350,7 @@ private:
         });
         
         auto new_base = _base::_find_base(children);
-        _base::_set_base_child(co_node, new_base, children.front());
-        for (size_t i = 0; i < children.size(); i++) {
-            auto c = children[i];
-            auto next = new_base xor c;
-            _base::_setup(next);
-            _base::_set_check_sibling(next, c, children[(i+1)%children.size()]);
-        }
-        _base::_consume_block(new_base/kBlockSize, children.size());
+        _insert_nodes(co_node, children, new_base);
         for (size_t i = 0; i < children.size(); i++) {
             auto c = children[i];
             auto next = new_base xor c;
@@ -1378,14 +1387,7 @@ private:
         iters.push_back(end);
         
         auto new_base = _base::_find_base(children);
-        _base::_set_base_child(co_node, new_base, children.front());
-        for (size_t i = 0; i < children.size(); i++) {
-            auto c = children[i];
-            auto next = new_base xor c;
-            _base::_setup(next);
-            _base::_set_check_sibling(next, c, children[(i+1)%children.size()]);
-        }
-        _base::_consume_block(new_base/kBlockSize, children.size());
+        _insert_nodes(co_node, children, new_base);
         for (size_t i = 0; i < children.size(); i++) {
             auto c = children[i];
             auto next = new_base xor c;
