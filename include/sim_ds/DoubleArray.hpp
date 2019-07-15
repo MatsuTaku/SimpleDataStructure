@@ -19,80 +19,258 @@
 namespace sim_ds {
 
 
-template <class IndexType>
-class _DoubleArrayBCUnit {
+// MARK: - Unit reference
+
+//  Double-array unit (Base/Check/LabelId) Implementation
+//      Check: Pointer
+//          if disabled:
+//              1 0 *(next)
+//          else:
+//              0 ?(terminal flag) *(check)
+//      Sibling: Byte
+//          *(child char)
+//      Base: Pointer
+//          if disabled:
+//              1 0 *(prev)
+//          else if basic base:
+//              0 0 *(base)
+//          else if label id:
+//              0 1 *(label id)
+//      Child: Byte
+//          *(child char)
+//
+template <class _Da>
+class _DoubleArrayUnitBcpReferenceCommon {
 public:
-    using _index_type = IndexType;
-    using _char_type = uint8_t;
+    using _index_type = typename _Da::_index_type;
+    using _char_type = typename _Da::_char_type;
     
-    static constexpr size_t kIndexBits = (sizeof(_index_type) == 8 ? 56 :
-                                          sizeof(_index_type) == 4 ? 24 :
-                                          sizeof(_index_type) == 2 ? 16 :
-                                          8);
-    static constexpr size_t kCharBits = 8;
+    static constexpr size_t kIndexBytes = sizeof(_index_type);
+    static constexpr _index_type kUpperBit = 1ull << (kIndexBytes*8-1);
+    static constexpr _index_type kSecondBit = kUpperBit >> 1;
+    static constexpr _index_type kEmptyFlag = kUpperBit;
+    static constexpr _index_type kLabelFlag = kSecondBit;
+    static constexpr _index_type kTerminalFlag = kSecondBit;
+    static constexpr _index_type kIndexMask = kSecondBit - 1;
+    static constexpr _index_type kIndexMax = kIndexMask;
+    static constexpr _char_type kEmptyChar = _Da::kEmptyChar;
     
-    static constexpr _index_type kEmptyFlag = 1ull << (kIndexBits - 1);
-    static constexpr _char_type kEmptyChar = 0xFF;
+    static constexpr size_t kCheckInsets = 0;
+    static constexpr size_t kSiblingInsets = kIndexBytes;
+    static constexpr size_t kBaseInsets = kIndexBytes + 1;
+    static constexpr size_t kChildInsets = kIndexBytes * 2 + 1;
+    static constexpr size_t kEdgeFlagInsets = kBaseInsets + kIndexBytes - 1;
+    static constexpr size_t kLabelFlagInsets = kBaseInsets + kIndexBytes - 1;
+    static constexpr size_t kTerminalFlagInsets = kCheckInsets + kIndexBytes - 1;
+    static constexpr size_t kNextInsets = kBaseInsets;
+    static constexpr size_t kPrevInsets = kCheckInsets;
+    static constexpr size_t kUnitBytes = kIndexBytes * 2 + 2;
+};
+
+
+template <class _Da>
+class _DoubleArrayUnitBcpConstReference;
+
+template <class _Da>
+class _DoubleArrayUnitBcpReference : private _DoubleArrayUnitBcpReferenceCommon<_Da> {
+    using _common = _DoubleArrayUnitBcpReferenceCommon<_Da>;
+    
+    using _unit_storage_type = typename _Da::_unit_storage_type;
+    static_assert(sizeof(_unit_storage_type) == 1, "Invalid unit storage type!");
+    using _unit_storage_pointer = typename _Da::_unit_storage_pointer;
+    
+    using typename _common::_index_type;
+    using typename _common::_char_type;
+    
+    using _common::kIndexBytes;
+    using _common::kEmptyFlag;
+    using _common::kLabelFlag;
+    using _common::kTerminalFlag;
+    using _common::kIndexMask;
+    using _common::kIndexMax;
+    using _common::kEmptyChar;
+    
+    using _common::kCheckInsets;
+    using _common::kSiblingInsets;
+    using _common::kBaseInsets;
+    using _common::kChildInsets;
+    using _common::kEdgeFlagInsets;
+    using _common::kLabelFlagInsets;
+    using _common::kTerminalFlagInsets;
+    using _common::kNextInsets;
+    using _common::kPrevInsets;
+    using _common::kUnitBytes;
     
 private:
-    _index_type check_ : kIndexBits;
-    _char_type sibling_ : kCharBits;
-    _index_type base_ : kIndexBits;
-    _char_type child_ : kCharBits;
+    _unit_storage_pointer pointer_;
+    
+    friend typename _Da::_self;
+    friend class _DoubleArrayUnitBcpConstReference<_Da>;
     
 public:
-    _DoubleArrayBCUnit() : check_(kEmptyFlag), sibling_(kEmptyChar), base_(kEmptyFlag), child_(kEmptyChar) {}
+    bool terminal() const {return *(pointer_ + kTerminalFlagInsets) bitand 0x40;}
     
-    ~_DoubleArrayBCUnit() = default;
-    
-    void init() {
-        check_ = kEmptyFlag;
-        sibling_ = kEmptyChar;
-        base_ = kEmptyFlag;
-        child_ = kEmptyChar;
+    void set_terminal() {
+        *(pointer_ + kTerminalFlagInsets) |= 0x40;
     }
     
-    _index_type check() const {return check_;}
-    
-    void set_check(_index_type check) {
-        check_ = check;
+    void disable_terminal() {
+        *(pointer_ + kTerminalFlagInsets) &= compl 0x40;
     }
     
-    _char_type sibling() const {return sibling_;}
+    _index_type check() const {return *reinterpret_cast<_index_type*>(pointer_ + kCheckInsets) bitand kIndexMask;}
     
-    void set_sibling(_char_type sibling) {
-        sibling_ = sibling;
+    void set_check(_index_type new_check) {
+        _index_type& target = *reinterpret_cast<_index_type*>(pointer_ + kCheckInsets);
+        target = new_check bitor (target bitand kTerminalFlag);
     }
     
-    _index_type base() const {return base_;}
+    _index_type base() const {return *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) bitand kIndexMask;}
     
-    void set_base(_index_type base) {
-        base_ = base;
+    void set_base(_index_type new_base) {
+        *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) = new_base bitand kIndexMask;
     }
     
-    _char_type child() const {return child_;}
+    bool has_label() const {return *(pointer_ + kLabelFlagInsets) bitand 0x40;}
     
-    void set_child(_char_type child) {
-        child_ = child;
+    _index_type pool_index() const {assert(has_label()); return base();}
+    
+    void set_pool_index(_index_type new_pool_index) {
+        *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) = (new_pool_index bitand kIndexMask) bitor kLabelFlag;
     }
+    
+    _char_type child() const {return *reinterpret_cast<_char_type*>(pointer_ + kChildInsets);}
+    
+    void set_child(_char_type new_child) {
+        *reinterpret_cast<_char_type*>(pointer_ + kChildInsets) = new_child;
+    }
+    
+    _char_type sibling() const {return *reinterpret_cast<_char_type*>(pointer_ + kSiblingInsets);}
+    
+    void set_sibling(_char_type new_sibling) {
+        *reinterpret_cast<_char_type*>(pointer_ + kSiblingInsets) = new_sibling;
+    }
+    
+    bool base_empty() const {return *(pointer_ + kEdgeFlagInsets) bitand 0x80;}
+    
+    _index_type prev() const {
+        assert(*reinterpret_cast<_index_type*>(pointer_ + kPrevInsets) bitand kEmptyFlag);
+        return *reinterpret_cast<_index_type*>(pointer_ + kPrevInsets) bitand kIndexMask;
+    }
+    
+    void set_prev(_index_type new_prev) {
+        *reinterpret_cast<_index_type*>(pointer_ + kPrevInsets) = (new_prev bitand kIndexMask) bitor kEmptyFlag;
+    }
+    
+    _index_type next() const {
+        assert(*reinterpret_cast<_index_type*>(pointer_ + kNextInsets) bitand kEmptyFlag);
+        return *reinterpret_cast<_index_type*>(pointer_ + kNextInsets) bitand kIndexMask;
+    }
+    
+    void set_next(_index_type new_next) {
+        *reinterpret_cast<_index_type*>(pointer_ + kNextInsets) = (new_next bitand kIndexMask) bitor kEmptyFlag;
+    }
+    
+    void init(_index_type prev, _index_type next) {
+        set_prev(prev);
+        set_sibling(kEmptyChar);
+        set_next(next);
+        set_child(kEmptyChar);
+    }
+    
+    void clean() {
+        *reinterpret_cast<_index_type*>(pointer_ + kCheckInsets) = kEmptyFlag;
+        set_sibling(kEmptyChar);
+        *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) = kEmptyFlag;
+        set_child(kEmptyChar);
+    }
+    
+private:
+    _DoubleArrayUnitBcpReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
     
 };
 
 
-template <class _Dac>
-class _DoubleArrayBlockConstReference;
+template <class _Da>
+class _DoubleArrayUnitBcpConstReference : private _DoubleArrayUnitBcpReferenceCommon<_Da> {
+    using _common = _DoubleArrayUnitBcpReferenceCommon<_Da>;
+    
+    using _unit_storage_type = typename _Da::_unit_storage_type;
+    static_assert(sizeof(_unit_storage_type) == 1, "Invalid unit storage type!");
+    using _unit_storage_pointer = typename _Da::_const_unit_storage_pointer;
+    
+    using typename _common::_index_type;
+    using typename _common::_char_type;
+    
+    using _common::kIndexBytes;
+    using _common::kEmptyFlag;
+    using _common::kLabelFlag;
+    using _common::kTerminalFlag;
+    using _common::kIndexMask;
+    using _common::kIndexMax;
+    using _common::kEmptyChar;
+    
+    using _common::kCheckInsets;
+    using _common::kSiblingInsets;
+    using _common::kBaseInsets;
+    using _common::kChildInsets;
+    using _common::kEdgeFlagInsets;
+    using _common::kLabelFlagInsets;
+    using _common::kTerminalFlagInsets;
+    using _common::kNextInsets;
+    using _common::kPrevInsets;
+    using _common::kUnitBytes;
+    
+private:
+    _unit_storage_pointer pointer_;
+    
+    friend typename _Da::_self;
+    
+public:
+    _DoubleArrayUnitBcpConstReference(const _DoubleArrayUnitBcpReference<_Da>& x) : pointer_(x.pointer_) {}
+    
+    bool terminal() const {return *(pointer_ + kTerminalFlagInsets) bitand 0x40;}
+    
+    _index_type check() const {return *reinterpret_cast<const _index_type*>(pointer_ + kCheckInsets) bitand kIndexMask;}
+    
+    _index_type base() const {return *reinterpret_cast<const _index_type*>(pointer_ + kBaseInsets) bitand kIndexMask;}
+    
+    bool has_label() const {return *(pointer_ + kLabelFlagInsets) bitand 0x40;}
+    
+    _index_type pool_index() const {assert(has_label()); return base();}
+    
+    _char_type child() const {return *reinterpret_cast<const _char_type*>(pointer_ + kChildInsets);}
+    
+    _char_type sibling() const {return *reinterpret_cast<const _char_type*>(pointer_ + kSiblingInsets);}
+    
+    bool base_empty() const {return *(pointer_ + kEdgeFlagInsets) bitand 0x80;}
+    
+    _index_type prev() const {
+        assert(*reinterpret_cast<_index_type*>(pointer_ + kPrevInsets) bitand kEmptyFlag);
+        return *reinterpret_cast<_index_type*>(pointer_ + kPrevInsets) bitand kIndexMask;
+    }
+    
+    _index_type next() const {
+        assert(*reinterpret_cast<_index_type*>(pointer_ + kNextInsets) bitand kEmptyFlag);
+        return *reinterpret_cast<_index_type*>(pointer_ + kNextInsets) bitand kIndexMask;
+    }
+    
+private:
+    _DoubleArrayUnitBcpConstReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
+    
+};
 
 
-template <class _Dac>
-class _DoubleArrayBlockReference {
-protected:
-    using _index_type = typename _Dac::_index_type;
-    using _block_word_type = typename _Dac::_block_word_type;
-    using _block_pointer = typename _Dac::_block_pointer;
-    using _const_block_pointer = typename _Dac::_block_pointer;
+// MARK: - Block reference
+
+template <class _Da>
+class _DoubleArrayBlockReferenceCommon {
+public:
+    using _index_type = typename _Da::_index_type;
+    using _block_word_type = typename _Da::_block_word_type;
     
     static constexpr size_t kWordBits = sizeof(_block_word_type)*8;
-    static constexpr size_t kBlockSize = _Dac::kBlockSize;
+    static constexpr size_t kBlockSize = _Da::kBlockSize;
     
     static constexpr size_t kPrevOffset = 0;
     static constexpr size_t kNextOffset = kPrevOffset + 1;
@@ -102,6 +280,32 @@ protected:
     static constexpr size_t kFieldSize = kBlockSize / kWordBits; // 4
     
     static constexpr _block_word_type kNumEmptiesMask = 0x1FF;
+};
+
+
+template <class _Dac>
+class _DoubleArrayBlockConstReference;
+
+template <class _Dac>
+class _DoubleArrayBlockReference : _DoubleArrayBlockReferenceCommon<_Dac> {
+    using _common = _DoubleArrayBlockReferenceCommon<_Dac>;
+protected:
+    using typename _common::_index_type;
+    using typename _common::_block_word_type;
+    static_assert(sizeof(_block_word_type) == 8, "Invalid block word type!");
+    using _block_pointer = typename _Dac::_block_pointer;
+    using _const_block_pointer = typename _Dac::_block_pointer;
+    
+    using _common::kWordBits;
+    using _common::kBlockSize;
+    
+    using _common::kPrevOffset;
+    using _common::kNextOffset;
+    using _common::kNumEmptiesOffset;
+    using _common::kNumEmptiesMask;
+    using _common::kErrorCountOffset;
+    using _common::kErrorCountInset;
+    using _common::kFieldSize;
     
     _block_pointer block_pointer_;
     
@@ -190,23 +394,24 @@ protected:
 
 
 template <class _Dac>
-class _DoubleArrayBlockConstReference {
+class _DoubleArrayBlockConstReference : _DoubleArrayBlockReferenceCommon<_Dac> {
+    using _common = _DoubleArrayBlockReferenceCommon<_Dac>;
 protected:
-    using _index_type = typename _Dac::_index_type;
-    using _block_word_type = typename _Dac::_block_word_type;
+    using typename _common::_index_type;
+    using typename _common::_block_word_type;
+    static_assert(sizeof(_block_word_type) == 8, "Invalid block word type!");
     using _block_pointer = typename _Dac::_const_block_pointer;
     
-    static constexpr size_t kWordBits = sizeof(_block_word_type)*8;
-    static constexpr size_t kBlockSize = _Dac::kBlockSize;
+    using _common::kWordBits;
+    using _common::kBlockSize;
     
-    static constexpr size_t kPrevOffset = 0;
-    static constexpr size_t kNextOffset = kPrevOffset + 1;
-    static constexpr size_t kNumEmptiesOffset = kNextOffset + 1;
-    static constexpr size_t kErrorCountOffset = kNumEmptiesOffset;
-    static constexpr size_t kErrorCountInset = 32;
-    static constexpr size_t kFieldSize = kBlockSize / kWordBits; // 4
-    
-    static constexpr _block_word_type kNumEmptiesMask = 0x1FF;
+    using _common::kPrevOffset;
+    using _common::kNextOffset;
+    using _common::kNumEmptiesOffset;
+    using _common::kNumEmptiesMask;
+    using _common::kErrorCountOffset;
+    using _common::kErrorCountInset;
+    using _common::kFieldSize;
     
     _block_pointer block_pointer_;
     
@@ -241,7 +446,6 @@ protected:
 
 template <class _Dac>
 class _DoubleArrayBlockLegacyConstReference;
-
 
 template <class _Dac>
 class _DoubleArrayBlockLegacyReference : public _DoubleArrayBlockReference<_Dac> {
@@ -319,32 +523,41 @@ private:
 };
 
 
-template <typename IndexType>
-class _DoubleArrayBCImpl {
+// MARK: - MPTrie
+
+template <typename IndexType, bool BitOperationalFind>
+class _DoubleArrayBcMpTrieImpl {
 public:
-    using _self = _DoubleArrayBCImpl<IndexType>;
+    using _self = _DoubleArrayBcMpTrieImpl<IndexType, BitOperationalFind>;
     using _index_type = IndexType;
     using _char_type = uint8_t;
-    using _unit_type = _DoubleArrayBCUnit<IndexType>;
     using _inset_type = uint8_t;
+    
+    using _unit_storage_type = uint8_t;
+    using _unit_storage_pointer = _unit_storage_type*;
+    using _const_unit_storage_pointer = const _unit_storage_type*;
+    using _unit_reference = _DoubleArrayUnitBcpReference<_self>;
+    using _unit_const_reference = _DoubleArrayUnitBcpConstReference<_self>;
+    
     using _block_word_type = uint64_t;
     using _block_pointer = _block_word_type*;
     using _const_block_pointer = const _block_word_type*;
-    
     using _block_reference = _DoubleArrayBlockLegacyReference<_self>;
     using _block_const_reference = _DoubleArrayBlockLegacyConstReference<_self>;
     
     static constexpr _index_type kRootIndex = 0;
     static constexpr _char_type kLeafChar = graph_util::kLeafChar;
+    static constexpr _char_type kEmptyChar = 0xFF;
     
-    static constexpr _index_type kEmptyFlag = _unit_type::kEmptyFlag;
-    static constexpr _char_type kEmptyChar = _unit_type::kEmptyChar;
+    static constexpr size_t kUnitBytes = _unit_reference::kUnitBytes;
+    static constexpr _index_type kIndexMax = _unit_reference::kIndexMax;
+    static constexpr _index_type kIndexMask = _unit_reference::kIndexMask;
+    static constexpr size_t kIndexBytes = _unit_reference::kIndexBytes;
+    static constexpr _index_type kEmptyFlag = _unit_reference::kEmptyFlag;
     
     static constexpr size_t kBlockQBytes = 8;
     static constexpr unsigned kBlockSize = 0x100;
     static constexpr _index_type kInitialEmptyBlockHead = std::numeric_limits<_index_type>::max();
-    
-    static constexpr size_t kIndexBits = _unit_type::kIndexBits;
     
     using _input_trie = graph_util::Trie<char>;
     
@@ -354,25 +567,35 @@ protected:
     _index_type general_block_head_;
     _index_type personal_block_head_;
     aligned_vector<_block_word_type, 32> basic_block_;
-    std::vector<_unit_type> container_;
+    std::vector<_unit_storage_type> container_;
     std::vector<_char_type> tail_;
     
-    _DoubleArrayBCImpl() : general_block_head_(kInitialEmptyBlockHead), personal_block_head_(kInitialEmptyBlockHead) {
+    _DoubleArrayBcMpTrieImpl() : general_block_head_(kInitialEmptyBlockHead), personal_block_head_(kInitialEmptyBlockHead) {
         _expand();
         _setup(kRootIndex);
-        _set_check_sibling(kRootIndex, 0, 0); // set root
+        auto root_unit = _unit_at(kRootIndex);
+        root_unit.set_check(0);
+        root_unit.set_sibling(0);
         _consume_block(_block_index_of(kRootIndex), 1);
     }
     
-    virtual ~_DoubleArrayBCImpl() = default;
+    virtual ~_DoubleArrayBcMpTrieImpl() = default;
     
     size_t _size_in_bytes() const {
         return sizeof(general_block_head_) + size_vec(basic_block_) + size_vec(container_) + size_vec(tail_);
     }
     
-    size_t _num_elements() const {return container_.size();}
+    size_t _num_elements() const {return container_.size() / kUnitBytes;}
     
     size_t _num_blocks() const {return basic_block_.size() / kBlockQBytes;}
+    
+    _unit_reference _unit_at(_index_type index) {
+        return _unit_reference(container_.data() + (kUnitBytes * index));
+    }
+    
+    _unit_const_reference _unit_at(_index_type index) const {
+        return _unit_const_reference(container_.data() + (kUnitBytes * index));
+    }
     
     _index_type _block_index_of(_index_type index) const {return index/kBlockSize;}
     
@@ -387,10 +610,10 @@ protected:
     }
     
     void _expand() {
-        if (container_.size() >= (1ull << (kIndexBits-1))) {
+        if (_num_elements() > kIndexMax) {
             throw "Index out-of-range! You should set large byte-size of template parameter.";
         }
-        container_.resize(container_.size() + kBlockSize);
+        container_.resize(container_.size() + kUnitBytes * kBlockSize);
         
         // Append blocks linking
         basic_block_.resize(basic_block_.size() + kBlockQBytes);
@@ -406,23 +629,20 @@ protected:
         }
         
         // Link elements in appended block
-        auto front = container_.size() - kBlockSize;
+        auto front = _num_elements() - kBlockSize;
         auto inset_back = kBlockSize - 1;
-        _set_prev(front, inset_back);
-        _set_next(front, 1);
+        _unit_at(front).init(inset_back, 1);
         for (size_t i = 1; i < inset_back; i++) {
-            _set_prev(front+i, i-1);
-            _set_next(front+i, i+1);
+            _unit_at(front+i).init(i-1, i+1);
         }
-        _set_prev(front+inset_back, inset_back-1);
-        _set_next(front+inset_back, 0);
+        _unit_at(front+inset_back).init(inset_back-1, 0);
     }
     
     void _shrink() {
         if (_num_blocks() == 1)
             return;
         assert(_block_at(_num_elements()-1).num_empties() == kBlockSize);
-        container_.resize(container_.size() - kBlockSize);
+        container_.resize(container_.size() - kUnitBytes * kBlockSize);
         basic_block_.resize(basic_block_.size() - kBlockQBytes);
     }
     
@@ -430,35 +650,15 @@ protected:
         return _block_at(_block_index_of(index)).empty_element_at(index%kBlockSize);
     }
     
-    _index_type _next(size_t index) const {
-        assert(_empty(index));
-        return _base(index) bitand compl(kEmptyFlag);
-    }
-    
-    void _set_next(size_t index, _inset_type next) {
-        assert(_empty(index));
-        _set_base(index, next bitor kEmptyFlag);
-    }
-    
-    _index_type _prev(size_t index) const {
-        assert(_empty(index));
-        return _check(index) bitand compl(kEmptyFlag);
-    }
-    
-    void _set_prev(size_t index, _inset_type prev) {
-        assert(_empty(index));
-        _set_check(index, prev bitor kEmptyFlag);
-    }
-    
     void _freeze(size_t index) {
         assert(_empty(index));
-        // Delete empty-elements linking
-        auto next = _next(index);
-        auto prev = _prev(index);
+        // Remove empty-elements linking
+        auto next = _unit_at(index).next();
+        auto prev = _unit_at(index).prev();
         auto block_index = _block_index_of(index);
         auto offset = kBlockSize * (block_index);
-        _set_prev(offset+next, prev);
-        _set_next(offset+prev, next);
+        _unit_at(offset+next).set_prev(prev);
+        _unit_at(offset+prev).set_next(next);
         auto b = _block_at(block_index);
         auto inset = index % kBlockSize;
         if (next == inset) {
@@ -467,90 +667,66 @@ protected:
             b.set_empty_head(next);
         }
         
-        _block_at(_block_index_of(index)).freeze_element_at(index%kBlockSize);
+        b.freeze_element_at(index%kBlockSize);
     }
     
     void _thaw(size_t index) {
         assert(not _empty(index));
         auto block_index = _block_index_of(index);
-        _block_at(block_index).thaw_element_at(index%kBlockSize);
+        auto b = _block_at(block_index);
+        b.thaw_element_at(index%kBlockSize);
         
         // Append empty-elements linking
-        auto b = _block_at(block_index);
         auto inset = index % kBlockSize;
         if (not b.link_enabled()) {
-            _set_next(index, inset);
-            _set_prev(index, inset);
+            _unit_at(index).init(inset, inset);
             b.set_empty_head(inset);
         } else {
             auto offset = kBlockSize * (block_index);
             auto head = b.empty_head();
-            auto tail = _prev(offset+head);
-            _set_next(offset+tail, inset);
-            _set_prev(offset+head, inset);
-            _set_next(index, head);
-            _set_prev(index, tail);
+            auto head_unit = _unit_at(offset+head);
+            auto tail = head_unit.prev();
+            head_unit.set_prev(inset);
+            _unit_at(offset+tail).set_next(inset);
+            _unit_at(index).init(tail, head);
         }
     }
     
     void _setup(size_t index) {
         _freeze(index);
-        container_[index].init();
+        _unit_at(index).clean();
     }
     
     void _erase(size_t index) {
-        container_[index].init();
+        _unit_at(index).clean();
         _thaw(index);
     }
     
-    _index_type _check(_index_type index) const {return container_[index].check();}
+    virtual _index_type _base_at(_index_type node) const {return _unit_at(node).base();}
     
-    void _set_check(size_t index, _index_type check) {
-        container_[index].set_check(check);
+    virtual void _set_base_at(_index_type node, _index_type new_base) {
+        _unit_at(node).set_base(new_base);
     }
     
-    _char_type _sibling(_index_type index) const {
-        assert(container_[index].sibling() != kEmptyChar);
-        return container_[index].sibling();
+    virtual bool _is_edge_at(_index_type node) const {
+        auto unit = _unit_at(node);
+        return unit.base_empty() or unit.has_label();
     }
     
-    void _set_sibling(_index_type index, _char_type sibling) {
-        container_[index].set_sibling(sibling);
+    void _set_new_trans(_index_type node, _index_type new_base, _char_type new_child) {
+        _set_base_at(node, new_base);
+        _unit_at(node).set_child(new_child);
     }
     
-    void _set_check_sibling(_index_type index, _index_type check, _char_type sibling) {
-        _set_check(index, check);
-        _set_sibling(index, sibling);
-    }
-    
-    _index_type _base(_index_type node) const {return container_[node].base();}
-    
-    void _set_base(_index_type node, _index_type base) {
-        container_[node].set_base(base);
-    }
-    
-    _char_type _child(_index_type node) const {return container_[node].child();}
-    
-    void _set_child(_index_type node, _char_type c) {
-        container_[node].set_child(c);
-    }
-    
-    bool _is_leaf(_index_type node) const {return _base(node) bitand kEmptyFlag;}
-    
-    void _set_base_child(_index_type node, _index_type base, _char_type child) {
-        assert(not _empty(node));
-        _set_base(node, base);
-        _set_child(node, child);
-    }
-    
-    _index_type _tail_index(_index_type node) const {
-        assert(_is_leaf(node));
-        return _base(node) bitand compl kEmptyFlag;
-    }
-    
-    void _set_tail_index(_index_type node, _index_type tail_index) {
-        assert(_is_leaf(node));
-        _set_base(node, tail_index bitor kEmptyFlag);
+    void _set_new_node(_index_type index, _index_type new_check, _char_type new_sibling, bool terminal, _index_type new_pool_index = kEmptyFlag) {
+        _setup(index);
+        auto unit = _unit_at(index);
+        unit.set_check(new_check);
+        unit.set_sibling(new_sibling);
+        if (terminal)
+            unit.set_terminal();
+        if (new_pool_index != kEmptyFlag)
+            unit.set_pool_index(new_pool_index);
     }
     
     std::string_view _suffix_in_tail(_index_type tail_index) const {
@@ -656,13 +832,13 @@ protected:
     
     template <class Action>
     void _for_each_children(_index_type node, Action action) {
-        assert(not _is_leaf(node));
-        auto base = _base(node);
-        auto first_child = _child(node);
+        assert(not _is_edge_at(node));
+        auto base = _base_at(node);
+        auto first_child = _unit_at(node).child();
         for (auto child = first_child; ; ) {
             auto next = base xor child;
-            assert(_check(next) == node);
-            auto sibling = _sibling(next);
+            assert(_unit_at(next).check() == node);
+            auto sibling = _unit_at(next).sibling();
             action(child, sibling);
             if (sibling == first_child)
                 break;
@@ -672,13 +848,14 @@ protected:
     
     template <class Action>
     void _for_each_children(_index_type node, Action action) const {
-        assert(not _is_leaf(node));
-        auto base = _base(node);
-        auto first_child = _child(node);
+        assert(not _is_edge_at(node));
+        auto base = _base_at(node);
+        auto first_child = _unit_at(node).child();
         for (auto child = first_child; ; ) {
             auto next = base xor child;
-            assert(_check(next) == node);
-            auto sibling = _sibling(next);
+            assert(not _empty(next));
+            assert(_unit_at(next).check() == node);
+            auto sibling = _unit_at(next).sibling();
             action(child, sibling);
             if (sibling == first_child)
                 break;
@@ -687,24 +864,22 @@ protected:
     }
     
     size_t _num_of_children(_index_type node) const {
+        if (_is_edge_at(node))
+            return 0;
         size_t cnt = 0;
         _for_each_children(node, [&cnt](auto, auto) {++cnt;});
         return cnt;
     }
     
-    _index_type _new_base(_char_type c) const {
-        return _num_elements() xor c;
-    }
-    
     void _insert_nodes(_index_type node, std::vector<_char_type>& children, _index_type base) {
         if (base >= _num_elements())
             _expand();
-        _set_base_child(node, base, children.front());
+        _set_new_trans(node, base, children.front());
         for (size_t i = 0; i < children.size(); i++) {
             auto c = children[i];
             auto next = base xor c;
             _setup(next);
-            _set_check_sibling(next, node, children[(i+1)%children.size()]);
+            _set_new_node(next, node, children[(i+1)%children.size()], false);
         }
         _consume_block(_block_index_of(base), children.size());
     }
@@ -717,7 +892,15 @@ protected:
         return index;
     }
     
-    virtual _index_type _find_base(const std::vector<_char_type>& children) {
+    _index_type _new_base(_char_type c) const {
+        if constexpr (BitOperationalFind) {
+            return _num_elements();
+        } else {
+            return _num_elements() xor c;
+        }
+    }
+    
+    _index_type _find_base(const std::vector<_char_type>& children) {
         if (children.size() == 1 and personal_block_head_ != kInitialEmptyBlockHead) {
             _index_type pbh = personal_block_head_;
             return (kBlockSize * pbh + _block_at(pbh).empty_head()) xor children.front();
@@ -730,8 +913,15 @@ protected:
         while (true) {
             auto block = _block_at(b);
             assert(block.link_enabled());
-            if (block.num_empties() >= children.size()) {
-                const auto offset = kBlockSize * b;
+            const auto offset = kBlockSize * b;
+            
+            if constexpr (BitOperationalFind) {
+                assert(block.error_count() < kErrorThreshold);
+                auto ctz = da_util::xcheck_in_da_block(block.field_ptr(), children);
+                if (ctz < kBlockSize) {
+                    return offset + ctz;
+                }
+            } else {
                 for (auto index = offset + block.empty_head(); ; ) {
                     _index_type n = index xor children.front();
                     bool skip = false;
@@ -744,82 +934,88 @@ protected:
                     if (not skip) {
                         return n;
                     }
-                    if (_next(index) == block.empty_head())
+                    auto next = _unit_at(index).next();
+                    if (next == block.empty_head())
                         break;
-                    index = offset + _next(index);
+                    index = offset + next;
                 }
             }
+            
             auto new_b = block.next();
             if (new_b == general_block_head_) {
-                return _new_base(children.front());
+                break;
             }
             _error_block(b);
             b = new_b;
         }
-        throw "Not found base!";
+        return _new_base(children.front());
     }
     
 };
 
 
-template <typename IndexType>
-class _DynamicDoubleArrayBCImpl : protected _DoubleArrayBCImpl<IndexType> {
+template <class _Impl>
+class _DynamicDoubleArrayPatriciaTrieBehavior;
+
+template <class _Impl>
+class _DynamicDoubleArrayMpTrieBehavior : protected _Impl {
 public:
-    using _static_impl = _DoubleArrayBCImpl<IndexType>;
-    using _index_type = typename _static_impl::_index_type;
-    using _char_type = typename _static_impl::_char_type;
+    using _impl = _Impl;
+    using typename _impl::_index_type;
+    using typename _impl::_char_type;
     
-    using _static_impl::kBlockSize;
-    using _static_impl::kEmptyFlag;
-    using _static_impl::kRootIndex;
-    using _static_impl::kInitialEmptyBlockHead;
-    using _static_impl::kLeafChar;
-    using _static_impl::kEmptyChar;
+    using _impl::kBlockSize;
+    using _impl::kRootIndex;
+    using _impl::kInitialEmptyBlockHead;
+    using _impl::kLeafChar;
+    using _impl::kEmptyChar;
     
 protected:
-    _DynamicDoubleArrayBCImpl() : _static_impl() {}
+    _DynamicDoubleArrayMpTrieBehavior() : _impl() {}
     
-    virtual ~_DynamicDoubleArrayBCImpl() = default;
+    virtual ~_DynamicDoubleArrayMpTrieBehavior() = default;
     
     _index_type _grow(_index_type node, _index_type base, _char_type c) {
-        if (base >= _static_impl::_num_elements())
-            _static_impl::_expand();
-        assert(_static_impl::_is_leaf(node));
+        if (base >= _impl::_num_elements())
+            _impl::_expand();
+        _impl::_set_new_trans(node, base, c);
         auto next = base xor c;
-        assert(_static_impl::_empty(next));
-        _static_impl::_set_base_child(node, base, c);
-        _static_impl::_setup(next);
-        _static_impl::_set_check_sibling(next, node, c);
-        _static_impl::_consume_block(base/kBlockSize, 1);
+        _impl::_set_new_node(next, node, c, false);
+        _impl::_consume_block(_impl::_block_index_of(base), 1);
         return next;
     }
     
     void _insert_in_bc(_index_type node, std::string_view suffix) {
         if (suffix.size() > 0) {
             node = _insert_trans(node, suffix.front());
-            auto tail_index = _static_impl::_insert_suffix(suffix.size() > 1 ? suffix.substr(1) : "");
-            _static_impl::_set_tail_index(node, tail_index);
-        } else {
-            node = _insert_trans(node, kLeafChar);
+            auto tail_index = _impl::_insert_suffix(suffix.size() > 1 ? suffix.substr(1) : "");
+            _impl::_unit_at(node).set_pool_index(tail_index);
         }
+        _impl::_unit_at(node).set_terminal();
     }
     
-    void _insert_in_tail(_index_type node, _index_type tail_pos, std::string_view suffix) {
-        auto tail_index = _static_impl::_tail_index(node);
-        if (tail_index < _static_impl::tail_.size()) {
-            while (tail_index < tail_pos) {
-                auto c = _static_impl::tail_[tail_index++];
-                node = _grow(node, this->_find_base({c}), c);
-            }
-            auto c = _static_impl::tail_[tail_index];
-            auto next = _grow(node, this->_find_base({c}), c);
-            _static_impl::_set_tail_index(next, tail_index+1);
+    virtual void _insert_in_tail(_index_type node, _index_type tail_pos, std::string_view suffix) {
+        auto tail_index = _impl::_unit_at(node).pool_index();
+        _impl::_unit_at(node).disable_terminal();
+        while (tail_index < tail_pos) {
+            auto c = _impl::tail_[tail_index++];
+            node = _grow(node, this->_find_base({c}), c);
         }
+        auto c = _impl::tail_[tail_index];
+        auto next = _grow(node, this->_find_base({c}), c);
+        auto unit = _impl::_unit_at(next);
+        unit.set_pool_index(tail_index+1);
+        unit.set_terminal();
         _insert_in_bc(node, suffix);
     }
     
     void _delete_leaf(_index_type node) {
-        assert(_is_leaf(node));
+        if (not _impl::_unit_at(node).terminal())
+            return;
+        if (not _impl::_is_edge_at(node)) {
+            _impl::_unit_at(node).disable_terminal();
+            return;
+        }
         size_t counts_children;
         do {
             _index_type prev = _check(node);
@@ -857,10 +1053,14 @@ protected:
     }
     
 private:
+    friend class _DynamicDoubleArrayPatriciaTrieBehavior<_impl>;
+    
     struct _moving_luggage {
         _index_type base;
         uint8_t child;
-        _moving_luggage(_index_type base, uint8_t child) : base(base), child(child) {}
+        bool has_leaf;
+        bool terminal;
+        _moving_luggage(_index_type base, uint8_t child, bool has_leaf, bool terminal) : base(base), child(child), has_leaf(has_leaf), terminal(terminal) {}
     };
     
     struct _shelter {
@@ -871,51 +1071,60 @@ private:
     
     void _evacuate(_index_type node, _shelter& shelter) {
         shelter.node = node;
-        auto base = _static_impl::_base(node);
-        _static_impl::_for_each_children(node, [&](auto child, auto) {
+        auto base = _impl::_base_at(node);
+        _impl::_for_each_children(node, [&](auto child, auto) {
             shelter.children.push_back(child);
             auto index = base xor child;
-            shelter.luggages.emplace_back(_static_impl::_base(index), _static_impl::_child(index));
-            _static_impl::_erase(index);
+            auto index_unit = _impl::_unit_at(index);
+            shelter.luggages.emplace_back(index_unit.base(), index_unit.child(), index_unit.has_label(), index_unit.terminal());
+            _impl::_erase(index);
         });
-        _static_impl::_refill_block(_static_impl::_block_index_of(base), shelter.children.size());
+        _impl::_refill_block(_impl::_block_index_of(base), shelter.children.size());
     }
     
-    void _update_node(_index_type index, _index_type check, _index_type sibling, _index_type base, _index_type child) {
-        assert(_static_impl::_empty(index));
-        _static_impl::_setup(index);
-        _static_impl::_set_check_sibling(index, check, sibling);
-        if (not (base & kEmptyFlag)) { // In BC
-            _static_impl::_set_base_child(index, base, child);
-            for (auto c = child; ; ) {
-                auto cur_index = base xor c;
-                _static_impl::_set_check(cur_index, index);
-                auto sibling = _static_impl::_sibling(cur_index);
-                if (sibling == child)
-                    break;
-                c = sibling;
-            }
-        } else { // In TAIL
-            _static_impl::_set_tail_index(index, base bitand compl kEmptyFlag);
+    void _update_node(_index_type index, _index_type check, _index_type sibling, _index_type base, _index_type child, bool has_label, bool terminal) {
+        assert(_impl::_empty(index));
+        if (not has_label) {
+            _impl::_set_new_node(index, check, sibling, terminal);
+            _impl::_set_new_trans(index, base, child);
+        } else {
+            _impl::_set_new_node(index, check, sibling, terminal, base);
+            _impl::_unit_at(index).set_child(child);
+        }
+    }
+    
+    void _update_check(_index_type base, _char_type child, _index_type new_check) {
+        assert(base < _impl::_num_elements());
+        for (_char_type c = child; ; ) {
+            auto unit = _impl::_unit_at(base xor c);
+            unit.set_check(new_check);
+            auto sibling = unit.sibling();
+            if (sibling == child)
+                break;
+            c = sibling;
         }
     }
     
     _index_type _move_nodes(_shelter& shelter, _index_type new_base,
                             _index_type monitoring_node = kRootIndex) {
-        if (new_base >= _static_impl::_num_elements())
-            _static_impl::_expand();
-        auto old_base = _static_impl::_base(shelter.node);
-        _static_impl::_set_base(shelter.node, new_base);
+        if (new_base >= _impl::_num_elements())
+            _impl::_expand();
+        auto old_base = _impl::_base_at(shelter.node);
+        _impl::_set_base_at(shelter.node, new_base);
         for (size_t i = 0; i < shelter.children.size(); i++) {
             auto child = shelter.children[i];
             auto sibling = shelter.children[(i+1)%shelter.children.size()];
             auto new_next = new_base xor child;
-            _update_node(new_next, shelter.node, sibling, shelter.luggages[i].base, shelter.luggages[i].child);
+            auto& luggage = shelter.luggages[i];
+            _update_node(new_next, shelter.node, sibling, luggage.base, luggage.child, luggage.has_leaf, luggage.terminal);
+            if (not _impl::_is_edge_at(new_next))
+                _update_check(_impl::_base_at(new_next), luggage.child, new_next);
+            assert(not _impl::_empty(new_next));
             if ((old_base xor child) == monitoring_node) {
                 monitoring_node = new_next;
             }
         }
-        _static_impl::_consume_block(_static_impl::_block_index_of(new_base), shelter.children.size());
+        _impl::_consume_block(_impl::_block_index_of(new_base), shelter.children.size());
         
         return monitoring_node;
     }
@@ -934,7 +1143,10 @@ private:
                 auto conflicting_node = _check(new_next);
                 _evacuate(conflicting_node, shelters.back());
             }
-            _update_node(new_next, shelter.node, sibling, shelter.luggages[i].base, shelter.luggages[i].child);
+            auto& luggage = shelter.luggages[i];
+            _update_node(new_next, shelter.node, sibling, luggage.base, luggage.child, luggage.has_leaf, luggage.terminal);
+            if (not _impl::_is_edge_at(new_next))
+                _update_check(_base_at(new_next), luggage.child, new_next);
         }
         _consume_block(_block_index_of(target_base), shelter.children.size());
         
@@ -947,19 +1159,19 @@ private:
     }
     
     _index_type _find_compression_target(std::vector<_char_type>& siblings) const {
-        if (siblings.size() == 1 and _static_impl::personal_block_head_ != kInitialEmptyBlockHead) {
-            _index_type pbh = _static_impl::personal_block_head_;
+        if (siblings.size() == 1 and _impl::personal_block_head_ != kInitialEmptyBlockHead) {
+            _index_type pbh = _impl::personal_block_head_;
             return (kBlockSize * pbh + _block_at(pbh).empty_head()) xor siblings.front();
         }
-        if (_static_impl::general_block_head_ == kInitialEmptyBlockHead) {
-            return _static_impl::_num_elements();
+        if (_impl::general_block_head_ == kInitialEmptyBlockHead) {
+            return _impl::_num_elements();
         }
-        _index_type b = _static_impl::general_block_head_;
+        _index_type b = _impl::general_block_head_;
         while (true) {
-            if (b == _block_index_of(_static_impl::_num_elements()-1)) {
-                b = _block_at(_block_index_of(_static_impl::_num_elements()-1)).next();
-                if (b == _static_impl::general_block_head_)
-                    return _static_impl::_num_elements();
+            if (b == _block_index_of(_impl::_num_elements()-1)) {
+                b = _block_at(_block_index_of(_impl::_num_elements()-1)).next();
+                if (b == _impl::general_block_head_)
+                    return _impl::_num_elements();
                 continue;
             }
             auto block = _block_at(b);
@@ -983,8 +1195,8 @@ private:
                     break;
                 index = offset + _next(index);
             }
-            if (block.next() == _static_impl::general_block_head_) {
-                return _static_impl::_num_elements();
+            if (block.next() == _impl::general_block_head_) {
+                return _impl::_num_elements();
             }
             b = block.next();
         }
@@ -992,7 +1204,7 @@ private:
     
     void _reduce() {
         using bit_util::ctz256;
-        for (_index_type b = _block_index_of(_static_impl::_num_elements()-1); b > 0; b--) {
+        for (_index_type b = _block_index_of(_impl::_num_elements()-1); b > 0; b--) {
             for (size_t ctz = ctz256(_block_at(b).field_ptr()); ctz < 256; ctz = ctz256(_block_at(b).field_ptr())) {
                 std::vector<_char_type> children;
                 auto parent = _check(kBlockSize*b+ctz);
@@ -1006,32 +1218,34 @@ private:
                 std::vector<_moving_luggage> luggages;
                 _for_each_children(parent, [&](auto child, auto) {
                     auto next = base xor child;
-                    luggages.emplace_back(_base(next), _child(next));
+                    auto unit = _unit_at(next);
+                    luggages.emplace_back(unit.base(), unit.child(), unit.has_label(), unit.terminal());
                     _erase(next);
                 });
+                _refill_block(_block_index_of(base), children.size());
                 _compress_nodes(parent, children, luggages, compression_target);
             }
-            _static_impl::_shrink();
+            _impl::_shrink();
         }
     }
     
     _index_type _solve_collision(_index_type node, _char_type c) {
-        auto base = _static_impl::_base(node);
+        auto base = _impl::_base_at(node);
         auto conflicting_index = base xor c;
-        auto competitor = _static_impl::_check(conflicting_index);
+        auto competitor = _impl::_unit_at(conflicting_index).check();
         if (conflicting_index != kRootIndex and
-            _static_impl::_num_of_children(competitor) <= _static_impl::_num_of_children(node)) {
+            _impl::_num_of_children(competitor) <= _impl::_num_of_children(node)) {
             _shelter shelter;
             _evacuate(competitor, shelter);
-            _static_impl::_freeze(conflicting_index);
-            auto new_base = this->_find_base(shelter.children);
-            _static_impl::_thaw(conflicting_index);
+            _impl::_freeze(conflicting_index);
+            auto new_base = _impl::_find_base(shelter.children);
+            _impl::_thaw(conflicting_index);
             node = _move_nodes(shelter, new_base, node);
         } else {
             _shelter shelter;
             _evacuate(node, shelter);
             shelter.children.push_back(c);
-            auto new_base = this->_find_base(shelter.children);
+            auto new_base = _impl::_find_base(shelter.children);
             shelter.children.pop_back();
             _move_nodes(shelter, new_base);
         }
@@ -1039,45 +1253,50 @@ private:
     }
     
     _index_type _insert_trans(_index_type node, _char_type c) {
-        if (_static_impl::_is_leaf(node)) {
-            return _grow(node, _static_impl::_find_base({c}), c);
+        if (_impl::_is_edge_at(node)) {
+            return _grow(node, _impl::_find_base({c}), c);
         }
-        auto base = _static_impl::_base(node);
-        if (not _static_impl::_empty(base xor c)) {
-            node = _solve_collision(node, c);
-            base = _static_impl::_base(node);
-        }
+        auto base = _impl::_base_at(node);
         auto next = base xor c;
-        assert(_static_impl::_empty(next));
-        _static_impl::_setup(next);
-        _static_impl::_set_check(next, node);
+        if (not _impl::_empty(next)) {
+            node = _solve_collision(node, c);
+            base = _impl::_base_at(node);
+            next = base xor c;
+        }
+        assert(_impl::_empty(next));
+        _impl::_setup(next);
+        auto next_unit = _impl::_unit_at(next);
+        next_unit.set_check(node);
         // Insert c to siblings link
-        auto first_child = _static_impl::_child(node);
+        auto node_unit = _impl::_unit_at(node);
+        auto first_child = node_unit.child();
         assert(c != first_child);
         if (c < first_child) {
-            _static_impl::_set_child(node, c);
-            _static_impl::_set_sibling(next, first_child);
+            node_unit.set_child(c);
+            next_unit.set_sibling(first_child);
             for (auto child = first_child; ; ) {
-                auto sibling = _static_impl::_sibling(base xor child);
+                auto child_unit = _impl::_unit_at(base xor child);
+                auto sibling = child_unit.sibling();
                 if (sibling == first_child) {
-                    _static_impl::_set_sibling(base xor child, c);
+                    child_unit.set_sibling(c);
                     break;
                 }
                 child = sibling;
             }
         } else {
             for (auto child = first_child; ; ) {
-                auto sibling = _static_impl::_sibling(base xor child);
+                auto child_unit = _impl::_unit_at(base xor child);
+                auto sibling = child_unit.sibling();
                 if (sibling > c or sibling == first_child) {
-                    _static_impl::_set_sibling(base xor child, c);
-                    _static_impl::_set_sibling(next, sibling);
+                    child_unit.set_sibling(c);
+                    next_unit.set_sibling(sibling);
                     break;
                 }
                 child = sibling;
             }
         }
         
-        _static_impl::_consume_block(base/kBlockSize, 1);
+        _impl::_consume_block(_impl::_block_index_of(base), 1);
         
         return next;
     }
@@ -1085,63 +1304,210 @@ private:
 };
 
 
-template <typename IndexType>
-class _BitOperationalDynamicDoubleArrayBCImpl : protected _DynamicDoubleArrayBCImpl<IndexType> {
+// MARK: - Patricia Trie
+
+template <typename IndexType, bool BitOperationalFind>
+class _DoubleArrayBcPatriciaTrieImpl : protected _DoubleArrayBcMpTrieImpl<IndexType, BitOperationalFind> {
+    using _impl = _DoubleArrayBcMpTrieImpl<IndexType, BitOperationalFind>;
 public:
-    using _base_impl = _DynamicDoubleArrayBCImpl<IndexType>;
-    using _index_type = typename _base_impl::_index_type;
-    using _char_type = typename _base_impl::_char_type;
+    using typename _impl::_index_type;
+    using typename _impl::_char_type;
     
-    using _base_impl::kBlockSize;
-    using _base_impl::kInitialEmptyBlockHead;
+    using _impl::kLeafChar;
+    using _impl::kEmptyChar;
+    using _impl::kIndexBytes;
+    using _impl::kEmptyFlag;
+    using _impl::kIndexMask;
     
 protected:
-    _BitOperationalDynamicDoubleArrayBCImpl() : _base_impl() {}
+    _DoubleArrayBcPatriciaTrieImpl() : _impl() {}
     
-    virtual ~_BitOperationalDynamicDoubleArrayBCImpl() = default;
+    virtual ~_DoubleArrayBcPatriciaTrieImpl() = default;
     
-    _index_type _find_base(const std::vector<_char_type>& children) override {
-        if (children.size() == 1 and _base_impl::personal_block_head_ != kInitialEmptyBlockHead) {
-            _index_type pbh = _base_impl::personal_block_head_;
-            return (kBlockSize * pbh + _base_impl::_block_at(pbh).empty_head()) xor children.front();
+    _index_type _base_in_pool(_index_type pool_index) const {
+        uint8_t* pool_ptr = (uint8_t*)_impl::tail_.data() + pool_index;
+        _index_type base_in_pool = 0;
+        for (size_t i = 0; i < kIndexBytes; i++)
+            base_in_pool |= (*(pool_ptr++)) << (8 * i);
+        return base_in_pool bitand kIndexMask;
+    }
+    
+    bool _base_in_pool_empty(_index_type pool_index) const {return _impl::tail_[pool_index+kIndexBytes-1] bitand 0x80;}
+    
+    bool _is_edge_at(_index_type node) const override {
+        auto unit = _impl::_unit_at(node);
+        return unit.base_empty() or (unit.has_label() and _base_in_pool_empty(unit.pool_index()));
+    }
+    
+    void _init_base_in_pool(_index_type pool_index) {
+        uint8_t* pool_ptr = _impl::tail_.data() + pool_index;
+        *reinterpret_cast<_index_type*>(pool_ptr) = kEmptyFlag;
+    }
+    
+    void _set_base_in_pool(_index_type pool_index, _index_type new_base) {
+        uint8_t* pool_ptr = _impl::tail_.data() + pool_index;
+        *reinterpret_cast<_index_type*>(pool_ptr) = new_base bitand kIndexMask;
+    }
+    
+    _index_type _base_at(_index_type node) const override {
+        auto unit = _impl::_unit_at(node);
+        return not unit.has_label() ? unit.base() : _base_in_pool(unit.pool_index());
+    }
+    
+    void _set_base_at(_index_type node, _index_type base) override {
+        auto unit = _impl::_unit_at(node);
+        if (not unit.has_label()) {
+            unit.set_base(base);
+        } else {
+            _set_base_in_pool(unit.pool_index(), base);
         }
-        
-        if (_base_impl::general_block_head_ != kInitialEmptyBlockHead) {
-            size_t b = _base_impl::general_block_head_;
-            while (true) {
-                auto block = _base_impl::_block_at(b);
-                if (block.num_empties() >= children.size()) {
-                    assert(block.error_count() < _base_impl::kErrorThreshold);
-                    auto ctz = da_util::xcheck_in_da_block(block.field_ptr(), children);
-                    if (ctz < kBlockSize) {
-                        return kBlockSize * b + ctz;
-                    }
-                }
-                auto new_b = block.next();
-                if (new_b == _base_impl::general_block_head_) {
-                    break;
-                }
-                assert(b != block.next());
-                assert(_base_impl::_block_at(new_b).error_count() < _base_impl::kErrorThreshold);
-                _base_impl::_error_block(b);
-                b = new_b;
-            }
-        }
-        return _base_impl::_new_base(children.front());
+    }
+    
+    std::string_view _label_in_pool(_index_type node) const {
+        return std::string_view((const char*)_impl::tail_.data() + _unit_at(node).pool_index() + kIndexBytes);
+    }
+    
+    _index_type _insert_label_in_pool(std::string_view key) {
+        _index_type index = _impl::tail_.size();
+        _impl::tail_.resize(_impl::tail_.size() + kIndexBytes + key.size() + 1);
+        _init_base_in_pool(index);
+        for (size_t i = 0; i < key.size(); i++)
+            _impl::tail_[index+kIndexBytes+i] = key[i];
+        _impl::tail_[index+kIndexBytes+key.size()] = kLeafChar;
+        return index;
     }
     
 };
 
 
-template <typename IndexType, bool LegacyBuild = false>
-class DoubleArray :
-    private std::conditional_t<LegacyBuild,
-                               _DynamicDoubleArrayBCImpl<IndexType>,
-                               _BitOperationalDynamicDoubleArrayBCImpl<IndexType>> {
-    using _impl = std::conditional_t<LegacyBuild,
-                                     _DynamicDoubleArrayBCImpl<IndexType>,
-                                     _BitOperationalDynamicDoubleArrayBCImpl<IndexType>>;
-    using _self = DoubleArray<IndexType, LegacyBuild>;
+template <class _Impl>
+class _DynamicDoubleArrayPatriciaTrieBehavior : protected _DynamicDoubleArrayMpTrieBehavior<_Impl> {
+public:
+    using _impl = _Impl;
+    using _base = _DynamicDoubleArrayMpTrieBehavior<_Impl>;
+    using typename _impl::_index_type;
+    using typename _impl::_char_type;
+    
+    using _impl::kIndexBytes;
+    using _impl::kLeafChar;
+    using _impl::kEmptyFlag;
+    
+protected:
+    _DynamicDoubleArrayPatriciaTrieBehavior() : _base() {}
+    
+    virtual ~_DynamicDoubleArrayPatriciaTrieBehavior() = default;
+    
+    _index_type _grow_with_label(_index_type node, _index_type base, std::string_view label) {
+        assert(not label.empty());
+        if (label.size() == 1)
+            return _base::_grow(node, base, label.front());
+        
+        if (base >= _impl::_num_elements())
+            _impl::_expand();
+        _char_type c = label.front();
+        _impl::_set_new_trans(node, base, c);
+        auto next = base xor c;
+        _impl::_set_new_node(next, node, c, false, _impl::_insert_label_in_pool(label.substr(1)));
+        _impl::_consume_block(_impl::_block_index_of(base), 1);
+        return next;
+    }
+    
+    void _insert_in_bc(_index_type node, std::string_view appendant_suffix) {
+        if (not appendant_suffix.empty()) {
+            node = _base::_insert_trans(node, appendant_suffix.front());
+            if (appendant_suffix.size() > 1) {
+                auto pool_index = _impl::_insert_label_in_pool(appendant_suffix.substr(1));
+                _impl::_unit_at(node).set_pool_index(pool_index);
+            }
+        }
+        _impl::_unit_at(node).set_terminal();
+    }
+    
+    void _insert_in_pool(_index_type node, _index_type label_pos, std::string_view appendant_suffix) {
+        _char_type char_at_confliction = _impl::tail_[label_pos];
+        assert(char_at_confliction != kLeafChar);
+        assert(char_at_confliction != (_char_type)appendant_suffix.front());
+        auto node_unit = _impl::_unit_at(node);
+        const auto pool_index = node_unit.pool_index();
+        const bool node_is_terminal = node_unit.terminal();
+        node_unit.disable_terminal();
+        
+        const auto node_is_edge = _impl::_is_edge_at(node);
+        const auto node_base = _impl::_base_in_pool(pool_index);
+        const auto node_child = node_unit.child();
+        auto link = [&](_index_type inserted_node) {
+            if (node_is_edge) { // There are no children.
+                return;
+            }
+            _impl::_set_new_trans(inserted_node, node_base, node_child);
+            _base::_update_check(node_base, node_child, inserted_node);
+        };
+        
+        auto label_index = pool_index + kIndexBytes;
+        auto label_prefix_length = label_pos - label_index;
+        auto relay_base = _impl::_find_base({char_at_confliction, (_char_type)appendant_suffix.front()});
+        if (label_prefix_length == 0) {
+            //            ||*|*|*||*|*|*|$||
+            //             |↑| conflict at front
+            node_unit.set_base(relay_base);
+            node_unit.set_child(char_at_confliction);
+            auto relay_next = relay_base xor char_at_confliction;
+            if (_impl::tail_[label_index + 1] == kLeafChar) { // Length of suffix is 1.
+                _impl::_set_new_node(relay_next, node, char_at_confliction, node_is_terminal);
+            } else {
+                _impl::_set_new_node(relay_next, node, char_at_confliction, node_is_terminal, pool_index + 1);
+                _impl::_init_base_in_pool(pool_index+1);
+            }
+            _impl::_consume_block(_impl::_block_index_of(relay_next), 1);
+            link(relay_next);
+        } else {
+            auto label_suffix_length = 0;
+            while (_impl::tail_[label_pos + label_suffix_length] != kLeafChar)
+                label_suffix_length++;
+            assert(label_suffix_length > 0);
+            if (label_prefix_length < label_suffix_length) {
+                //              ||*|*|*||*|*|*|$||
+                //                 |→ ←| conflict at
+                std::string label_prefix((char*)_impl::tail_.data() + label_index, label_prefix_length);
+                node_unit.set_pool_index(_impl::_insert_label_in_pool(label_prefix));
+                auto relay_next = _base::_grow(node, relay_base, char_at_confliction);
+                auto relay_label_index = label_pos+1 - kIndexBytes;
+                assert(_impl::tail_[label_pos+1] != kLeafChar);
+                auto relay_next_unit = _impl::_unit_at(relay_next);
+                relay_next_unit.set_pool_index(relay_label_index);
+                _impl::_init_base_in_pool(relay_label_index);
+                link(relay_next);
+            } else {
+                //              ||*|*|*||*|*|*|$||
+                //                      |→   ←| conflict at
+                std::string label_suffix((char*)_impl::tail_.data() + label_pos, label_suffix_length);
+                auto relay_next = _grow_with_label(node, relay_base, label_suffix);
+                link(relay_next);
+                _impl::tail_[label_pos] = kLeafChar;
+            }
+        }
+        assert(_impl::_base_at(node) == relay_base);
+        _insert_in_bc(node, appendant_suffix);
+    }
+    
+private:
+    
+    
+};
+
+
+// MARK: - Dynamic Double-array Interface
+
+template <typename IndexType, bool LegacyBuild = true, bool Patricia = false>
+class DoubleArray;
+
+
+template <typename IndexType, bool LegacyBuild>
+class DoubleArray<IndexType, LegacyBuild, false> :
+    private _DynamicDoubleArrayMpTrieBehavior<_DoubleArrayBcMpTrieImpl<IndexType, not LegacyBuild>> {
+    using _impl = _DoubleArrayBcMpTrieImpl<IndexType, not LegacyBuild>;
+    using _behavior = _DynamicDoubleArrayMpTrieBehavior<_impl>;
+    using _self = DoubleArray<IndexType, LegacyBuild, false>;
 public:
     using input_trie = typename graph_util::Trie<char>;
     using index_type = typename _impl::_index_type;
@@ -1152,10 +1518,10 @@ public:
     
     static constexpr size_t kBlockSize = _impl::kBlockSize;
     
-    DoubleArray() : _impl() {}
+    DoubleArray() : _behavior() {}
     
     template <typename StrIter,
-              typename Traits = std::iterator_traits<StrIter>>
+    typename Traits = std::iterator_traits<StrIter>>
     DoubleArray(StrIter begin, StrIter end) {
         _arrange_keysets(begin, end, 0, kRootIndex);
     }
@@ -1180,38 +1546,40 @@ public:
         return _impl::_size_in_bytes();
     }
     
+    size_t num_nodes() const {
+        size_t cnt = 0;
+        for (size_t i = 0; i < _impl::_num_blocks(); i++) {
+            cnt += 256 - _impl::_block_at(i).num_empties();
+        }
+        return cnt;
+    }
+    
     void insert(std::string_view key) {
         index_type node = kRootIndex;
         size_t pos = 0;
         for (; pos < key.size(); pos++) {
-            if (_impl::_is_leaf(node)) {
+            if (_impl::_unit_at(node).has_label())
                 break;
-            }
             if (not _transition(node, key[pos])) {
-                _impl::_insert_in_bc(node, key.substr(pos));
+                _behavior::_insert_in_bc(node, key.substr(pos));
                 return;
             }
         }
-        if (_impl::_is_leaf(node)) {
-            auto tail_index = _impl::_tail_index(node);
+        auto leached_unit = _impl::_unit_at(node);
+        if (leached_unit.has_label()) {
+            auto tail_index = leached_unit.pool_index();
             for (; pos < key.size(); pos++, tail_index++) {
-                if (tail_index >= _impl::tail_.size() or
-                    _impl::tail_[tail_index] != char_type(key[pos])) {
-                    char_type e,cc;
-                    if (tail_index < _impl::tail_.size()) {
-                        e = _impl::tail_[tail_index];
-                        cc = key[pos];
-                    }
-                    _impl::_insert_in_tail(node, tail_index, key.substr(pos));
+                if (_impl::tail_[tail_index] != char_type(key[pos])) {
+                    _behavior::_insert_in_tail(node, tail_index, key.substr(pos));
                     return;
                 }
             }
             if (_impl::tail_[tail_index] != kLeafChar) {
-                _impl::_insert_in_tail(node, tail_index, "");
+                _behavior::_insert_in_tail(node, tail_index, "");
             }
         } else {
-            if (not _transition(node, kLeafChar)) {
-                _impl::_insert_in_bc(node, "");
+            if (not leached_unit.terminal()) {
+                leached_unit.set_terminal();
             }
         }
     }
@@ -1220,15 +1588,16 @@ public:
         index_type node = kRootIndex;
         size_t pos = 0;
         for (; pos < key.size(); pos++) {
-            if (_leaf(node)) {
+            if (_impl::_unit_at(node).has_label()) {
                 break;
             }
             if (not _transition(node, key[pos])) {
                 return false;
             }
         }
-        if (_leaf(node)) {
-            auto tail_index = _tail_index(node);
+        auto leached_unit = _impl::_unit_at(node);
+        if (leached_unit.has_label()) {
+            auto tail_index = leached_unit.pool_index();
             for (; pos < key.size(); pos++, tail_index++) {
                 if (_impl::tail_[tail_index] != key[pos])
                     return false;
@@ -1236,7 +1605,7 @@ public:
             if (_impl::tail_[tail_index] == kLeafChar)
                 _impl::_delete_leaf(node);
         } else {
-            if (_transition(node, kLeafChar))
+            if (leached_unit.terminal())
                 _impl::_delete_leaf(node);
         }
         return true;
@@ -1246,48 +1615,51 @@ public:
         index_type node = kRootIndex;
         size_t pos = 0;
         for (; pos < key.size(); pos++) {
-            if (_leaf(node)) {
+            if (_impl::_unit_at(node).has_label()) {
                 break;
             }
             if (not _transition(node, key[pos])) {
                 return false;
             }
         }
-        if (_leaf(node)) {
-            auto tail_index = _tail_index(node);
+        auto leached_unit = _impl::_unit_at(node);
+        if (leached_unit.has_label()) {
+            auto tail_index = leached_unit.pool_index();
             for (; pos < key.size(); pos++, tail_index++) {
                 if (_impl::tail_[tail_index] != key[pos])
                     return false;
             }
             return _impl::tail_[tail_index] == kLeafChar;
         } else {
-            return _transition(node, kLeafChar);
+            return leached_unit.terminal();
         }
     }
     
     void print_for_debug() const {
         std::cout << "------------ Double-array implementation ------------" << std::endl;
-        std::cout << "\tindex] \texists, \tcheck, \tsibling, \tbase, \tchild"  << std::endl;
-        for (size_t i = 0; i < _impl::storage_.size(); i++) {
+        std::cout << "\tindex] \tterminal, \tcheck, \tsibling, \tbase, \tchild"  << std::endl;
+        for (size_t i = 0; i < _impl::_num_elements(); i++) {
             if (i % 0x100 == 0)
                 std::cout << std::endl;
+            std::cout << "\t\t"<<i<<"] \t";
             auto empty =_impl::_empty(i);
-            if (empty) {
-                std::cout << "\t\t"<<i<<"] \t"<<0<< std::endl;
-            } else {
-                std::cout << "\t\t"<<i<<"] \t"<<1<<", \t"<<_impl::_check(i)<<", \t"<<_impl::_sibling(i)<<", \t"<<_impl::_base(i)<<", \t"<<_impl::_child(i)<< std::endl;
+            if (not empty) {
+                auto unit = _impl::_unit_at(i);
+                std::cout<<unit.terminal()<<", \t"<<unit.check()<<", \t"<<unit.sibling()<<", \t"<<unit.has_label();
+                if (not _impl::_is_edge_at(i))
+                    std::cout<<", \t"<<_impl::_base_at(i)<<", \t"<<unit.child();
             }
+            std::cout << std::endl;
         }
     }
     
 private:
     bool _transition(index_type& node, char_type c) const {
-        if (_impl::_is_leaf(node))
+        if (_impl::_is_edge_at(node))
             return false;
-        assert(not _impl::_is_leaf(node));
-        auto next = _impl::_base(node) xor c;
+        auto next = _impl::_base_at(node) xor c;
         if (_impl::_empty(next) or
-            _impl::_check(next) != node)
+            _impl::_unit_at(next).check() != node)
             return false;
         node = next;
         return true;
@@ -1333,13 +1705,13 @@ private:
     }
     
     template <typename StrIter,
-              typename Traits = std::iterator_traits<StrIter>>
+    typename Traits = std::iterator_traits<StrIter>>
     void _arrange_keysets(StrIter begin, StrIter end, size_t depth, index_type co_node) {
         if ((*begin).size() < depth)
             return;
         if (end-begin == 1) {
             auto tail_index = _impl::_insert_suffix((*begin).size() > depth ? std::string_view((const char*)&(*begin) + depth) : "");
-            _impl::_set_tail_index(co_node, tail_index);
+            _impl::_unit_at(co_node).set_pool_index(tail_index);
             return;
         }
         
@@ -1362,6 +1734,233 @@ private:
         
         auto new_base = _impl::_find_base(children);
         _impl::_insert_nodes(co_node, children, new_base);
+        for (size_t i = 0; i < children.size(); i++) {
+            auto c = children[i];
+            auto next = new_base xor c;
+            _arrange_keysets(iters[i], iters[i+1], depth+1, next);
+        }
+    }
+    
+};
+
+
+template <typename IndexType, bool LegacyBuild>
+class DoubleArray<IndexType, LegacyBuild, true> :
+    private _DynamicDoubleArrayPatriciaTrieBehavior<_DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild>> {
+    using _impl = _DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild>;
+    using _behavior = _DynamicDoubleArrayPatriciaTrieBehavior<_impl>;
+    using _self = DoubleArray<IndexType, LegacyBuild, false>;
+public:
+    using input_trie = typename graph_util::Trie<char>;
+    using index_type = typename _behavior::_index_type;
+    using char_type = typename _behavior::_char_type;
+    
+    static constexpr index_type kRootIndex = _impl::kRootIndex;
+    static constexpr char_type kLeafChar = '\0';
+    
+    static constexpr size_t kBlockSize = _behavior::kBlockSize;
+    
+    DoubleArray() : _behavior() {}
+    
+    template <typename StrIter,
+    typename Traits = std::iterator_traits<StrIter>>
+    DoubleArray(StrIter begin, StrIter end) {
+        _arrange_keysets(begin, end, 0, kRootIndex);
+    }
+    
+    DoubleArray(const std::vector<std::string>& key_set) : DoubleArray(key_set.begin(), key_set.end()) {}
+    
+    DoubleArray(const input_trie& trie) {
+        _arrange_trie(trie, graph_util::kRootIndex, kRootIndex);
+        rebuild();
+    }
+    
+    ~DoubleArray() = default;
+    
+    DoubleArray& rebuild() {
+        DoubleArray new_da;
+        new_da._arrange_da(*this, kRootIndex, kRootIndex);
+        *this = new_da;
+        return *this;
+    }
+    
+    size_t size_in_bytes() const {
+        return _impl::_size_in_bytes();
+    }
+    
+    size_t num_nodes() const {
+        size_t cnt = 0;
+        for (size_t i = 0; i < _impl::_num_blocks(); i++) {
+            cnt += 256 - _impl::_block_at(i).num_empties();
+        }
+        return cnt;
+    }
+    
+    bool accept(std::string_view key) const {
+        return _traverse(key, []{}, []{}, []{});
+    }
+    
+    bool insert(std::string_view key) {
+        return not _traverse(key, [](auto, auto){},
+                             [&](index_type node, std::string_view key, size_t key_pos) {
+                                 _behavior::_insert_in_bc(node, key_pos < key.size() ? key.substr(key_pos) : "");
+                             },
+                             [&](index_type node, size_t label_pos, std::string_view key, size_t key_pos) {
+                                 _behavior::_insert_in_pool(node, label_pos, key_pos < key.size() ? key.substr(key_pos) : "");
+                             });
+    }
+    
+    bool erase(std::string_view key) {
+        return _traverse(key,
+                         [&](index_type node, std::string_view key) {
+                             _behavior::_delete_leaf(node);
+                         }, []{}, []{});
+    }
+    
+    void print_for_debug() const {
+        std::cout << "------------ Double-array implementation ------------" << std::endl;
+        std::cout << "\tindex] \texists, \tcheck, \tsibling, \tbase, \tchild"  << std::endl;
+        for (size_t i = 0; i < _impl::_num_elements(); i++) {
+            if (i % 0x100 == 0)
+                std::cout << std::endl;
+            std::cout << "\t\t"<<i<<"] \t";
+            auto empty =_impl::_empty(i);
+            if (not empty) {
+                auto unit = _impl::_unit_at(i);
+                std::cout<<unit.terminal()<<", \t"<<unit.check()<<", \t"<<unit.sibling()<<", \t"<<unit.has_label();
+                if (not _impl::_is_edge_at(i))
+                    std::cout<<", \t"<<_impl::_base_at(i)<<", \t"<<unit.child();
+            }
+            std::cout << std::endl;
+        }
+    }
+    
+private:
+    template <class SuccessAction, class FailedInBcAction, class FailedInPoolAction>
+    bool _traverse(std::string_view key, SuccessAction success, FailedInBcAction failed_in_bc, FailedInPoolAction failed_in_pool) const {
+        index_type node = kRootIndex;
+        for (size_t key_pos = 0; key_pos < key.size(); key_pos++) {
+            if (not _transition(node, key[key_pos])) {
+                failed_in_bc(node, key, key_pos);
+                return false;
+            }
+            if (_impl::_unit_at(node).has_label() and not _transition_with_label(node, key, ++key_pos, failed_in_pool))
+                return false;
+        }
+        if (not _impl::_unit_at(node).terminal()) {
+            failed_in_bc(node, key, key.size());
+            return false;
+        }
+        success(node, key);
+        return true;
+    }
+    
+    bool _transition(index_type& node, char_type c) const {
+        if (_impl::_is_edge_at(node))
+            return false;
+        auto next = _behavior::_base_at(node) xor c;
+        if (_behavior::_empty(next) or
+            _behavior::_unit_at(next).check() != node)
+            return false;
+        node = next;
+        return true;
+    }
+    
+    template <class FailedAction>
+    bool _transition_with_label(index_type node, std::string_view key, size_t& key_pos, FailedAction failed) const {
+        assert(_impl::_unit_at(node).has_label());
+        auto label_index = _impl::_unit_at(node).pool_index() + _impl::kIndexBytes;
+        assert(_impl::tail_[label_index] != kLeafChar);
+        size_t i = 0;
+        while (key_pos < key.size()) {
+            char_type char_in_label = _impl::tail_[label_index+i];
+            if (char_in_label == kLeafChar) {
+                --key_pos;
+                return true;
+            }
+            if (char_in_label != (char_type)key[key_pos]) {
+                failed(node, label_index+i, key, key_pos);
+                return false;
+            }
+            i++;
+            key_pos++;
+        }
+        if (not (_impl::tail_[label_index+i] == kLeafChar)) {
+            failed(node, label_index+i, key, key_pos);
+            return false;
+        }
+        return true;
+    }
+    
+    void _arrange_da(const _self& da, index_type node, index_type co_node) {
+        if (da._behavior::_is_leaf(node)) {
+            auto tail_index = _behavior::_insert_suffix(da._behavior::_suffix_in_tail(da._behavior::_tail_index(node)));
+            _behavior::_set_tail_index(co_node, tail_index);
+            return;
+        }
+        std::vector<char_type> children;
+        da._behavior::_for_each_children(node, [&](auto child, auto) {
+            children.push_back(child);
+        });
+        
+        auto new_base = _behavior::_find_base(children);
+        _behavior::_insert_nodes(co_node, children, new_base);
+        for (auto c : children) {
+            auto target = node;
+            da._transition(target, c);
+            _arrange_da(da, target, new_base xor c);
+        }
+    }
+    
+    void _arrange_trie(const input_trie& trie, typename input_trie::size_type node, index_type co_node) {
+        auto& n = trie.node(node);
+        if (n.terminal()) {
+            return;
+        }
+        std::vector<char_type> children;
+        n.for_each_edge([&](auto c, auto) {
+            children.push_back(c);
+        });
+        
+        auto new_base = _behavior::_find_base(children);
+        _behavior::_insert_nodes(co_node, children, new_base);
+        for (size_t i = 0; i < children.size(); i++) {
+            auto c = children[i];
+            auto next = new_base xor c;
+            _arrange_trie(trie, n.target(c), next);
+        }
+    }
+    
+    template <typename StrIter,
+    typename Traits = std::iterator_traits<StrIter>>
+    void _arrange_keysets(StrIter begin, StrIter end, size_t depth, index_type co_node) {
+        if ((*begin).size() < depth)
+            return;
+        if (end-begin == 1) {
+            auto tail_index = _behavior::_insert_suffix((*begin).size() > depth ? std::string_view((const char*)&(*begin) + depth) : "");
+            _behavior::_unit_at(co_node).set_pool_index(tail_index);
+            return;
+        }
+        
+        std::vector<char_type> children;
+        std::vector<StrIter> iters = {begin};
+        char_type prev_c = (*begin).size() <= depth ? kLeafChar : (*begin)[depth];
+        char_type b = depth==0?0:(*begin)[depth-1];
+        for (auto it = begin+1; it != end; ++it) {
+            char_type bb = (*it)[depth-1];
+            assert(depth == 0 or bb == b);
+            char_type c = (*it).size() <= depth ? kLeafChar : (*it)[depth];
+            if (c != prev_c) {
+                children.push_back(prev_c);
+                iters.push_back(it);
+                prev_c = c;
+            }
+        }
+        children.push_back((*(end-1))[depth]);
+        iters.push_back(end);
+        
+        auto new_base = _behavior::_find_base(children);
+        _behavior::_insert_nodes(co_node, children, new_base);
         for (size_t i = 0; i < children.size(); i++) {
             auto c = children[i];
             auto next = new_base xor c;
