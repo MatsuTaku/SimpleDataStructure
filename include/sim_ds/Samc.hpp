@@ -102,7 +102,7 @@ _SamcImpl<ValueType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
             auto index = storage_.size() - height + i;
             if (storage_[index] == kEmptyChar)
                 continue;
-            trie.node(node_indexes[index]).for_each_edge([&](uint8_t c, auto e) {
+            trie.node(node_indexes[index]).for_each_edge([&](uint8_t c, auto) {
                 indices_list[c].push_back(i);
             });
         }

@@ -62,6 +62,20 @@ public:
     }
 };
 
+template <class Process>
+double millisec_time_in_process(Process process) {
+    Stopwatch sw;
+    process();
+    return sw.get_milli_sec();
+}
+
+template <class Process>
+double microsec_time_in_process(Process process) {
+    Stopwatch sw;
+    process();
+    return sw.get_micro_sec();
+}
+
 // MARK: Read
 
 template<typename T>
