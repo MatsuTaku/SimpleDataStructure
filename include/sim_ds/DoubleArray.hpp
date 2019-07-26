@@ -263,13 +263,13 @@ public:
     bool base_empty() const {return *(pointer_ + kEdgeFlagInsets) bitand 0x80;}
     
     _index_type pred() const {
-        assert(*reinterpret_cast<_index_type*>(pointer_ + kPredInsets) bitand kEmptyFlag);
-        return *reinterpret_cast<_index_type*>(pointer_ + kPredInsets) bitand kIndexMask;
+        assert(*reinterpret_cast<const _index_type*>(pointer_ + kPredInsets) bitand kEmptyFlag);
+        return *reinterpret_cast<const _index_type*>(pointer_ + kPredInsets) bitand kIndexMask;
     }
     
     _index_type succ() const {
-        assert(*reinterpret_cast<_index_type*>(pointer_ + kSuccInsets) bitand kEmptyFlag);
-        return *reinterpret_cast<_index_type*>(pointer_ + kSuccInsets) bitand kIndexMask;
+        assert(*reinterpret_cast<const _index_type*>(pointer_ + kSuccInsets) bitand kEmptyFlag);
+        return *reinterpret_cast<const _index_type*>(pointer_ + kSuccInsets) bitand kIndexMask;
     }
     
 private:
@@ -1070,35 +1070,36 @@ protected:
         }
         size_t counts_children;
         do {
-            _index_type pred = _check(node);
-            counts_children = _num_of_children(pred);
+            _index_type pred = _impl::_unit_at(node).check();
+            counts_children = _impl::_num_of_children(pred);
             // Erase current char from siblings link.
-            auto base = _base(pred);
-            _char_type first_child = _child(pred);
+            auto base = _impl::_base_at(pred);
+            _char_type first_child = _impl::_unit_at(pred).child();
             if ((base xor first_child) == node) {
-                _char_type child = _sibling(base xor first_child);
-                _index_type tail_index = base xor first_child;
+                auto unit = _impl::_unit_at(base xor first_child);
+                _char_type child = unit.sibling();
+                _index_type back_index = base xor first_child;
                 while (child != first_child) {
-                    tail_index = base xor child;
-                    child = _sibling(tail_index);
+                    back_index = base xor child;
+                    child = _impl::_unit_at(back_index).sibling();
                 }
-                _char_type second_child = _sibling(base xor first_child);
-                _set_sibling(tail_index, second_child);
-                _set_child(pred, counts_children != 1 ? second_child : kEmptyChar);
+                _char_type second_child = unit.sibling();
+                _impl::_unit_at(back_index).set_sibling(second_child);
+                _impl::_unit_at(pred).set_child(counts_children != 1 ? second_child : kEmptyChar);
             } else {
-                _index_type pred_index = base xor first_child;
-                for (_char_type child = _sibling(pred_index); ; ) {
+                auto pred_unit = _impl::_unit_at(base xor first_child);
+                for (_char_type child = pred_unit.sibling(); ; ) {
                     auto next = base xor child;
-                    auto sibling = _sibling(next);
+                    auto sibling = _impl::_unit_at(next).sibling();
                     if (next == node) {
-                        _set_sibling(pred_index, sibling);
+                        pred_unit.set_sibling(sibling);
                         break;
                     }
                     child = sibling;
                 }
             }
             
-            _erase(node);
+            _impl::_erase(node);
             node = pred;
         } while (node != kRootIndex and counts_children == 1);
         _reduce();
@@ -1183,29 +1184,28 @@ private:
     }
     
     void _compress_nodes(_shelter& shelter, _index_type target_base) {
-        auto old_base = _base(shelter.node);
-        _set_base(shelter.node, target_base);
+        _impl::_set_base_at(shelter.node, target_base);
         std::vector<_shelter> shelters;
         for (size_t i = 0; i < shelter.children.size(); i++) {
             auto child = shelter.children[i];
             auto sibling = shelter.children[(i+1)%shelter.children.size()];
             auto new_next = target_base xor child;
-            if (not _empty(new_next)) {
+            if (not _impl::_empty(new_next)) {
                 // Evacuate already placed siblings membering element at conflicting index to shelter.
                 shelters.emplace_back();
-                auto conflicting_node = _check(new_next);
+                auto conflicting_node = _impl::_unit_at(new_next).check();
                 _evacuate(conflicting_node, shelters.back());
             }
             auto& luggage = shelter.luggages[i];
             _update_node(new_next, shelter.node, sibling, luggage);
             if (not _impl::_is_edge_at(new_next))
-                _update_check(_base_at(new_next), luggage.child, new_next);
+                _update_check(_impl::_base_at(new_next), luggage.child, new_next);
         }
-        _impl::_consume_block(_block_index_of(target_base), shelter.children.size());
+        _impl::_consume_block(_impl::_block_index_of(target_base), shelter.children.size());
         
         // Compress sheltered siblings recursively.
         for (auto& sht : shelters) {
-            _compress_nodes(sht.check, sht.children, sht.luggages, _find_compression_target(sht.children));
+            _compress_nodes(sht, _find_compression_target(sht.children));
         }
         
         return;
@@ -1214,20 +1214,20 @@ private:
     _index_type _find_compression_target(std::vector<_char_type>& siblings) const {
         if (siblings.size() == 1 and _impl::personal_block_head_ != kInitialEmptyBlockHead) {
             _index_type pbh = _impl::personal_block_head_;
-            return (kBlockSize * pbh + _block_at(pbh).empty_head()) xor siblings.front();
+            return (kBlockSize * pbh + _impl::_block_at(pbh).empty_head()) xor siblings.front();
         }
         if (_impl::general_block_head_ == kInitialEmptyBlockHead) {
-            return _impl::_num_elements();
+            return _impl::_bc_size();
         }
         _index_type b = _impl::general_block_head_;
         while (true) {
-            if (b == _block_index_of(_impl::_num_elements()-1)) {
-                b = _block_at(_block_index_of(_impl::_num_elements()-1)).succ();
+            if (b == _impl::_block_index_of(_impl::_bc_size()-1)) {
+                b = _impl::_block_at(_impl::_block_index_of(_impl::_bc_size()-1)).succ();
                 if (b == _impl::general_block_head_)
-                    return _impl::_num_elements();
+                    return _impl::_bc_size();
                 continue;
             }
-            auto block = _block_at(b);
+            auto block = _impl::_block_at(b);
             assert(block.link_enabled());
             const auto offset = kBlockSize * b;
             for (auto index = offset + block.empty_head(); ; ) {
@@ -1235,8 +1235,8 @@ private:
                 bool skip = false;
                 for (_char_type c : siblings) {
                     auto target = n xor c;
-                    if (not _empty(target) and
-                        _num_of_children(_check(target)) >= siblings.size()) {
+                    if (not _impl::_empty(target) and
+                        _impl::_num_of_children(_impl::_unit_at(target).check()) >= siblings.size()) {
                         skip = true;
                         break;
                     }
@@ -1244,12 +1244,13 @@ private:
                 if (not skip) {
                     return n;
                 }
-                if (_unit_at(index).succ() == block.empty_head())
+                auto succ = _impl::_unit_at(index).succ();
+                if (succ == block.empty_head())
                     break;
-                index = offset + _unit_at(index).succ();
+                index = offset + succ;
             }
             if (block.succ() == _impl::general_block_head_) {
-                return _impl::_num_elements();
+                return _impl::_bc_size();
             }
             b = block.succ();
         }
@@ -1257,26 +1258,26 @@ private:
     
     void _reduce() {
         using bit_util::ctz256;
-        for (_index_type b = _block_index_of(_impl::_num_elements()-1); b > 0; b--) {
-            for (size_t ctz = ctz256(_block_at(b).field_ptr()); ctz < 256; ctz = ctz256(_block_at(b).field_ptr())) {
-                std::vector<_char_type> children;
-                auto parent = _check(kBlockSize*b+ctz);
-                auto base = _base(parent);
-                _for_each_children(parent, [&](_char_type child) {
-                    children.push_back(child);
+        for (_index_type b = _impl::_block_index_of(_impl::_bc_size()-1); b > 0; b--) {
+            for (size_t ctz = ctz256(_impl::_block_at(b).field_ptr()); ctz < 256; ctz = ctz256(_impl::_block_at(b).field_ptr())) {
+                auto parent = _impl::_unit_at(kBlockSize*b+ctz).check();
+                auto base = _impl::_base_at(parent);
+                _shelter shelter;
+                shelter.node = parent;
+                _impl::_for_each_children(parent, [&](_char_type child) {
+                    shelter.children.push_back(child);
                 });
-                auto compression_target = _find_compression_target(children);
-                if (_block_index_of(compression_target) >= b)
+                auto compression_target = _find_compression_target(shelter.children);
+                if (_impl::_block_index_of(compression_target) >= b)
                     return;
-                std::vector<_moving_luggage> luggages;
-                _for_each_children(parent, [&](_char_type child) {
+                _impl::_for_each_children(parent, [&](_char_type child) {
                     auto next = base xor child;
-                    auto unit = _unit_at(next);
-                    luggages.emplace_back(unit.base(), unit.child(), unit.has_label(), unit.terminal());
-                    _erase(next);
+                    auto unit = _impl::_unit_at(next);
+                    shelter.luggages.emplace_back(unit.terminal(), _impl::_is_edge_at(next), unit.has_label(), unit.label_is_suffix(), unit.base(), unit.child());
+                    _impl::_erase(next);
                 });
-                _refill_block(_block_index_of(base), children.size());
-                _compress_nodes(parent, children, luggages, compression_target);
+                _impl::_refill_block(_impl::_block_index_of(base), shelter.children.size());
+                _compress_nodes(shelter, compression_target);
             }
             _impl::_shrink();
         }
@@ -1608,7 +1609,7 @@ private:
 
 // MARK: - Dynamic Double-array Interface
 
-template <typename IndexType, bool LegacyBuild = true, bool Patricia = false>
+template <typename IndexType, bool LegacyBuild = true, bool Patricia = true>
 class DoubleArray;
 
 
