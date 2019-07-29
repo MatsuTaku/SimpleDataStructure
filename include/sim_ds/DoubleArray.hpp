@@ -879,15 +879,13 @@ protected:
     void _for_each_children(_index_type node, Action action) const {
         assert(not _is_edge_at(node));
         auto base = _base_at(node);
-        auto first_child = _unit_at(node).child();
-        for (auto child = first_child; ; ) {
+        auto child = _unit_at(node).child();
+        while (child != kEmptyChar) {
             auto next = base xor child;
             assert(not _empty(next));
             assert(_unit_at(next).check() == node);
             auto sibling = _unit_at(next).sibling();
-            action(child);
-            if (sibling == first_child)
-                break;
+            action(next, child);
             child = sibling;
         }
     }
@@ -896,8 +894,27 @@ protected:
         if (_is_edge_at(node))
             return 0;
         size_t cnt = 0;
-        _for_each_children(node, [&cnt](auto) {++cnt;});
+        _for_each_children(node, [&cnt](auto, auto) {++cnt;});
         return cnt;
+    }
+    
+    // Compare number of children of index (x,y).
+    // This function returns false if "num of x" less-equal than "num of y", otherwise return true.
+    bool _compare_num_of_children(_index_type x, _index_type y) const {
+        auto x_base = _base_at(x), y_base = _base_at(y);
+        for (auto x_c = _unit_at(x).child(), y_c = _unit_at(y).child(); ; ) {
+            if ((x_c = _unit_at(x_base xor x_c).sibling()) == kEmptyChar)
+                return false;
+            if ((y_c = _unit_at(y_base xor y_c).sibling()) == kEmptyChar)
+                return true;
+        }
+        
+    }
+    
+    bool _is_single_node(_index_type node) const {
+        auto base = _base_at(node);
+        auto child = _unit_at(node).child();
+        return _unit_at(base xor child).sibling() == kEmptyChar;
     }
     
     struct _internal_label_container {
@@ -914,11 +931,12 @@ protected:
             auto label = label_datas[i].label;
             assert(not label.empty());
             auto next = base xor (_char_type)label.front();
+            auto sibling = i+1<label_datas.size() ? label_datas[i+1].label.front() : kEmptyChar;
             if (label.size() == 1) {
-                _set_new_node(next, node, label_datas[(i+1)%label_datas.size()].label.front(), label_datas[i].terminal);
+                _set_new_node(next, node, sibling, label_datas[i].terminal);
             } else {
                 _set_new_node_by_label(next, node,
-                                       label_datas[(i+1)%label_datas.size()].label.front(),
+                                       sibling,
                                        label_datas[i].terminal,
                                        _append_suffix_in_pool(label.substr(1)),
                                        true);
@@ -999,10 +1017,10 @@ protected:
 };
 
 
-template <class _Impl>
+template <class _Impl, bool Ordered>
 class _DynamicDoubleArrayPatriciaTrieBehavior;
 
-template <class _Impl>
+template <class _Impl, bool Ordered>
 class _DynamicDoubleArrayMpTrieBehavior : protected _Impl {
 public:
     using _impl = _Impl;
@@ -1025,7 +1043,7 @@ protected:
     virtual _index_type _grow(_index_type node, _index_type base, _char_type c) {
         _impl::_set_new_trans(node, base, c);
         auto next = base xor c;
-        _impl::_set_new_node(next, node, c, false);
+        _impl::_set_new_node(next, node, kEmptyChar, false);
         _impl::_consume_block(_impl::_block_index_of(next), 1);
         return next;
     }
@@ -1068,10 +1086,10 @@ protected:
             _impl::_unit_at(node).disable_terminal();
             return;
         }
-        size_t counts_children;
+        bool single_node;
         do {
             _index_type pred = _impl::_unit_at(node).check();
-            counts_children = _impl::_num_of_children(pred);
+            single_node = _impl::_is_single_node(pred);
             // Erase current char from siblings link.
             auto base = _impl::_base_at(pred);
             _char_type first_child = _impl::_unit_at(pred).child();
@@ -1085,7 +1103,7 @@ protected:
                 }
                 _char_type second_child = unit.sibling();
                 _impl::_unit_at(back_index).set_sibling(second_child);
-                _impl::_unit_at(pred).set_child(counts_children != 1 ? second_child : kEmptyChar);
+                _impl::_unit_at(pred).set_child(not single_node ? second_child : kEmptyChar);
             } else {
                 auto pred_unit = _impl::_unit_at(base xor first_child);
                 for (_char_type child = pred_unit.sibling(); ; ) {
@@ -1101,12 +1119,12 @@ protected:
             
             _impl::_erase(node);
             node = pred;
-        } while (node != kRootIndex and counts_children == 1);
+        } while (node != kRootIndex and single_node);
         _reduce();
     }
     
 private:
-    friend class _DynamicDoubleArrayPatriciaTrieBehavior<_impl>;
+    friend class _DynamicDoubleArrayPatriciaTrieBehavior<_impl, Ordered>;
     
     struct _moving_luggage {
         bool terminal:1;
@@ -1127,9 +1145,8 @@ private:
     void _evacuate(_index_type node, _shelter& shelter) {
         shelter.node = node;
         auto base = _impl::_base_at(node);
-        _impl::_for_each_children(node, [&](_char_type child) {
+        _impl::_for_each_children(node, [&](_index_type index, _char_type child) {
             shelter.children.push_back(child);
-            auto index = base xor child;
             auto index_unit = _impl::_unit_at(index);
             shelter.luggages.emplace_back(index_unit.terminal(), _impl::_is_edge_at(index), index_unit.has_label(), index_unit.label_is_suffix(), index_unit.base(), index_unit.child());
             _impl::_erase(index);
@@ -1151,13 +1168,10 @@ private:
     
     void _update_check(_index_type base, _char_type child, _index_type new_check) {
         assert(base < _impl::_bc_size());
-        for (_char_type c = child; ; ) {
+        for (_char_type c = child; c != kEmptyChar; ) {
             auto unit = _impl::_unit_at(base xor c);
             unit.set_check(new_check);
-            auto sibling = unit.sibling();
-            if (sibling == child)
-                break;
-            c = sibling;
+            c = unit.sibling();
         }
     }
     
@@ -1167,7 +1181,7 @@ private:
         _impl::_set_base_at(shelter.node, new_base);
         for (size_t i = 0; i < shelter.children.size(); i++) {
             auto child = shelter.children[i];
-            auto sibling = shelter.children[(i+1)%shelter.children.size()];
+            auto sibling = i+1<shelter.children.size() ? shelter.children[i+1] : kEmptyChar;
             auto new_next = new_base xor child;
             auto& luggage = shelter.luggages[i];
             _update_node(new_next, shelter.node, sibling, luggage);
@@ -1188,7 +1202,7 @@ private:
         std::vector<_shelter> shelters;
         for (size_t i = 0; i < shelter.children.size(); i++) {
             auto child = shelter.children[i];
-            auto sibling = shelter.children[(i+1)%shelter.children.size()];
+            auto sibling = i+1<shelter.children.size() ? shelter.children[i+1] : kEmptyChar;
             auto new_next = target_base xor child;
             if (not _impl::_empty(new_next)) {
                 // Evacuate already placed siblings membering element at conflicting index to shelter.
@@ -1264,14 +1278,13 @@ private:
                 auto base = _impl::_base_at(parent);
                 _shelter shelter;
                 shelter.node = parent;
-                _impl::_for_each_children(parent, [&](_char_type child) {
+                _impl::_for_each_children(parent, [&](auto, _char_type child) {
                     shelter.children.push_back(child);
                 });
                 auto compression_target = _find_compression_target(shelter.children);
                 if (_impl::_block_index_of(compression_target) >= b)
                     return;
-                _impl::_for_each_children(parent, [&](_char_type child) {
-                    auto next = base xor child;
+                _impl::_for_each_children(parent, [&](_index_type next, auto) {
                     auto unit = _impl::_unit_at(next);
                     shelter.luggages.emplace_back(unit.terminal(), _impl::_is_edge_at(next), unit.has_label(), unit.label_is_suffix(), unit.base(), unit.child());
                     _impl::_erase(next);
@@ -1288,7 +1301,8 @@ private:
         auto conflicting_index = base xor c;
         auto competitor = _impl::_unit_at(conflicting_index).check();
         if (conflicting_index != kRootIndex and
-            _impl::_num_of_children(competitor) <= _impl::_num_of_children(node)) {
+            _impl::_compare_num_of_children(competitor, node) == false) {
+            // Move competitor node
             _shelter shelter;
             _evacuate(competitor, shelter);
             _impl::_freeze(conflicting_index);
@@ -1298,6 +1312,7 @@ private:
             _impl::_refill_block(_impl::_block_index_of(conflicting_index), 1);
             node = _move_nodes(shelter, new_base, node);
         } else {
+            // Move self node
             _shelter shelter;
             _evacuate(node, shelter);
             shelter.children.push_back(c);
@@ -1323,29 +1338,20 @@ private:
         _impl::_setup(next);
         auto next_unit = _impl::_unit_at(next);
         next_unit.set_check(node);
-        // Insert c to siblings link
+        // Insert c into siblings link
         auto node_unit = _impl::_unit_at(node);
         auto first_child = node_unit.child();
         assert(c != first_child);
-        if (c < first_child) {
+        if (not Ordered or c < first_child) {
             node_unit.set_child(c);
-            next_unit.set_sibling(first_child);
-            for (auto child = first_child; ; ) {
-                auto child_unit = _impl::_unit_at(base xor child);
-                auto sibling = child_unit.sibling();
-                if (sibling == first_child) {
-                    child_unit.set_sibling(c);
-                    break;
-                }
-                child = sibling;
-            }
+            _impl::_unit_at(next).set_sibling(first_child);
         } else {
             for (auto child = first_child; ; ) {
                 auto child_unit = _impl::_unit_at(base xor child);
                 auto sibling = child_unit.sibling();
-                if (sibling > c or sibling == first_child) {
+                if (sibling > c or sibling == kEmptyChar) {
                     child_unit.set_sibling(c);
-                    next_unit.set_sibling(sibling);
+                    _impl::_unit_at(next).set_sibling(sibling);
                     break;
                 }
                 child = sibling;
@@ -1440,14 +1446,15 @@ protected:
             auto label = label_datas[i].label;
             assert(not label.empty());
             auto next = base xor (_char_type)label.front();
+            auto sibling = i+1 < label_datas.size() ? label_datas[i+1].label.front() : kEmptyChar;
             if (label.size() == 1) {
-                _base::_set_new_node(next, node, label_datas[(i+1)%label_datas.size()].label.front(), label_datas[i].terminal);
+                _base::_set_new_node(next, node, sibling, label_datas[i].terminal);
             } else {
                 auto pool_index = (label_datas[i].suffix ?
                                    _base::_append_suffix_in_pool(label.substr(1)) :
                                    _append_internal_label_in_pool(label.substr(1), kEmptyFlag));
                 _base::_set_new_node_by_label(next, node,
-                                       label_datas[(i+1)%label_datas.size()].label.front(),
+                                       sibling,
                                        label_datas[i].terminal,
                                        pool_index,
                                        label_datas[i].suffix);
@@ -1459,17 +1466,18 @@ protected:
 };
 
 
-template <class _Impl>
-class _DynamicDoubleArrayPatriciaTrieBehavior : protected _DynamicDoubleArrayMpTrieBehavior<_Impl> {
+template <class _Impl, bool Ordered>
+class _DynamicDoubleArrayPatriciaTrieBehavior : protected _DynamicDoubleArrayMpTrieBehavior<_Impl, Ordered> {
 public:
     using _impl = _Impl;
-    using _base = _DynamicDoubleArrayMpTrieBehavior<_Impl>;
+    using _base = _DynamicDoubleArrayMpTrieBehavior<_Impl, Ordered>;
     using typename _impl::_index_type;
     using typename _impl::_char_type;
     
     using _impl::kIndexBytes;
     using _impl::kLeafChar;
     using _impl::kEmptyFlag;
+    using _impl::kEmptyChar;
     
 protected:
     _DynamicDoubleArrayPatriciaTrieBehavior() : _base() {}
@@ -1489,7 +1497,7 @@ protected:
             _impl::_set_new_trans(node, base, c);
         }
         auto next = base xor c;
-        _impl::_set_new_node(next, node, c, false);
+        _impl::_set_new_node(next, node, kEmptyChar, false);
         _impl::_consume_block(_impl::_block_index_of(next), 1);
         return next;
     }
@@ -1536,9 +1544,9 @@ private:
         node_unit.set_child(char_at_confliction);
         auto relay_next = forked_base xor char_at_confliction;
         if (_impl::tail_[label_pos + 1] == kLeafChar) { // Length of right-label is 1.
-            _impl::_set_new_node(relay_next, node, char_at_confliction, true);
+            _impl::_set_new_node(relay_next, node, kEmptyChar, true);
         } else {
-            _impl::_set_new_node_by_label(relay_next, node, char_at_confliction, true, label_pos+1, true);
+            _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, true, label_pos+1, true);
         }
         _impl::_consume_block(_impl::_block_index_of(relay_next), 1);
     }
@@ -1577,10 +1585,10 @@ private:
             }
             node_unit.set_child(char_at_confliction);
             if (_impl::tail_[label_pos + 1] == kLeafChar) { // Length of right-label is 1.
-                _impl::_set_new_node(relay_next, node, char_at_confliction, node_is_terminal);
+                _impl::_set_new_node(relay_next, node, kEmptyChar, node_is_terminal);
                 _impl::_set_new_trans(relay_next, node_base, node_child);
             } else {
-                _impl::_set_new_node_by_label(relay_next, node, char_at_confliction, node_is_terminal, label_pos+1-kIndexBytes, false);
+                _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, node_is_terminal, label_pos+1-kIndexBytes, false);
                 _impl::_set_base_in_pool(label_pos+1-kIndexBytes, node_base);
                 _impl::_unit_at(relay_next).set_child(node_child);
             }
@@ -1591,12 +1599,12 @@ private:
             _impl::_set_base_in_pool(pool_index, forked_base);
             node_unit.set_child(char_at_confliction);
             if (right_label_length == 1) {
-                _impl::_set_new_node(relay_next, node, char_at_confliction, node_is_terminal);
+                _impl::_set_new_node(relay_next, node, kEmptyChar, node_is_terminal);
                 _impl::_set_new_trans(relay_next, node_base, node_child);
             } else {
                 std::string right_label((char*)_impl::tail_.data() + label_pos + 1);
                 auto relay_pool_index = _impl::_append_internal_label_in_pool(right_label, node_base);
-                _impl::_set_new_node_by_label(relay_next, node, char_at_confliction, node_is_terminal, relay_pool_index, false);
+                _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, node_is_terminal, relay_pool_index, false);
                 _impl::_unit_at(relay_next).set_child(node_child);
             }
         }
@@ -1609,15 +1617,15 @@ private:
 
 // MARK: - Dynamic Double-array Interface
 
-template <typename IndexType, bool LegacyBuild = true, bool Patricia = true>
+template <typename IndexType, bool Ordered = false, bool LegacyBuild = true, bool Patricia = true>
 class DoubleArray;
 
 
-template <typename IndexType, bool LegacyBuild>
-class DoubleArray<IndexType, LegacyBuild, false> :
-private _DynamicDoubleArrayMpTrieBehavior<_DoubleArrayBcMpTrieImpl<IndexType, not LegacyBuild>> {
+template <typename IndexType, bool Ordered, bool LegacyBuild>
+class DoubleArray<IndexType, Ordered, LegacyBuild, false> :
+private _DynamicDoubleArrayMpTrieBehavior<_DoubleArrayBcMpTrieImpl<IndexType, not LegacyBuild>, Ordered> {
     using _impl = _DoubleArrayBcMpTrieImpl<IndexType, not LegacyBuild>;
-    using _behavior = _DynamicDoubleArrayMpTrieBehavior<_impl>;
+    using _behavior = _DynamicDoubleArrayMpTrieBehavior<_impl, Ordered>;
     using _self = DoubleArray<IndexType, LegacyBuild, false>;
 public:
     using index_type = typename _impl::_index_type;
@@ -1784,21 +1792,18 @@ private:
         std::vector<typename _impl::_internal_label_container> label_datas;
         std::vector<char_type> children;
         auto base = _impl::_base_at(node);
-        da._behavior::_for_each_children(node, [&](char_type child) {
+        da._behavior::_for_each_children(node, [&](index_type index, char_type child) {
             children.push_back(child);
-            auto index = base xor child;
             auto unit = _impl::_unit_at(index);
-            auto num_children = _impl::_num_of_children(index);
             std::string label = std::string(child);
             if (unit.has_label())
                 _impl::_label_in_pool(index);
-            while (not unit.terminal() and num_children == 1) {
+            while (not unit.terminal() and _impl::_is_single_node(index)) {
                 label += unit.child;
                 _transition(index, unit.child);
                 unit = _impl::_unit_at(index);
                 if (unit.has_label())
                     label += _impl::_suffix_in_tail(unit.pool_index());
-                num_children = _impl::_num_of_children(index);
             }
             label_datas.push_back({label,
                 unit.terminal(),
@@ -1861,11 +1866,11 @@ private:
 };
 
 
-template <typename IndexType, bool LegacyBuild>
-class DoubleArray<IndexType, LegacyBuild, true> :
-private _DynamicDoubleArrayPatriciaTrieBehavior<_DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild>> {
+template <typename IndexType, bool Ordered, bool LegacyBuild>
+class DoubleArray<IndexType, Ordered, LegacyBuild, true> :
+private _DynamicDoubleArrayPatriciaTrieBehavior<_DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild>, Ordered> {
     using _impl = _DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild>;
-    using _behavior = _DynamicDoubleArrayPatriciaTrieBehavior<_impl>;
+    using _behavior = _DynamicDoubleArrayPatriciaTrieBehavior<_impl, Ordered>;
     using _self = DoubleArray<IndexType, LegacyBuild, false>;
 public:
     using index_type = typename _behavior::_index_type;
@@ -2037,21 +2042,18 @@ private:
         std::vector<typename _impl::_internal_label_container> label_datas;
         std::vector<char_type> children;
         auto base = _impl::_base_at(node);
-        da._behavior::_for_each_children(node, [&](char_type child) {
+        da._behavior::_for_each_children(node, [&](index_type index, char_type child) {
             children.push_back(child);
-            auto index = base xor child;
             auto unit = _impl::_unit_at(index);
-            auto num_children = _impl::_num_of_children(index);
             std::string label = std::string(child);
             if (unit.has_label())
                 _impl::_label_in_pool(index);
-            while (not unit.terminal() and num_children == 1) {
+            while (not unit.terminal() and _impl::_is_single_node(index)) {
                 label += unit.child;
                 _transition(index, unit.child);
                 unit = _impl::_unit_at(index);
                 if (unit.has_label())
                     label += _impl::_label_in_pool(index);
-                num_children = _impl::_num_of_children(index);
             }
             label_datas.push_back({label,
                                    unit.terminal(),
