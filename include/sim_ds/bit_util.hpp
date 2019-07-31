@@ -237,7 +237,6 @@ inline int clz(uint32_t x) {
         c |= 2;
     }
     if (x & 0xAAAAAAAA) {
-        x &= 0xAAAAAAAA;
         c |= 1;
     }
     return c ^ 63;
@@ -280,7 +279,6 @@ inline int clz(uint64_t x) {
         c |= 2;
     }
     if (x & 0xAAAAAAAAAAAAAAAA) {
-        x &= 0xAAAAAAAAAAAAAAAA;
         c |= 1;
     }
     return c ^ 63;

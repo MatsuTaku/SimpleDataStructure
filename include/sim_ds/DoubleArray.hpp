@@ -62,10 +62,10 @@ public:
     static constexpr _char_type kEmptyChar = _Da::kEmptyChar;
     
     static constexpr size_t kCheckInsets = 0;
+    static constexpr size_t kEmptyFlagInsets = kCheckInsets + kIndexBytes - 1;
     static constexpr size_t kSiblingInsets = kIndexBytes;
     static constexpr size_t kBaseInsets = kIndexBytes + 1;
     static constexpr size_t kChildInsets = kIndexBytes * 2 + 1;
-    static constexpr size_t kTerminalFlagInsets = kCheckInsets + kIndexBytes - 1;
     static constexpr size_t kEdgeFlagInsets = kBaseInsets + kIndexBytes - 1;
     static constexpr size_t kLabelFlagInsets = kEdgeFlagInsets;
     static constexpr size_t kSuffixFlagInsets = kLabelFlagInsets;
@@ -89,112 +89,87 @@ class _DoubleArrayUnitBcpReference : private _DoubleArrayUnitBcpReferenceCommon<
     using typename _common::_index_type;
     using typename _common::_char_type;
     
-    using _common::kIndexBytes;
-    using _common::kUnitBytes;
-    using _common::kIndexMask;
-    using _common::kIndexMax;
-    using _common::kEmptyChar;
-    
-    using _common::kEmptyFlag;
-    using _common::kCheckInsets;
-    using _common::kSiblingInsets;
-    using _common::kBaseInsets;
-    using _common::kEdgeFlagInsets;
-    using _common::kTerminalFlag;
-    using _common::kTerminalFlagInsets;
-    using _common::kLabelFlag;
-    using _common::kLabelFlagInsets;
-    using _common::kSuffixFlag;
-    using _common::kSuffixFlagInsets;
-    using _common::kChildInsets;
-    
-    using _common::kSuccInsets;
-    using _common::kPredInsets;
-    
 private:
     _unit_storage_pointer pointer_;
     
     friend typename _Da::_self;
     friend class _DoubleArrayUnitBcpConstReference<_Da>;
     
+    template <size_t Offset>
+    _index_type _index() const {return *reinterpret_cast<const _index_type*>(pointer_ + Offset);}
+    
+    template <size_t Offset>
+    _index_type& _index() {return *reinterpret_cast<_index_type*>(pointer_ + Offset);}
+    
 public:
-    bool terminal() const {return *(pointer_ + kTerminalFlagInsets) bitand 0x40;}
-    
-    void enable_terminal() {
-        *(pointer_ + kTerminalFlagInsets) |= 0x40;
-    }
-    
-    void disable_terminal() {
-        *(pointer_ + kTerminalFlagInsets) &= compl 0x40;
-    }
-    
-    _index_type check() const {return *reinterpret_cast<_index_type*>(pointer_ + kCheckInsets) bitand kIndexMask;}
+    _index_type check() const {return _index<_common::kCheckInsets>() bitand _common::kIndexMask;}
     
     void set_check(_index_type new_check) {
-        _index_type& target = *reinterpret_cast<_index_type*>(pointer_ + kCheckInsets);
-        target = new_check bitor (target bitand kTerminalFlag);
+        _index_type& target = _index<_common::kCheckInsets>();
+        target = new_check bitor (target bitand _common::kTerminalFlag);
     }
     
-    _index_type base() const {return *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) bitand kIndexMask;}
+    _index_type base() const {return _index<_common::kBaseInsets>() bitand _common::kIndexMask;}
     
     void set_base(_index_type new_base) {
-        *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) = new_base bitand kIndexMask;
+        _index<_common::kBaseInsets>() = new_base bitand _common::kIndexMask;
     }
     
-    bool has_label() const {return *(pointer_ + kLabelFlagInsets) bitand 0x40;}
+    bool has_label() const {return *(pointer_ + _common::kLabelFlagInsets) bitand 0x40;}
     
-    bool label_is_suffix() const {return *(pointer_ + kSuffixFlagInsets) bitand 0x20;}
+    bool label_is_suffix() const {return *(pointer_ + _common::kSuffixFlagInsets) bitand 0x20;}
     
     _index_type pool_index() const {assert(has_label()); return base();}
     
     void set_pool_index(_index_type new_pool_index, bool label_is_suffix) {
-        *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) = (new_pool_index bitand kIndexMask) bitor kLabelFlag bitor (label_is_suffix ? kSuffixFlag : 0);
+        _index<_common::kBaseInsets>() = ((new_pool_index bitand _common::kIndexMask) bitor
+                                           _common::kLabelFlag bitor
+                                           (label_is_suffix ? _common::kSuffixFlag : 0));
     }
     
-    _char_type child() const {return *reinterpret_cast<_char_type*>(pointer_ + kChildInsets);}
+    _char_type child() const {return *(pointer_ + _common::kChildInsets);}
     
     void set_child(_char_type new_child) {
-        *reinterpret_cast<_char_type*>(pointer_ + kChildInsets) = new_child;
+        *(pointer_ + _common::kChildInsets) = new_child;
     }
     
-    _char_type sibling() const {return *reinterpret_cast<_char_type*>(pointer_ + kSiblingInsets);}
+    _char_type sibling() const {return *(pointer_ + _common::kSiblingInsets);}
     
     void set_sibling(_char_type new_sibling) {
-        *reinterpret_cast<_char_type*>(pointer_ + kSiblingInsets) = new_sibling;
+        *(pointer_ + _common::kSiblingInsets) = new_sibling;
     }
     
-    bool base_empty() const {return *(pointer_ + kEdgeFlagInsets) bitand 0x80;}
+    bool base_empty() const {return *(pointer_ + _common::kEdgeFlagInsets) bitand 0x80;}
+    
+    bool check_empty() const {return *(pointer_ + _common::kEmptyFlagInsets) bitand 0x80;}
     
     _index_type pred() const {
-        assert(*reinterpret_cast<_index_type*>(pointer_ + kPredInsets) bitand kEmptyFlag);
-        return *reinterpret_cast<_index_type*>(pointer_ + kPredInsets) bitand kIndexMask;
+        assert(_index<_common::kPredInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kPredInsets>() bitand _common::kIndexMask;
     }
     
     void set_pred(_index_type new_pred) {
-        *reinterpret_cast<_index_type*>(pointer_ + kPredInsets) = (new_pred bitand kIndexMask) bitor kEmptyFlag;
+        _index<_common::kPredInsets>() = (new_pred bitand _common::kIndexMask) bitor _common::kEmptyFlag;
     }
     
     _index_type succ() const {
-        assert(*reinterpret_cast<_index_type*>(pointer_ + kSuccInsets) bitand kEmptyFlag);
-        return *reinterpret_cast<_index_type*>(pointer_ + kSuccInsets) bitand kIndexMask;
+        assert(_index<_common::kSuccInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kSuccInsets>() bitand _common::kIndexMask;
     }
     
     void set_succ(_index_type new_succ) {
-        *reinterpret_cast<_index_type*>(pointer_ + kSuccInsets) = (new_succ bitand kIndexMask) bitor kEmptyFlag;
+        _index<_common::kSuccInsets>() = (new_succ bitand _common::kIndexMask) bitor _common::kEmptyFlag;
     }
     
     void init(_index_type pred, _index_type succ) {
         set_pred(pred);
-        set_sibling(kEmptyChar);
+        set_sibling(_common::kEmptyChar);
         set_succ(succ);
-        set_child(kEmptyChar);
+        set_child(_common::kEmptyChar);
     }
     
     void clean() {
-        *reinterpret_cast<_index_type*>(pointer_ + kCheckInsets) = kEmptyFlag;
-        set_sibling(kEmptyChar);
-        *reinterpret_cast<_index_type*>(pointer_ + kBaseInsets) = kEmptyFlag;
-        set_child(kEmptyChar);
+        init(0, 0);
     }
     
 private:
@@ -214,62 +189,43 @@ class _DoubleArrayUnitBcpConstReference : private _DoubleArrayUnitBcpReferenceCo
     using typename _common::_index_type;
     using typename _common::_char_type;
     
-    using _common::kIndexBytes;
-    using _common::kUnitBytes;
-    using _common::kIndexMask;
-    using _common::kIndexMax;
-    using _common::kEmptyChar;
-    
-    using _common::kEmptyFlag;
-    using _common::kCheckInsets;
-    using _common::kSiblingInsets;
-    using _common::kBaseInsets;
-    using _common::kEdgeFlagInsets;
-    using _common::kTerminalFlag;
-    using _common::kTerminalFlagInsets;
-    using _common::kLabelFlag;
-    using _common::kLabelFlagInsets;
-    using _common::kSuffixFlag;
-    using _common::kSuffixFlagInsets;
-    using _common::kChildInsets;
-    
-    using _common::kSuccInsets;
-    using _common::kPredInsets;
-    
 private:
     _unit_storage_pointer pointer_;
     
     friend typename _Da::_self;
     
+    template <size_t Offset>
+    _index_type _index() const {return *reinterpret_cast<const _index_type*>(pointer_ + Offset);}
+    
 public:
     _DoubleArrayUnitBcpConstReference(const _DoubleArrayUnitBcpReference<_Da>& x) : pointer_(x.pointer_) {}
     
-    bool terminal() const {return *(pointer_ + kTerminalFlagInsets) bitand 0x40;}
+    _index_type check() const {return _index<_common::kCheckInsets>() bitand _common::kIndexMask;}
     
-    _index_type check() const {return *reinterpret_cast<const _index_type*>(pointer_ + kCheckInsets) bitand kIndexMask;}
+    _index_type base() const {return _index<_common::kBaseInsets>() bitand _common::kIndexMask;}
     
-    _index_type base() const {return *reinterpret_cast<const _index_type*>(pointer_ + kBaseInsets) bitand kIndexMask;}
+    bool has_label() const {return *(pointer_ + _common::kLabelFlagInsets) bitand 0x40;}
     
-    bool has_label() const {return *(pointer_ + kLabelFlagInsets) bitand 0x40;}
-    
-    bool label_is_suffix() const {return *(pointer_ + kSuffixFlagInsets) bitand 0x20;}
+    bool label_is_suffix() const {return *(pointer_ + _common::kSuffixFlagInsets) bitand 0x20;}
     
     _index_type pool_index() const {assert(has_label()); return base();}
     
-    _char_type child() const {return *reinterpret_cast<const _char_type*>(pointer_ + kChildInsets);}
+    _char_type child() const {return *(pointer_ + _common::kChildInsets);}
     
-    _char_type sibling() const {return *reinterpret_cast<const _char_type*>(pointer_ + kSiblingInsets);}
+    _char_type sibling() const {return *(pointer_ + _common::kSiblingInsets);}
     
-    bool base_empty() const {return *(pointer_ + kEdgeFlagInsets) bitand 0x80;}
+    bool base_empty() const {return *(pointer_ + _common::kEdgeFlagInsets) bitand 0x80;}
+    
+    bool check_empty() const {return *(pointer_ + _common::kEmptyFlagInsets) bitand 0x80;}
     
     _index_type pred() const {
-        assert(*reinterpret_cast<const _index_type*>(pointer_ + kPredInsets) bitand kEmptyFlag);
-        return *reinterpret_cast<const _index_type*>(pointer_ + kPredInsets) bitand kIndexMask;
+        assert(_index<_common::kPredInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kPredInsets>() bitand _common::kIndexMask;
     }
     
     _index_type succ() const {
-        assert(*reinterpret_cast<const _index_type*>(pointer_ + kSuccInsets) bitand kEmptyFlag);
-        return *reinterpret_cast<const _index_type*>(pointer_ + kSuccInsets) bitand kIndexMask;
+        assert(_index<_common::kSuccInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kSuccInsets>() bitand _common::kIndexMask;
     }
     
 private:
@@ -285,6 +241,7 @@ class _DoubleArrayBlockReferenceCommon {
 public:
     using _index_type = typename _Da::_index_type;
     using _block_word_type = typename _Da::_block_word_type;
+    using _inset_type = typename _Da::_inset_type;
     
     static constexpr size_t kWordBits = sizeof(_block_word_type)*8;
     static constexpr size_t kBlockSize = _Da::kBlockSize;
@@ -294,9 +251,13 @@ public:
     static constexpr size_t kNumEmptiesOffset = kSuccOffset + 1;
     static constexpr size_t kErrorCountOffset = kNumEmptiesOffset;
     static constexpr size_t kErrorCountInset = 32;
+    static constexpr size_t kEmptyHeadOffset = kNumEmptiesOffset + 1;
     static constexpr size_t kFieldSize = kBlockSize / kWordBits; // 4
     
     static constexpr _block_word_type kNumEmptiesMask = 0x1FF;
+    
+    static constexpr _block_word_type kDisabledFlag = 1ull << sizeof(_inset_type)*8;
+    static constexpr _block_word_type kEmptyHeadMask = kDisabledFlag-1;
 };
 
 
@@ -306,105 +267,125 @@ class _DoubleArrayBlockConstReference;
 template <class _Dac>
 class _DoubleArrayBlockReference : _DoubleArrayBlockReferenceCommon<_Dac> {
     using _common = _DoubleArrayBlockReferenceCommon<_Dac>;
-protected:
+    
     using typename _common::_index_type;
     using typename _common::_block_word_type;
     static_assert(sizeof(_block_word_type) == 8, "Invalid block word type!");
     using _block_pointer = typename _Dac::_block_pointer;
-    using _const_block_pointer = typename _Dac::_block_pointer;
+    using _const_block_pointer = typename _Dac::_const_block_pointer;
+    using typename _common::_inset_type;
     
-    using _common::kWordBits;
-    using _common::kBlockSize;
-    
-    using _common::kPredOffset;
-    using _common::kSuccOffset;
-    using _common::kNumEmptiesOffset;
-    using _common::kNumEmptiesMask;
-    using _common::kErrorCountOffset;
-    using _common::kErrorCountInset;
-    using _common::kFieldSize;
-    
+private:
     _block_pointer block_pointer_;
     
     friend typename _Dac::_self;
     
     friend class _DoubleArrayBlockConstReference<_Dac>;
     
+    template <size_t Offset>
+    _index_type _index() const {return *reinterpret_cast<const _index_type*>(basic_ptr() + Offset);}
+    
+    template <size_t Offset>
+    _index_type& _index() {return *reinterpret_cast<_index_type*>(basic_ptr() + Offset);}
+    
+    template <size_t Offset>
+    _inset_type _inset() const {return *reinterpret_cast<const _inset_type*>(basic_ptr() + Offset);}
+    
+    template <size_t Offset>
+    _inset_type& _inset() {return *reinterpret_cast<_inset_type*>(basic_ptr() + Offset);}
+    
 public:
     _DoubleArrayBlockReference& init(_index_type pred, _index_type succ) {
         set_pred(pred);
         set_succ(succ);
-        *(basic_ptr()+kNumEmptiesOffset) = kBlockSize;
+        *(basic_ptr()+_common::kNumEmptiesOffset) = _common::kBlockSize;
         error_reset();
         bit_util::set256_epi1(1, field_ptr());
+        set_empty_head(0);
         return *this;
     }
     
-    _block_pointer basic_ptr() {return block_pointer_ + kFieldSize;}
+    _block_pointer basic_ptr() {return block_pointer_ + _common::kFieldSize;}
     
-    _const_block_pointer basic_ptr() const {return block_pointer_ + kFieldSize;}
+    _const_block_pointer basic_ptr() const {return block_pointer_ + _common::kFieldSize;}
     
     _block_pointer field_ptr() {return block_pointer_;}
     
     _const_block_pointer field_ptr() const {return block_pointer_;}
     
-    _index_type pred() const {return _index_type(*(basic_ptr()+kPredOffset));}
+    _index_type pred() const {return _index<_common::kPredOffset>();}
     
     void set_pred(_index_type pred) {
-        *(basic_ptr()+kPredOffset) = pred;
+        _index<_common::kPredOffset>() = pred;
     }
     
-    _index_type succ() const {return _index_type(*(basic_ptr()+kSuccOffset));}
+    _index_type succ() const {return _index<_common::kSuccOffset>();}
     
     void set_succ(_index_type succ) {
-        *(basic_ptr()+kSuccOffset) = succ;
+        _index<_common::kSuccOffset>() = succ;
     }
     
-    size_t num_empties() const {return *(basic_ptr()+kNumEmptiesOffset) bitand kNumEmptiesMask;}
+    size_t num_empties() const {return *(basic_ptr()+_common::kNumEmptiesOffset) bitand _common::kNumEmptiesMask;}
     
     bool filled() const {return num_empties() == 0;}
     
     void consume(size_t num) {
         assert(num_empties() >= num);
-        auto& t = *(basic_ptr()+kNumEmptiesOffset);
-        t = (t bitand compl kNumEmptiesMask) | (num_empties() - num);
+        auto& t = *(basic_ptr()+_common::kNumEmptiesOffset);
+        t = (t bitand compl _common::kNumEmptiesMask) | (num_empties() - num);
         assert(num_empties() == bit_util::popcnt256(field_ptr()));
     }
     
     void refill(size_t num) {
         assert(num_empties() + num <= 256);
-        auto& t = *(basic_ptr()+kNumEmptiesOffset);
-        t = (t bitand compl kNumEmptiesMask) | (num_empties() + num);
+        auto& t = *(basic_ptr()+_common::kNumEmptiesOffset);
+        t = (t bitand compl _common::kNumEmptiesMask) | (num_empties() + num);
         assert(num_empties() == bit_util::popcnt256(field_ptr()));
     }
     
-    size_t error_count() const {return (*(basic_ptr()+kErrorCountOffset) >> kErrorCountInset);}
+    size_t error_count() const {return (*(basic_ptr()+_common::kErrorCountOffset) >> _common::kErrorCountInset);}
     
     void errored() {
-        auto& v = *(basic_ptr()+kErrorCountOffset) ;
-        v = ((v bitand bit_util::width_mask<kErrorCountInset>) bitor
-             ((_block_word_type)(error_count()+1) << kErrorCountInset));
+        auto& v = *(basic_ptr()+_common::kErrorCountOffset) ;
+        v = ((v bitand bit_util::width_mask<_common::kErrorCountInset>) bitor
+             ((_block_word_type)(error_count()+1) << _common::kErrorCountInset));
     }
     
     void error_reset() {
-        *(basic_ptr()+kErrorCountOffset) &= bit_util::width_mask<kErrorCountInset>;
+        *(basic_ptr()+_common::kErrorCountOffset) &= bit_util::width_mask<_common::kErrorCountInset>;
     }
     
     bool empty_element_at(size_t index) const {
-        return *(field_ptr()+(index/kWordBits)) bitand bit_util::OffsetMask(index%kWordBits);
+        return *(field_ptr()+(index/_common::kWordBits)) bitand bit_util::OffsetMask(index%_common::kWordBits);
     }
     
     void freeze_element_at(size_t index) {
         assert(empty_element_at(index));
-        *(field_ptr()+(index/kWordBits)) &= compl bit_util::OffsetMask(index%kWordBits);
+        *(field_ptr()+(index/_common::kWordBits)) &= compl bit_util::OffsetMask(index%_common::kWordBits);
     }
     
     void thaw_element_at(size_t index) {
         assert(not empty_element_at(index));
-        *(field_ptr()+(index/kWordBits)) |= bit_util::OffsetMask(index%kWordBits);
+        *(field_ptr()+(index/_common::kWordBits)) |= bit_util::OffsetMask(index%_common::kWordBits);
     }
     
-protected:
+    bool link_enabled() const {return not (*(basic_ptr()+_common::kEmptyHeadOffset) bitand _common::kDisabledFlag);}
+    
+    void disable_link() {
+        *(basic_ptr()+_common::kEmptyHeadOffset) |= _common::kDisabledFlag;
+    }
+    
+    _inset_type empty_head() const {
+        assert(link_enabled());
+        return _inset<_common::kEmptyHeadOffset>();
+    }
+    
+    void set_empty_head(_inset_type empty_head) {
+        assert(empty_element_at(empty_head));
+        *(basic_ptr()+_common::kEmptyHeadOffset) = empty_head;
+    }
+    
+private:
     _DoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
     
 };
@@ -413,129 +394,51 @@ protected:
 template <class _Dac>
 class _DoubleArrayBlockConstReference : _DoubleArrayBlockReferenceCommon<_Dac> {
     using _common = _DoubleArrayBlockReferenceCommon<_Dac>;
-protected:
+    
     using typename _common::_index_type;
     using typename _common::_block_word_type;
     static_assert(sizeof(_block_word_type) == 8, "Invalid block word type!");
     using _block_pointer = typename _Dac::_const_block_pointer;
+    using typename _common::_inset_type;
     
-    using _common::kWordBits;
-    using _common::kBlockSize;
-    
-    using _common::kPredOffset;
-    using _common::kSuccOffset;
-    using _common::kNumEmptiesOffset;
-    using _common::kNumEmptiesMask;
-    using _common::kErrorCountOffset;
-    using _common::kErrorCountInset;
-    using _common::kFieldSize;
-    
+private:
     _block_pointer block_pointer_;
     
     friend typename _Dac::_self;
     
+    template <size_t Offset>
+    _index_type _index() const {return *reinterpret_cast<const _index_type*>(basic_ptr() + Offset);}
+    
+    template <size_t Offset>
+    _inset_type _inset() const {return *reinterpret_cast<const _inset_type*>(basic_ptr() + Offset);}
+    
 public:
     _DoubleArrayBlockConstReference(const _DoubleArrayBlockReference<_Dac> x) : block_pointer_(x.block_pointer_) {}
     
-    _block_pointer basic_ptr() const {return block_pointer_ + kFieldSize;}
+    _block_pointer basic_ptr() const {return block_pointer_ + _common::kFieldSize;}
     
     _block_pointer field_ptr() const {return block_pointer_;}
     
-    _index_type pred() const {return _index_type(*(basic_ptr()+kPredOffset));}
+    _index_type pred() const {return _index<_common::kPredOffset>();}
     
-    _index_type succ() const {return _index_type(*(basic_ptr()+kSuccOffset));}
+    _index_type succ() const {return _index<_common::kSuccOffset>();}
     
-    size_t num_empties() const {return *(basic_ptr()+kNumEmptiesOffset) & kNumEmptiesMask;}
+    size_t num_empties() const {return *(basic_ptr()+_common::kNumEmptiesOffset) & _common::kNumEmptiesMask;}
     
-    size_t error_count() const {return (*(basic_ptr()+kErrorCountOffset) >> kErrorCountInset);}
+    size_t error_count() const {return (*(basic_ptr()+_common::kErrorCountOffset) >> _common::kErrorCountInset);}
     
     bool filled() const {return num_empties() == 0;}
     
     bool empty_element_at(size_t index) const {
-        return *(field_ptr()+(index/kWordBits)) bitand bit_util::OffsetMask(index%kWordBits);
+        return *(field_ptr()+(index/_common::kWordBits)) bitand bit_util::OffsetMask(index%_common::kWordBits);
     }
     
-protected:
+    bool link_enabled() const {return not (*(basic_ptr()+_common::kEmptyHeadOffset) bitand _common::kDisabledFlag);}
+    
+    _inset_type empty_head() const {return _inset<_common::kEmptyHeadOffset>();}
+    
+private:
     _DoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
-    
-};
-
-
-template <class _Dac>
-class _DoubleArrayBlockLegacyConstReference;
-
-template <class _Dac>
-class _DoubleArrayBlockLegacyReference : public _DoubleArrayBlockReference<_Dac> {
-    using _base = _DoubleArrayBlockReference<_Dac>;
-    using _index_type = typename _base::_index_type;
-    using _block_word_type = typename _base::_block_word_type;
-    using _block_pointer = typename _base::_block_pointer;
-    
-    using _inset_type = typename _Dac::_inset_type;
-    
-    static constexpr _block_word_type kDisabledFlag = 1ull << sizeof(_inset_type)*8;
-    static constexpr _block_word_type kEmptyHeadMask = kDisabledFlag-1;
-    
-    static constexpr size_t kEmptyHeadOffset = _base::kNumEmptiesOffset + 1;
-    
-    friend typename _Dac::_self;
-    
-    friend class _DoubleArrayBlockLegacyConstReference<_Dac>;
-    
-public:
-    _DoubleArrayBlockLegacyReference& init(_index_type pred, _index_type succ) {
-        _base::init(pred, succ);
-        set_empty_head(0);
-        return *this;
-    }
-    
-    _inset_type empty_head() const {
-        return *(_base::basic_ptr()+kEmptyHeadOffset) & kEmptyHeadMask;
-    }
-    
-    void set_empty_head(_inset_type empty_head) {
-        *(_base::basic_ptr()+kEmptyHeadOffset) = empty_head;
-    }
-    
-    bool link_enabled() const {return not (*(_base::basic_ptr()+kEmptyHeadOffset) bitand kDisabledFlag);}
-    
-    void disable_link() {
-        *(_base::basic_ptr()+kEmptyHeadOffset) = kDisabledFlag;
-    }
-    
-private:
-    _DoubleArrayBlockLegacyReference(_block_pointer pointer) : _base(pointer) {}
-    
-};
-
-
-template <class _Dac>
-class _DoubleArrayBlockLegacyConstReference : public _DoubleArrayBlockConstReference<_Dac> {
-    using _base = _DoubleArrayBlockConstReference<_Dac>;
-    using _index_type = typename _base::_index_type;
-    using _block_word_type = typename _base::_block_word_type;
-    using _block_pointer = typename _base::_block_pointer;
-    
-    using _inset_type = typename _Dac::_inset_type;
-    
-    static constexpr _block_word_type kDisabledFlag = 1ull << sizeof(_inset_type)*8;
-    static constexpr _block_word_type kEmptyHeadMask = kDisabledFlag-1;
-    
-    static constexpr size_t kEmptyHeadOffset = _base::kNumEmptiesOffset + 1;
-    
-    friend typename _Dac::_self;
-    
-public:
-    _DoubleArrayBlockLegacyConstReference(const _DoubleArrayBlockLegacyReference<_Dac> x) : _base(x) {}
-    
-    _inset_type empty_head() const {
-        return *(_base::basic_ptr()+kEmptyHeadOffset) & kEmptyHeadMask;
-    }
-    
-    bool link_enabled() const {return not (*(_base::basic_ptr()+kEmptyHeadOffset) bitand kDisabledFlag);}
-    
-private:
-    _DoubleArrayBlockLegacyConstReference(_block_pointer pointer) : _base(pointer) {}
     
 };
 
@@ -559,8 +462,8 @@ public:
     using _block_word_type = uint64_t;
     using _block_pointer = _block_word_type*;
     using _const_block_pointer = const _block_word_type*;
-    using _block_reference = _DoubleArrayBlockLegacyReference<_self>;
-    using _block_const_reference = _DoubleArrayBlockLegacyConstReference<_self>;
+    using _block_reference = _DoubleArrayBlockReference<_self>;
+    using _block_const_reference = _DoubleArrayBlockConstReference<_self>;
     
     static constexpr _index_type kRootIndex = 0;
     static constexpr _char_type kLeafChar = graph_util::kLeafChar;
@@ -588,7 +491,7 @@ protected:
     std::vector<_char_type> tail_;
     
     _DoubleArrayBcMpTrieImpl() : general_block_head_(kInitialEmptyBlockHead), personal_block_head_(kInitialEmptyBlockHead) {
-        _set_new_node(kRootIndex, kIndexMax, kEmptyChar, false);
+        _set_new_node(kRootIndex, kIndexMax);
         _consume_block(_block_index_of(kRootIndex), 1);
     }
     
@@ -733,7 +636,6 @@ protected:
     }
     
     void _erase(size_t index) {
-        _unit_at(index).clean();
         _thaw(index);
     }
     
@@ -743,7 +645,7 @@ protected:
         _unit_at(node).set_base(new_base);
     }
     
-    virtual bool _is_edge_at(_index_type node) const {
+    virtual bool _is_leaf_at(_index_type node) const {
         auto unit = _unit_at(node);
         return unit.base_empty() or unit.has_label();
     }
@@ -753,18 +655,15 @@ protected:
         _unit_at(node).set_child(new_child);
     }
     
-    void _set_new_node(_index_type index, _index_type new_check, _char_type new_sibling, bool terminal) {
+    void _set_new_node(_index_type index, _index_type new_check, _char_type new_sibling = kEmptyChar) {
         _setup(index);
         auto unit = _unit_at(index);
         unit.set_check(new_check);
         unit.set_sibling(new_sibling);
-        if (terminal) {
-            unit.enable_terminal();
-        }
     }
     
-    void _set_new_node_by_label(_index_type index, _index_type new_check, _char_type new_sibling, bool terminal, _index_type new_pool_index, bool label_is_suffix) {
-        _set_new_node(index, new_check, new_sibling, terminal);
+    void _set_new_node_by_label(_index_type index, _index_type new_check, _char_type new_sibling, _index_type new_pool_index, bool label_is_suffix) {
+        _set_new_node(index, new_check, new_sibling);
         _unit_at(index).set_pool_index(new_pool_index, label_is_suffix);
     }
     
@@ -877,7 +776,7 @@ protected:
     
     template <class Action>
     void _for_each_children(_index_type node, Action action) const {
-        assert(not _is_edge_at(node));
+        assert(not _is_leaf_at(node));
         auto base = _base_at(node);
         auto child = _unit_at(node).child();
         while (child != kEmptyChar) {
@@ -891,7 +790,7 @@ protected:
     }
     
     size_t _num_of_children(_index_type node) const {
-        if (_is_edge_at(node))
+        if (_is_leaf_at(node))
             return 0;
         size_t cnt = 0;
         _for_each_children(node, [&cnt](auto, auto) {++cnt;});
@@ -900,7 +799,7 @@ protected:
     
     // Compare number of children of index (x,y).
     // This function returns false if "num of x" less-equal than "num of y", otherwise return true.
-    bool _compare_num_of_children(_index_type x, _index_type y) const {
+    bool _compare_num_of_children_greater(_index_type x, _index_type y) const {
         auto x_base = _base_at(x), y_base = _base_at(y);
         for (auto x_c = _unit_at(x).child(), y_c = _unit_at(y).child(); ; ) {
             if ((x_c = _unit_at(x_base xor x_c).sibling()) == kEmptyChar)
@@ -919,39 +818,38 @@ protected:
     
     struct _internal_label_container {
         std::string_view label;
-        bool terminal:1;
         bool suffix:1;
     };
     
     virtual void _insert_nodes(_index_type node, std::vector<_internal_label_container>& label_datas, _index_type base) {
         if (base >= _bc_size())
             _expand();
-        _set_new_trans(node, base, label_datas.front().label.front());
+        _set_new_trans(node, base,
+                       label_datas.front().label.empty() ? kLeafChar : label_datas.front().label.front());
         for (size_t i = 0; i < label_datas.size(); i++) {
             auto label = label_datas[i].label;
-            assert(not label.empty());
-            auto next = base xor (_char_type)label.front();
+            _char_type c = label.empty() ? kLeafChar : label.front();
+            auto next = base xor c;
             auto sibling = i+1<label_datas.size() ? label_datas[i+1].label.front() : kEmptyChar;
-            if (label.size() == 1) {
-                _set_new_node(next, node, sibling, label_datas[i].terminal);
+            if (label.empty()) {
+                _set_new_node(next, node, sibling);
+            } else if (label_datas[i].suffix) {
+                auto pool_index = _append_suffix_in_pool(label.substr(1));
+                _set_new_node_by_label(next, node, sibling, pool_index, true);
             } else {
-                _set_new_node_by_label(next, node,
-                                       sibling,
-                                       label_datas[i].terminal,
-                                       _append_suffix_in_pool(label.substr(1)),
-                                       true);
+                _set_new_node(next, node, sibling);
             }
         }
         _consume_block(_block_index_of(base), label_datas.size());
     }
     
     _index_type _append_suffix_in_pool(std::string_view suffix) {
-        assert(not suffix.empty());
         _index_type index = tail_.size();
         tail_.resize(index + suffix.size() + 1);
-        for (size_t i = 0; i < suffix.size(); i++)
-            tail_[index+i] = suffix[i];
-        tail_[index+suffix.size()] = kLeafChar;
+        auto ptr = tail_.data()+index;
+        for (_char_type c : suffix)
+            *(ptr++) = c;
+        *ptr = kLeafChar;
         return index;
     }
     
@@ -1040,50 +938,46 @@ protected:
     
     virtual ~_DynamicDoubleArrayMpTrieBehavior() = default;
     
-    virtual _index_type _grow(_index_type node, _index_type base, _char_type c) {
+    _index_type _grow(_index_type node, _index_type base, _char_type c) {
+        assert(_impl::_is_leaf_at(node));
         _impl::_set_new_trans(node, base, c);
         auto next = base xor c;
-        _impl::_set_new_node(next, node, kEmptyChar, false);
+        _impl::_set_new_node(next, node);
         _impl::_consume_block(_impl::_block_index_of(next), 1);
         return next;
     }
     
-    virtual void _insert_in_bc(_index_type node, std::string_view suffix) {
-        if (suffix.size() > 0) {
-            node = _insert_trans(node, suffix.front());
-            if (suffix.size() > 1) {
-                auto pool_index = _impl::_append_suffix_in_pool(suffix.substr(1));
-                _impl::_unit_at(node).set_pool_index(pool_index, true);
-            }
+    virtual void _insert_in_bc(_index_type node, std::string_view additional_suffix) {
+        if (additional_suffix.size() > 0) {
+            node = _insert_trans(node, additional_suffix.front());
+            auto pool_index = _impl::_append_suffix_in_pool(additional_suffix.substr(1));
+            _impl::_unit_at(node).set_pool_index(pool_index, true);
+        } else {
+            node = _insert_trans(node, kLeafChar);
         }
-        _impl::_unit_at(node).enable_terminal();
     }
     
     void _insert_in_tail(_index_type node, _index_type tail_pos, std::string_view additional_suffix) {
+        assert(_impl::_unit_at(node).label_is_suffix());
         auto tail_index = _impl::_unit_at(node).pool_index();
-        _impl::_unit_at(node).disable_terminal();
         while (tail_index < tail_pos) {
             _char_type c = _impl::tail_[tail_index++];
             node = _grow(node, _impl::_find_base({c}), c);
         }
         _char_type char_at_confliction = _impl::tail_[tail_pos];
+        auto next = _grow(node,
+                          _impl::_find_base({char_at_confliction, additional_suffix.empty() ? kLeafChar : (_char_type)additional_suffix.front()}),
+                          char_at_confliction);
+        
         if (char_at_confliction != kLeafChar) {
-            auto next = _grow(node, _impl::_find_base({char_at_confliction, (_char_type)additional_suffix.front()}), char_at_confliction);
             auto unit = _impl::_unit_at(next);
-            if (_impl::tail_[tail_pos+1] != kLeafChar)
-                unit.set_pool_index(tail_pos+1, true);
-            unit.enable_terminal();
-        } else {
-            _impl::_unit_at(node).enable_terminal();
+            unit.set_pool_index(tail_pos+1, true);
         }
         _insert_in_bc(node, additional_suffix);
     }
     
     void _delete_leaf(_index_type node) {
-        if (not _impl::_unit_at(node).terminal())
-            return;
-        if (not _impl::_is_edge_at(node)) {
-            _impl::_unit_at(node).disable_terminal();
+        if (not _impl::_is_leaf_at(node)) {
             return;
         }
         bool single_node;
@@ -1127,13 +1021,12 @@ private:
     friend class _DynamicDoubleArrayPatriciaTrieBehavior<_impl, Ordered>;
     
     struct _moving_luggage {
-        bool terminal:1;
         bool is_edge:1;
         bool has_label:1;
         bool label_is_suffix:1;
         _index_type target;
         uint8_t child;
-        _moving_luggage(bool terminal, bool is_edge, bool has_label, bool label_is_suffix, _index_type base, uint8_t child) : terminal(terminal), is_edge(is_edge), has_label(has_label), label_is_suffix(label_is_suffix), target(base), child(child) {}
+        _moving_luggage(bool is_edge, bool has_label, bool label_is_suffix, _index_type base, uint8_t child) : is_edge(is_edge), has_label(has_label), label_is_suffix(label_is_suffix), target(base), child(child) {}
     };
     
     struct _shelter {
@@ -1148,7 +1041,7 @@ private:
         _impl::_for_each_children(node, [&](_index_type index, _char_type child) {
             shelter.children.push_back(child);
             auto index_unit = _impl::_unit_at(index);
-            shelter.luggages.emplace_back(index_unit.terminal(), _impl::_is_edge_at(index), index_unit.has_label(), index_unit.label_is_suffix(), index_unit.base(), index_unit.child());
+            shelter.luggages.emplace_back(_impl::_is_leaf_at(index), index_unit.has_label(), index_unit.label_is_suffix(), index_unit.base(), index_unit.child());
             _impl::_erase(index);
         });
         _impl::_refill_block(_impl::_block_index_of(base), shelter.children.size());
@@ -1156,11 +1049,11 @@ private:
     
     void _update_node(_index_type index, _index_type check, _index_type sibling, const _moving_luggage& luggage) {
         if (not luggage.has_label) {
-            _impl::_set_new_node(index, check, sibling, luggage.terminal);
+            _impl::_set_new_node(index, check, sibling);
             if (not luggage.is_edge)
                 _impl::_set_new_trans(index, luggage.target, luggage.child);
         } else {
-            _impl::_set_new_node_by_label(index, check, sibling, luggage.terminal, luggage.target, luggage.label_is_suffix);
+            _impl::_set_new_node_by_label(index, check, sibling, luggage.target, luggage.label_is_suffix);
             if (not luggage.is_edge)
                 _impl::_unit_at(index).set_child(luggage.child);
         }
@@ -1212,7 +1105,7 @@ private:
             }
             auto& luggage = shelter.luggages[i];
             _update_node(new_next, shelter.node, sibling, luggage);
-            if (not _impl::_is_edge_at(new_next))
+            if (not _impl::_is_leaf_at(new_next))
                 _update_check(_impl::_base_at(new_next), luggage.child, new_next);
         }
         _impl::_consume_block(_impl::_block_index_of(target_base), shelter.children.size());
@@ -1286,7 +1179,7 @@ private:
                     return;
                 _impl::_for_each_children(parent, [&](_index_type next, auto) {
                     auto unit = _impl::_unit_at(next);
-                    shelter.luggages.emplace_back(unit.terminal(), _impl::_is_edge_at(next), unit.has_label(), unit.label_is_suffix(), unit.base(), unit.child());
+                    shelter.luggages.emplace_back(_impl::_is_leaf_at(next), unit.has_label(), unit.label_is_suffix(), unit.base(), unit.child());
                     _impl::_erase(next);
                 });
                 _impl::_refill_block(_impl::_block_index_of(base), shelter.children.size());
@@ -1301,7 +1194,7 @@ private:
         auto conflicting_index = base xor c;
         auto competitor = _impl::_unit_at(conflicting_index).check();
         if (conflicting_index != kRootIndex and
-            _impl::_compare_num_of_children(competitor, node) == false) {
+            not _impl::_compare_num_of_children_greater(competitor, node)) {
             // Move competitor node
             _shelter shelter;
             _evacuate(competitor, shelter);
@@ -1324,7 +1217,7 @@ private:
     }
     
     _index_type _insert_trans(_index_type node, _char_type c) {
-        if (_impl::_is_edge_at(node)) {
+        if (_impl::_is_leaf_at(node)) {
             return _grow(node, _impl::_find_base({c}), c);
         }
         auto base = _impl::_base_at(node);
@@ -1344,14 +1237,14 @@ private:
         assert(c != first_child);
         if (not Ordered or c < first_child) {
             node_unit.set_child(c);
-            _impl::_unit_at(next).set_sibling(first_child);
+            next_unit.set_sibling(first_child);
         } else {
             for (auto child = first_child; ; ) {
                 auto child_unit = _impl::_unit_at(base xor child);
                 auto sibling = child_unit.sibling();
                 if (sibling > c or sibling == kEmptyChar) {
                     child_unit.set_sibling(c);
-                    _impl::_unit_at(next).set_sibling(sibling);
+                    next_unit.set_sibling(sibling);
                     break;
                 }
                 child = sibling;
@@ -1388,7 +1281,7 @@ protected:
     
     virtual ~_DoubleArrayBcPatriciaTrieImpl() = default;
     
-    bool _is_edge_at(_index_type node) const override {
+    bool _is_leaf_at(_index_type node) const override {
         auto unit = _base::_unit_at(node);
         return unit.base_empty() or (unit.has_label() and unit.label_is_suffix());
     }
@@ -1404,7 +1297,7 @@ protected:
     }
     
     _index_type _base_at(_index_type node) const override {
-        assert(not _is_edge_at(node));
+        assert(not _is_leaf_at(node));
         auto unit = _base::_unit_at(node);
         return not unit.has_label() ? unit.base() : _base_in_pool(unit.pool_index());
     }
@@ -1432,9 +1325,10 @@ protected:
         _index_type index = _base::tail_.size();
         _base::tail_.resize(_base::tail_.size() + kIndexBytes + key.size() + 1);
         _set_base_in_pool(index, new_base);
-        for (size_t i = 0; i < key.size(); i++)
-            _base::tail_[index+kIndexBytes+i] = key[i];
-        _base::tail_[index+kIndexBytes+key.size()] = kLeafChar;
+        auto ptr = _base::tail_.data()+index+kIndexBytes;
+        for (_char_type c : key)
+            *(ptr++) = c;
+        *ptr = kLeafChar;
         return index;
     }
     
@@ -1443,21 +1337,24 @@ protected:
             _base::_expand();
         _base::_set_new_trans(node, base, label_datas.front().label.front());
         for (size_t i = 0; i < label_datas.size(); i++) {
-            auto label = label_datas[i].label;
-            assert(not label.empty());
-            auto next = base xor (_char_type)label.front();
+            auto cur_label = label_datas[i].label;
+            _char_type c = cur_label.empty() ? kLeafChar : cur_label.front();
+            auto next = base xor c;
             auto sibling = i+1 < label_datas.size() ? label_datas[i+1].label.front() : kEmptyChar;
-            if (label.size() == 1) {
-                _base::_set_new_node(next, node, sibling, label_datas[i].terminal);
+            if (label_datas[i].suffix) {
+                if (cur_label.empty()) {
+                    _base::_set_new_node(next, node, sibling);
+                } else {
+                    auto pool_index = _base::_append_suffix_in_pool(cur_label.substr(1));
+                    _base::_set_new_node_by_label(next, node, sibling, pool_index, true);
+                }
             } else {
-                auto pool_index = (label_datas[i].suffix ?
-                                   _base::_append_suffix_in_pool(label.substr(1)) :
-                                   _append_internal_label_in_pool(label.substr(1), kEmptyFlag));
-                _base::_set_new_node_by_label(next, node,
-                                       sibling,
-                                       label_datas[i].terminal,
-                                       pool_index,
-                                       label_datas[i].suffix);
+                if (cur_label.size() == 1) {
+                    _base::_set_new_node(next, node, sibling);
+                } else {
+                    auto pool_index = _append_internal_label_in_pool(cur_label.substr(1), kEmptyFlag);
+                    _base::_set_new_node_by_label(next, node, sibling, pool_index, false);
+                }
             }
         }
         _base::_consume_block(_base::_block_index_of(base), label_datas.size());
@@ -1486,42 +1383,29 @@ protected:
     
     virtual ~_DynamicDoubleArrayPatriciaTrieBehavior() = default;
     
-    _index_type _grow(_index_type node, _index_type base, _char_type c) override {
-        auto unit = _impl::_unit_at(node);
-        assert(_impl::_is_edge_at(node));
-        if (unit.has_label() and unit.label_is_suffix()) {
-            auto new_pool_index = _impl::_append_internal_label_in_pool(_impl::_label_in_pool(node), base);
-            unit.set_pool_index(new_pool_index, false);
-            unit.set_child(c);
-        } else {
-            _impl::_set_new_trans(node, base, c);
-        }
-        auto next = base xor c;
-        _impl::_set_new_node(next, node, kEmptyChar, false);
-        _impl::_consume_block(_impl::_block_index_of(next), 1);
-        return next;
-    }
-    
     void _insert_in_bc(_index_type node, std::string_view additional_suffix) override {
         if (not additional_suffix.empty()) {
             node = _base::_insert_trans(node, additional_suffix.front());
-            if (additional_suffix.size() > 1) {
-                auto pool_index = _impl::_append_suffix_in_pool(additional_suffix.substr(1));
-                _impl::_unit_at(node).set_pool_index(pool_index, true);
-            }
+            auto pool_index = _impl::_append_suffix_in_pool(additional_suffix.substr(1));
+            _impl::_unit_at(node).set_pool_index(pool_index, true);
+        } else {
+            node = _base::_insert_trans(node, kLeafChar);
         }
-        auto unit = _impl::_unit_at(node);
-        unit.enable_terminal();
     }
     
-    void _insert_in_pool(_index_type node, _index_type label_pos, std::string_view additional_suffix) {
-        assert(_impl::_unit_at(node).has_label());
+    void _insert_in_suffix(_index_type node, _index_type label_pos, std::string_view additional_suffix) {
+        assert(_impl::_unit_at(node).has_label() and
+               _impl::_unit_at(node).label_is_suffix());
         auto forked_base = _impl::_find_base({_impl::tail_[label_pos], (_char_type)additional_suffix.front()});
-        if (_impl::_unit_at(node).label_is_suffix()) {
-            _fork_in_suffix(node, label_pos, forked_base);
-        } else {
-            _fork_in_internal_label(node, label_pos, forked_base);
-        }
+        _fork_in_suffix(node, label_pos, forked_base);
+        _insert_in_bc(node, additional_suffix);
+    }
+    
+    void _insert_in_internal_label(_index_type node, _index_type label_pos, std::string_view additional_suffix) {
+        assert(_impl::_unit_at(node).has_label() and
+               not _impl::_unit_at(node).label_is_suffix());
+        auto forked_base = _impl::_find_base({_impl::tail_[label_pos], (_char_type)additional_suffix.front()});
+        _fork_in_internal_label(node, label_pos, forked_base);
         _insert_in_bc(node, additional_suffix);
     }
     
@@ -1532,7 +1416,6 @@ private:
                node_unit.label_is_suffix());
         auto label_index = node_unit.pool_index();
         _char_type char_at_confliction = _impl::tail_[label_pos];
-        assert(char_at_confliction != kLeafChar);
         auto left_label_length = label_pos - label_index;
         if (left_label_length == 0) {
             node_unit.set_base(forked_base);
@@ -1543,10 +1426,10 @@ private:
         }
         node_unit.set_child(char_at_confliction);
         auto relay_next = forked_base xor char_at_confliction;
-        if (_impl::tail_[label_pos + 1] == kLeafChar) { // Length of right-label is 1.
-            _impl::_set_new_node(relay_next, node, kEmptyChar, true);
+        if (char_at_confliction == kLeafChar) {
+            _impl::_set_new_node(relay_next, node);
         } else {
-            _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, true, label_pos+1, true);
+            _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, label_pos+1, true);
         }
         _impl::_consume_block(_impl::_block_index_of(relay_next), 1);
     }
@@ -1556,8 +1439,6 @@ private:
         assert(node_unit.has_label() and
                not node_unit.label_is_suffix());
         const auto pool_index = node_unit.pool_index();
-        const bool node_is_terminal = node_unit.terminal();
-        node_unit.disable_terminal();
         
         const auto node_base = _impl::_base_in_pool(pool_index);
         const auto node_child = node_unit.child();
@@ -1585,10 +1466,10 @@ private:
             }
             node_unit.set_child(char_at_confliction);
             if (_impl::tail_[label_pos + 1] == kLeafChar) { // Length of right-label is 1.
-                _impl::_set_new_node(relay_next, node, kEmptyChar, node_is_terminal);
+                _impl::_set_new_node(relay_next, node);
                 _impl::_set_new_trans(relay_next, node_base, node_child);
             } else {
-                _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, node_is_terminal, label_pos+1-kIndexBytes, false);
+                _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, label_pos+1-kIndexBytes, false);
                 _impl::_set_base_in_pool(label_pos+1-kIndexBytes, node_base);
                 _impl::_unit_at(relay_next).set_child(node_child);
             }
@@ -1599,12 +1480,12 @@ private:
             _impl::_set_base_in_pool(pool_index, forked_base);
             node_unit.set_child(char_at_confliction);
             if (right_label_length == 1) {
-                _impl::_set_new_node(relay_next, node, kEmptyChar, node_is_terminal);
+                _impl::_set_new_node(relay_next, node, kEmptyChar);
                 _impl::_set_new_trans(relay_next, node_base, node_child);
             } else {
                 std::string right_label((char*)_impl::tail_.data() + label_pos + 1);
                 auto relay_pool_index = _impl::_append_internal_label_in_pool(right_label, node_base);
-                _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, node_is_terminal, relay_pool_index, false);
+                _impl::_set_new_node_by_label(relay_next, node, kEmptyChar, relay_pool_index, false);
                 _impl::_unit_at(relay_next).set_child(node_child);
             }
         }
@@ -1695,9 +1576,11 @@ public:
     bool insert(std::string_view key) {
         return not _traverse(key, [](auto){},
                              [&](index_type node, size_t key_pos) {
-                                 _behavior::_insert_in_bc(node, key_pos < key.size() ? key.substr(key_pos) : "");
+                                 _behavior::_insert_in_bc(node, key.substr(key_pos));
+                                 assert(accept(key));
                              }, [&](index_type node, size_t tail_pos, size_t key_pos) {
-                                 _behavior::_insert_in_tail(node, tail_pos, key_pos < key.size() ? key.substr(key_pos) : "");
+                                 _behavior::_insert_in_tail(node, tail_pos, key.substr(key_pos));
+                                 assert(accept(key));
                              });
     }
     
@@ -1722,7 +1605,7 @@ public:
                 std::cout<<unit.terminal()<<", \t"<<unit.check()<<", \t"<<unit.sibling()<<", \t"<<unit.has_label();
                 if (unit.has_label())
                     std::cout<<", \t"<<unit.pool_index();
-                if (not _impl::_is_edge_at(i))
+                if (not _impl::_is_leaf_at(i))
                     std::cout<<", \t"<<_impl::_base_at(i)<<", \t"<<unit.child();
             }
             std::cout << std::endl;
@@ -1730,22 +1613,24 @@ public:
     }
     
 private:
-    template <class SuccessAction, class FailedInBcAction, class FailedInTailAction>
-    bool _traverse(std::string_view key, SuccessAction success, FailedInBcAction failed_in_bc, FailedInTailAction failed_in_tail) const {
+    template <class SuccessAction, class FailedInBcAction, class FailedInSuffixAction>
+    bool _traverse(std::string_view key, SuccessAction success, FailedInBcAction failed_in_bc, FailedInSuffixAction failed_in_suffix) const {
         index_type node = kRootIndex;
         size_t key_pos = 0;
         for (; key_pos < key.size(); key_pos++) {
-            if (not _transition(node, key[key_pos])) {
+            if (not _transition_bc(node, key[key_pos])) {
                 failed_in_bc(node, key_pos);
                 return false;
             }
-            if (_impl::_unit_at(node).has_label() and
-                not _transition_in_tail(node, key, ++key_pos, failed_in_tail)) {
-                return false;
+            if (_impl::_unit_at(node).has_label()) {
+                if (not _transition_suffix(node, key, ++key_pos, failed_in_suffix)) {
+                    return false;
+                }
+                success(node);
+                return true;
             }
         }
-        auto leached_unit = _impl::_unit_at(node);
-        if (not leached_unit.terminal()) {
+        if (not _transition_bc(node, kLeafChar)) {
             failed_in_bc(node, key_pos);
             return false;
         }
@@ -1753,35 +1638,35 @@ private:
         return true;
     }
     
-    bool _transition(index_type& node, char_type c) const {
-        if (_impl::_is_edge_at(node))
+    bool _transition_bc(index_type& node, char_type c) const {
+        if (_impl::_is_leaf_at(node))
             return false;
         auto next = _impl::_base_at(node) xor c;
-        if (_impl::_empty(next) or
-            _impl::_unit_at(next).check() != node)
+        auto unit = _impl::_unit_at(next);
+        if (unit.check_empty() or
+            unit.check() != node)
             return false;
         node = next;
         return true;
     }
     
-    template <class FailedInTailAction>
-    bool _transition_in_tail(index_type node, std::string_view key, size_t& key_pos, FailedInTailAction failed_in_tail) const {
+    template <class FailedAction>
+    bool _transition_suffix(index_type node, std::string_view key, size_t& key_pos, FailedAction failed) const {
         assert(_impl::_unit_at(node).has_label());
         auto tail_index = _impl::_unit_at(node).pool_index();
         size_t i = 0;
-        assert(_impl::tail_[tail_index] != kLeafChar);
         while (key_pos < key.size()) {
             char_type char_in_tail = _impl::tail_[tail_index+i];
             if (char_in_tail == kLeafChar or
                 char_in_tail != (char_type)key[key_pos]) {
-                failed_in_tail(node, tail_index+i, key_pos);
+                failed(node, tail_index+i, key_pos);
                 return false;
             }
             key_pos++;
             i++;
         }
         if (_impl::tail_[tail_index+i] != kLeafChar) {
-            failed_in_tail(node, tail_index+i, key_pos);
+            failed(node, tail_index+i, key_pos);
             return false;
         }
         key_pos--;
@@ -1800,7 +1685,7 @@ private:
                 _impl::_label_in_pool(index);
             while (not unit.terminal() and _impl::_is_single_node(index)) {
                 label += unit.child;
-                _transition(index, unit.child);
+                _transition_bc(index, unit.child);
                 unit = _impl::_unit_at(index);
                 if (unit.has_label())
                     label += _impl::_suffix_in_tail(unit.pool_index());
@@ -1824,13 +1709,16 @@ private:
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
     void _arrange_keysets(StrIter begin, StrIter end, size_t depth, index_type co_node) {
-        while (begin < end and ((*begin).size() == depth))
-            ++begin;
         if (begin >= end)
             return;
         
         std::vector<typename _impl::_internal_label_container> label_datas;
         std::vector<char_type> children;
+        while (begin < end and ((*begin).size() == depth)) {
+            label_datas.push_back({"", true});
+            children.push_back(kLeafChar);
+            ++begin;
+        }
         std::vector<StrIter> iters = {begin};
         std::string_view front_label((*begin).data() + depth);
         char_type prev_key = (*begin)[depth];
@@ -1939,16 +1827,19 @@ public:
     }
     
     bool accept(std::string_view key) const {
-        return _traverse(key, [](auto){}, [](auto, auto){}, [](auto, auto, auto){});
+        return _traverse(key, [](auto){}, [](auto, auto){}, [](auto, auto, auto){}, [](auto, auto, auto){});
     }
     
     bool insert(std::string_view key) {
         return not _traverse(key, [](auto){},
                              [&](index_type node, size_t key_pos) {
-                                 _behavior::_insert_in_bc(node, key_pos < key.size() ? key.substr(key_pos) : "");
+                                 _behavior::_insert_in_bc(node, key.substr(key_pos));
                              },
                              [&](index_type node, size_t label_pos, size_t key_pos) {
-                                 _behavior::_insert_in_pool(node, label_pos, key_pos < key.size() ? key.substr(key_pos) : "");
+                                 _behavior::_insert_in_internal_label(node, label_pos, key.substr(key_pos));
+                             },
+                             [&](index_type node, size_t label_pos, size_t key_pos) {
+                                 _behavior::_insert_in_suffix(node, label_pos, key.substr(key_pos));
                              });
     }
     
@@ -1956,7 +1847,7 @@ public:
         return _traverse(key,
                          [&](index_type node) {
                              _behavior::_delete_leaf(node);
-                         }, [](auto, auto){}, [](auto, auto, auto){});
+                         }, [](auto, auto){}, [](auto, auto, auto){}, [](auto, auto, auto){});
     }
     
     void print_for_debug() const {
@@ -1972,7 +1863,7 @@ public:
                 std::cout<<unit.terminal()<<", \t"<<unit.check()<<", \t"<<unit.sibling()<<", \t"<<unit.has_label();
                 if (unit.has_label())
                     std::cout<<", \t"<<unit.pool_index();
-                if (not _impl::_is_edge_at(i))
+                if (not _impl::_is_leaf_at(i))
                     std::cout<<", \t"<<_impl::_base_at(i)<<", \t"<<unit.child();
             }
             std::cout << std::endl;
@@ -1980,19 +1871,38 @@ public:
     }
     
 private:
-    template <class SuccessAction, class FailedInBcAction, class FailedInPoolAction>
-    bool _traverse(std::string_view key, SuccessAction success, FailedInBcAction failed_in_bc, FailedInPoolAction failed_in_pool) const {
+    template <class SuccessAction, class FailedInBcAction, class FailedInInternalLabelAction, class FailedInSuffixAction>
+    bool _traverse(std::string_view key, SuccessAction success, FailedInBcAction failed_in_bc, FailedInInternalLabelAction failed_in_internal_label, FailedInSuffixAction failed_in_suffix) const {
+        if (_impl::_is_leaf_at(kRootIndex)) {
+            // First insertion
+            failed_in_bc(kRootIndex, 0);
+            return false;
+        }
         index_type node = kRootIndex;
+        index_type base = _impl::_base_at(node);
         for (size_t key_pos = 0; key_pos < key.size(); key_pos++) {
-            if (not _transition(node, key[key_pos])) {
+            if (not _transition_bc(node, base, key[key_pos])) {
                 failed_in_bc(node, key_pos);
                 return false;
             }
-            if (_impl::_unit_at(node).has_label() and
-                not _transition_with_label(node, key, ++key_pos, failed_in_pool))
-                return false;
+            auto unit = _impl::_unit_at(node);
+            if (unit.has_label()) {
+                if (not unit.label_is_suffix()) {
+                    auto [nbase, success] = _transition_internal_label(node, key, ++key_pos, failed_in_internal_label);
+                    if (not success)
+                        return false;
+                    base = nbase;
+                } else {
+                    if (not _transition_suffix(node, key, ++key_pos, failed_in_suffix))
+                        return false;
+                    success(node);
+                    return true;
+                }
+            } else {
+                base = unit.base();
+            }
         }
-        if (not _impl::_unit_at(node).terminal()) {
+        if (not _transition_bc(node, base, kLeafChar)) {
             failed_in_bc(node, key.size());
             return false;
         }
@@ -2000,30 +1910,52 @@ private:
         return true;
     }
     
-    bool _transition(index_type& node, char_type c) const {
-        if (_impl::_is_edge_at(node))
-            return false;
-        auto next = _impl::_base_at(node) xor c;
-        if (_impl::_empty(next) or
-            _impl::_unit_at(next).check() != node)
+    bool _transition_bc(index_type& node, index_type base, char_type c) const {
+        auto next = base xor c;
+        auto unit = _impl::_unit_at(next);
+        if (unit.check_empty() or
+            unit.check() != node)
             return false;
         node = next;
         return true;
     }
     
     template <class FailedAction>
-    bool _transition_with_label(index_type node, std::string_view key, size_t& key_pos, FailedAction failed) const {
-        assert(_impl::_unit_at(node).has_label());
-        auto label_index = _impl::_label_index_at(node);
+    std::pair<index_type, bool> _transition_internal_label(index_type node, std::string_view key, size_t& key_pos, FailedAction failed) const {
+        auto pool_index = _impl::_unit_at(node).pool_index();
+        auto base = _impl::_base_in_pool(pool_index);
+        auto label_index = pool_index + _impl::kIndexBytes;
         assert(_impl::tail_[label_index] != kLeafChar);
         size_t i = 0;
         while (key_pos < key.size()) {
             char_type char_in_label = _impl::tail_[label_index+i];
             if (char_in_label == kLeafChar) {
                 --key_pos;
-                return true;
+                return {base, true};
             }
             if (char_in_label != (char_type)key[key_pos]) {
+                failed(node, label_index+i, key_pos);
+                return {base, false};
+            }
+            i++;
+            key_pos++;
+        }
+        if (_impl::tail_[label_index+i] != kLeafChar) {
+            failed(node, label_index+i, key_pos);
+            return {base, false};
+        }
+        --key_pos;
+        return {base, true};
+    }
+    
+    template <class FailedAction>
+    bool _transition_suffix(index_type node, std::string_view key, size_t& key_pos, FailedAction failed) const {
+        auto label_index = _impl::_unit_at(node).pool_index();
+        size_t i = 0;
+        while (key_pos < key.size()) {
+            char_type char_in_label = _impl::tail_[label_index+i];
+            if (char_in_label == kLeafChar or
+                char_in_label != (char_type)key[key_pos]) {
                 failed(node, label_index+i, key_pos);
                 return false;
             }
@@ -2048,15 +1980,14 @@ private:
             std::string label = std::string(child);
             if (unit.has_label())
                 _impl::_label_in_pool(index);
-            while (not unit.terminal() and _impl::_is_single_node(index)) {
+            while (_impl::_is_single_node(index)) {
                 label += unit.child;
-                _transition(index, unit.child);
+                _transition_bc(index, unit.child);
                 unit = _impl::_unit_at(index);
                 if (unit.has_label())
                     label += _impl::_label_in_pool(index);
             }
             label_datas.push_back({label,
-                                   unit.terminal(),
                                    unit.label_is_suffix()});
         });
         
@@ -2074,33 +2005,36 @@ private:
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
     void _arrange_keysets(StrIter begin, StrIter end, size_t depth, index_type co_node) {
-        while (begin < end and ((*begin).size() == depth))
-            ++begin;
         if (begin >= end)
             return;
         
         std::vector<typename _impl::_internal_label_container> label_datas;
         std::vector<char_type> children;
+        if (begin < end and ((*begin).size() == depth)) {
+            label_datas.push_back({"", true});
+            children.push_back(kLeafChar);
+            ++begin;
+        }
+        assert(begin->size() > depth);
         std::vector<StrIter> iters = {begin};
-        std::string_view front_label((*begin).data() + depth);
-        char_type prev_key = (*begin).size() <= depth ? kLeafChar : (*begin)[depth];
+        std::string_view front_label(begin->data() + depth);
+        char_type prev_key = begin->size() <= depth ? kLeafChar : (*begin)[depth];
         auto append = [&](auto it) {
             size_t label_length = 1;
-            std::string_view back_label((*it).data() + depth);
+            std::string_view back_label(it->data() + depth);
             while (label_length < front_label.size() and label_length < back_label.size() and
                    back_label[label_length] == front_label[label_length])
                 label_length++;
             label_datas.push_back({front_label.substr(0, label_length),
-                                   label_length == front_label.size(),
                                    label_length == back_label.size()});
             children.push_back(prev_key);
             iters.push_back(it+1);
         };
-        for (auto it = begin+1; it != end; ++it) {
+        for (auto it = begin+1; it < end; ++it) {
             char_type c = (*it)[depth];
             if (c != prev_key) {
                 append(it-1);
-                front_label = std::string_view((*it).data() + depth);
+                front_label = std::string_view(it->data() + depth);
                 prev_key = c;
             }
         }
