@@ -40,14 +40,10 @@ TEST(DoubleArrayTest, SampleLegacy) {
         "bac",
         "bb"
     };
-    using double_array_type = DoubleArray<uint32_t, true>;
-    double_array_type::input_trie trie;
+    using double_array_type = DoubleArray<char, uint32_t>;
+    double_array_type da(set);
     for (std::string_view s : set) {
-        trie.insert(s, 1);
-    }
-    double_array_type da(trie);
-    for (std::string_view s : set) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }
 
@@ -59,41 +55,29 @@ TEST(DoubleArrayTest, Sample) {
         "bac",
         "bb"
     };
-    using double_array_type = DoubleArray<uint32_t, false>;
-    double_array_type::input_trie trie;
+    using double_array_type = DoubleArray<char, uint32_t>;
+    double_array_type da(set);
     for (std::string_view s : set) {
-        trie.insert(s, 1);
-    }
-    double_array_type da(trie);
-    for (std::string_view s : set) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }
 
 TEST(DoubleArrayTest, SampleLargeLegacy) {
-    using double_array_type = DoubleArray<uint32_t, true>;
-    double_array_type::input_trie trie;
-    for (auto& s : large_keyset) {
-        trie.insert(s, 1);
-    }
+    using double_array_type = DoubleArray<char, uint32_t>;
     sim_ds::Stopwatch sw;
-    double_array_type da(trie);
+    double_array_type da(large_keyset);
     std::cout << "Build time(m): " << sw.get_milli_sec() << std::endl;
     for (std::string_view s : large_keyset) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }
 
 TEST(DoubleArrayTest, SampleLarge) {
-    using double_array_type = DoubleArray<uint32_t, false>;
-    double_array_type::input_trie trie;
-    for (auto& s : large_keyset) {
-        trie.insert(s, 1);
-    }
+    using double_array_type = DoubleArray<char, uint32_t>;
     sim_ds::Stopwatch sw;
-    double_array_type da(trie);
+    double_array_type da(large_keyset);
     std::cout << "Build time(m): " << sw.get_milli_sec() << std::endl;
     for (std::string_view s : large_keyset) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }

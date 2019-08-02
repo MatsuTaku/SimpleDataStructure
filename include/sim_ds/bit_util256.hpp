@@ -52,7 +52,7 @@ inline bool is_zero256(const uint64_t* x_addr) {
 #ifdef __AVX2__
 inline bool is_zero256_intrinsics(__m256i x) {
     int iszero_mask = _mm256_movemask_epi8(_mm256_cmpeq_epi64(x, _mm256_set1_epi64x(0)));
-    return iszero_mask == 0xFFFFFFFF;
+    return iszero_mask == (int)0xFFFFFFFF;
 }
 #endif
 
