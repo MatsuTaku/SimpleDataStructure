@@ -1511,7 +1511,12 @@ private:
 
 // MARK: - Dynamic Double-array Interface
 
-template <typename ValueType, typename IndexType, bool Ordered = false, unsigned MaxTrial = 32, bool LegacyBuild = true, bool Patricia = true>
+template <typename ValueType,
+          typename IndexType,
+          bool     Ordered     = false,
+          unsigned MaxTrial    = 32,
+          bool     LegacyBuild = true,
+          bool     Patricia    = true>
 class DoubleArray;
 
 
@@ -1597,6 +1602,13 @@ public:
                                  return _behavior::_insert_in_tail(node, tail_pos, key.substr(key_pos));
                              });
         return {ptr, not res};
+    }
+    
+    std::pair<value_type*, bool> insert(std::string_view key, value_type value) {
+        auto pair = insert(key);
+        if (pair.second)
+            *(pair.first) = value;
+        return pair;
     }
     
     bool erase(std::string_view key) {
@@ -1864,6 +1876,13 @@ public:
                                  return _behavior::_insert_in_suffix(node, label_pos, key.substr(key_pos));
                              });
         return {ptr, not res};
+    }
+    
+    std::pair<value_type*, bool> insert(std::string_view key, value_type value) {
+        auto pair = insert(key);
+        if (pair.second)
+            *(pair.first) = value;
+        return pair;
     }
     
     bool erase(std::string_view key) {
