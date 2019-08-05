@@ -212,7 +212,7 @@ private:
 std::vector<size_t>
 TurboBom::find_all(std::string_view text) const {
     const long long kWindowSize = key_.size();
-    const long long kKmpWindowSize = kWindowSize * kAlpha;
+    const long long kKmpWindowSize = kAlpha * kWindowSize;
     
     std::vector<size_t> matchies;
     difference_type back = kWindowSize - 1;

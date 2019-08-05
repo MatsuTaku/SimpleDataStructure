@@ -17,10 +17,10 @@ namespace da_util {
 #define BLOCK_UTIL_BUILTIN
 #endif
 
-int xcheck_in_da_block(const uint64_t* field, std::vector<uint8_t> cs) {
+int xcheck_in_da_block(const uint64_t* base_field, const uint64_t* unit_field, std::vector<uint8_t> cs) {
 #ifdef BLOCK_UTIL_BUILTIN
-    __m256i x = _mm256_load_si256(reinterpret_cast<const __m256i*>(field));
-    __m256i temp = _mm256_set1_epi64x(uint64_t(-1));
+    __m256i temp = _mm256_load_si256(reinterpret_cast<const __m256i*>(base_field));
+    __m256i x = _mm256_load_si256(reinterpret_cast<const __m256i*>(unit_field));
     for (uint8_t c : cs) {
         temp = _mm256_and_si256(temp, bit_util::xor_map_intrinsics(x, c));
         if (bit_util::is_zero256_intrinsics(temp))
@@ -30,10 +30,10 @@ int xcheck_in_da_block(const uint64_t* field, std::vector<uint8_t> cs) {
     _mm256_store_si256(reinterpret_cast<__m256i*>(dst), temp);
     return bit_util::ctz256(dst);
 #else
-    alignas(32) uint64_t dst[4] = {uint64_t(-1), uint64_t(-1), uint64_t(-1), uint64_t(-1)};
+    alignas(32) uint64_t dst[4] = {*(base_field+0), *(base_field+1), *(base_field+2), *(base_field+3)};
     for (uint8_t mask : cs) {
         uint64_t temp[4];
-        bit_util::xor_map(field, mask, temp);
+        bit_util::xor_map(unit_field, mask, temp);
         for (int i = 0; i < 4; i++) {
             dst[i] &= temp[i];
         }

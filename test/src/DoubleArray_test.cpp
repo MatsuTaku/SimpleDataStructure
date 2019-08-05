@@ -15,15 +15,17 @@ namespace {
 std::vector<std::string> make_sample_keyset(size_t size) {
     std::vector<std::string> keyset;
     const size_t kMaxKeySize = 32;
-    const size_t kCharPattern = 32;
+    const size_t kCharPattern = 'z'-'a'+1;
     for (size_t i = 0; i < size; i++) {
         std::string s;
-        auto key_size = rand() % kMaxKeySize;
+        auto key_size = rand() % kMaxKeySize+1;
         for (size_t j = 0; j < key_size; j++) {
-            s.push_back(uint8_t(kCharPattern - rand() % kCharPattern));
+            s.push_back('a'+uint8_t(rand() % kCharPattern));
         }
         keyset.push_back(s);
     }
+    sort(keyset.begin(), keyset.end());
+    keyset.erase(std::unique(keyset.begin(), keyset.end()), keyset.end());
     return keyset;
 }
 
@@ -40,6 +42,7 @@ TEST(DoubleArrayTest, SampleLegacy) {
         "bac",
         "bb"
     };
+    assert(set.end() - set.begin() == 5);
     using double_array_type = DoubleArray<char, uint32_t>;
     double_array_type da(set);
     for (std::string_view s : set) {
