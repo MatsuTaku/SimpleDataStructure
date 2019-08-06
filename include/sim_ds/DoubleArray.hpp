@@ -9,598 +9,34 @@
 #define DoubleArray_hpp
 
 #include "basic.hpp"
-#include "MultipleVector.hpp"
-#include "BitVector.hpp"
-#include "EmptyLinkedVector.hpp"
-#include "graph_util.hpp"
+#include "DoubleArrayUnit.hpp"
+#include "DoubleArrayBlock.hpp"
+#include "DoubleArrayConstructor.hpp"
 #include "bit_util256.hpp"
 #include "da_util.hpp"
 
 namespace sim_ds {
 
 
-// MARK: - Unit reference
-    
-template <class _Da>
-class _DoubleArrayUnitContainer;
-
-//  Double-array unit implementation
-//             ---------------------------------------------------------------------------------------------------------------------------------------------
-//    Enabled  |             | Check[Byte] | Sibling[Byte] | Target(base or label-idx)[Word] | flag-Suffix[bit] | flag-Label[bit] | flag-Target-empty[bit] |
-//             | Child[Byte] -------------------------------------------------------------------------------------------------------------------------------
-//    Disabled |             | Pred[Byte]  | Succ[Byte]    |                                                                      |           1            |
-//             ---------------------------------------------------------------------------------------------------------------------------------------------
-//             |
-//          pointer_
-//
-template <class _Da>
-class _DoubleArrayUnitBcpReferenceCommon {
-public:
-    using _container = _DoubleArrayUnitContainer<_Da>;
-    using _unit_storage_type = typename _container::_unit_storage_type;
-    static_assert(sizeof(_unit_storage_type) == 1, "Invalid unit storage type!");
-    using _index_type = typename _Da::_index_type;
-    using _char_type = typename _Da::_char_type;
-    using _inset_type = typename _Da::_inset_type;
-    
-    static constexpr auto kEmptyChar = _Da::kEmptyChar;
-    
-    static constexpr size_t kIndexBytes = sizeof(_index_type);
-    static constexpr _index_type kUpperBit = 1ull << (kIndexBytes*8-1);
-    static constexpr _index_type kSecondBit = kUpperBit >> 1;
-    static constexpr _index_type kThirdBit = kUpperBit >> 2;
-    static constexpr _index_type kEmptyFlag = kUpperBit;
-    static constexpr _index_type kLabelFlag = kSecondBit;
-    static constexpr _index_type kSuffixFlag = kThirdBit;
-    static constexpr _index_type kIndexMask = kThirdBit - 1;
-    static constexpr _index_type kIndexMax = kIndexMask;
-    
-    static constexpr size_t kChildInsets = 0;
-    static constexpr size_t kCheckInsets = 1;
-    static constexpr size_t kSiblingInsets = 2;
-    static constexpr size_t kTargetInsets = 3;
-    static constexpr size_t kFlagsInsets = kTargetInsets + kIndexBytes - 1;
-    
-    static constexpr size_t kPredInsets = 1;
-    static constexpr size_t kSuccInsets = 2;
-    static constexpr size_t kUnitBytes = kTargetInsets + kIndexBytes;
-};
-
-
-template <class _Da>
-class _DoubleArrayUnitContainer;
-
-template <class _Da>
-class _DoubleArrayUnitBcpConstReference;
-
-template <class _Da>
-class _DoubleArrayUnitBcpReference : public _DoubleArrayUnitBcpReferenceCommon<_Da> {
-    using _common = _DoubleArrayUnitBcpReferenceCommon<_Da>;
-    using typename _common::_container;
-    
-    using _unit_storage_type = typename _common::_unit_storage_type;
-    using _unit_storage_pointer = typename _container::_unit_storage_pointer;
-    
-    using typename _common::_index_type;
-    using typename _common::_char_type;
-    using typename _common::_inset_type;
-    
-private:
-    _unit_storage_pointer pointer_;
-    
-    friend class _DoubleArrayUnitContainer<_Da>;
-    friend class _DoubleArrayUnitBcpConstReference<_Da>;
-    
-    template <size_t Offset>
-    _char_type _char() const {return *(_char_type*)(pointer_ + Offset);}
-    
-    template <size_t Offset>
-    _char_type& _char() {return *(_char_type*)(pointer_ + Offset);}
-    
-    template <size_t Offset>
-    _index_type _index() const {return *reinterpret_cast<const _index_type*>(pointer_ + Offset);}
-    
-    template <size_t Offset>
-    _index_type& _index() {return *reinterpret_cast<_index_type*>(pointer_ + Offset);}
-    
-    _unit_storage_type _flags() const {return *(pointer_ + _common::kFlagsInsets);}
-    
-public:
-    _char_type child() const {return _char<_common::kChildInsets>();}
-    
-    void set_child(_char_type new_child) {
-        _char<_common::kChildInsets>() = new_child;
-    }
-    
-    _char_type check() const {return _char<_common::kCheckInsets>();}
-    
-    void set_check(_char_type new_check) {
-        _char<_common::kCheckInsets>() = new_check;
-    }
-    
-    _char_type sibling() const {return _char<_common::kSiblingInsets>();}
-    
-    void set_sibling(_char_type new_sibling) {
-        _char<_common::kSiblingInsets>() = new_sibling;
-    }
-    
-    _index_type target() const {return _index<_common::kTargetInsets>() bitand _common::kIndexMask;}
-    
-    _index_type base() const {assert(not has_label()); return target();}
-    
-    void set_base(_index_type new_base) {
-        _index<_common::kTargetInsets>() = new_base bitand _common::kIndexMask;
-    }
-    
-    bool has_label() const {return _flags() bitand 0x40;}
-    
-    bool label_is_suffix() const {return _flags() bitand 0x20;}
-    
-    _index_type pool_index() const {assert(has_label()); return target();}
-    
-    void set_pool_index(_index_type new_pool_index, bool label_is_suffix) {
-        _index<_common::kTargetInsets>() = ((new_pool_index bitand _common::kIndexMask) bitor
-                                            _common::kLabelFlag bitor
-                                            (label_is_suffix ? _common::kSuffixFlag : 0));
-    }
-    
-    bool target_empty() const {return _flags() bitand 0x80;}
-    
-    bool is_leaf() const {return target_empty() or (has_label() and label_is_suffix());}
-    
-    bool check_empty() const {return check() == _common::kEmptyChar;}
-    
-    _inset_type pred() const {return (_inset_type)*(pointer_+_common::kPredInsets);}
-    
-    void set_pred(_inset_type new_pred) {
-        *(pointer_+_common::kPredInsets) = new_pred;
-    }
-    
-    _inset_type succ() const {return (_inset_type)*(pointer_+_common::kSuccInsets);}
-    
-    void set_succ(_inset_type new_succ) {
-        *(pointer_+_common::kSuccInsets) = new_succ;
-    }
-    
-    void clean_with_link(uint8_t pred, uint8_t succ) {
-        set_child(_common::kEmptyChar);
-        init_disabled_unit(pred, succ);
-    }
-    
-    void init_disabled_unit(uint8_t pred, uint8_t succ) {
-        set_pred(pred);
-        set_succ(succ);
-        _index<_common::kTargetInsets>() = _common::kEmptyFlag;
-    }
-    
-    void init_unit() {
-        auto i = _common::kChildInsets+1;
-        for (; i <= _common::kSiblingInsets; i++)
-            *(pointer_+i) = _common::kEmptyChar;
-        _index<_common::kTargetInsets>() = _common::kEmptyFlag;
-    }
-    
-    void init_unit(_char_type check, _char_type sibling) {
-        set_check(check);
-        set_sibling(sibling);
-    }
-    
-private:
-    _DoubleArrayUnitBcpReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
-    
-};
-
-
-template <class _Da>
-class _DoubleArrayUnitBcpConstReference : public _DoubleArrayUnitBcpReferenceCommon<_Da> {
-    using _common = _DoubleArrayUnitBcpReferenceCommon<_Da>;
-    using typename _common::_container;
-    
-    using _unit_storage_type = typename _common::_unit_storage_type;
-    using _unit_storage_pointer = typename _container::_const_unit_storage_pointer;
-    
-    using typename _common::_index_type;
-    using typename _common::_char_type;
-    
-private:
-    _unit_storage_pointer pointer_;
-    
-    friend class _DoubleArrayUnitContainer<_Da>;
-    
-    template <size_t Offset>
-    _char_type _char() const {return *(_char_type*)(pointer_ + Offset);}
-    
-    template <size_t Offset>
-    _index_type _index() const {return *reinterpret_cast<const _index_type*>(pointer_ + Offset);}
-    
-    _unit_storage_type _flags() const {return *(pointer_ + _common::kFlagsInsets);}
-    
-public:
-    _char_type child() const {return _char<_common::kChildInsets>();}
-    
-    _char_type check() const {return _char<_common::kCheckInsets>();}
-    
-    _char_type sibling() const {return _char<_common::kSiblingInsets>();}
-    
-    bool target_empty() const {return _flags() bitand 0x80;}
-    
-    _index_type target() const {return _index<_common::kTargetInsets>() bitand _common::kIndexMask;}
-    
-    _index_type base() const {assert(not has_label()); return target();}
-    
-    bool has_label() const {return _flags() bitand 0x40;}
-    
-    bool label_is_suffix() const {return _flags() bitand 0x20;}
-    
-    _index_type pool_index() const {assert(has_label()); return target();}
-    
-    bool is_leaf() const {return target_empty() or (has_label() and label_is_suffix());}
-    
-    bool check_empty() const {return check() == _common::kEmptyChar;}
-    
-    uint8_t pred() const {return *(uint8_t*)(pointer_+_common::kPredInsets);}
-    
-    uint8_t succ() const {return *(uint8_t*)(pointer_+_common::kSuccInsets);}
-    
-private:
-    _DoubleArrayUnitBcpConstReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
-    
-};
-
-
-template <class _Da>
-class _DoubleArrayUnitContainer {
-public:
-    using _self = _DoubleArrayUnitContainer<_Da>;
-    using _unit_storage_type = uint8_t;
-    using _unit_storage_pointer = _unit_storage_type*;
-    using _const_unit_storage_pointer = const _unit_storage_type*;
-    
-    using _unit_reference = _DoubleArrayUnitBcpReference<_Da>;
-    using _unit_const_reference = _DoubleArrayUnitBcpConstReference<_Da>;
-    
-    static constexpr auto kUnitBytes = _unit_reference::kUnitBytes;
-    
-private:
-    std::vector<_unit_storage_type> container_;
-    
-public:
-    _unit_reference operator[](size_t index) {
-        return _unit_reference(container_.data() + (kUnitBytes * index));
-    }
-    
-    _unit_const_reference operator[](size_t index) const {
-        return _unit_const_reference(container_.data() + (kUnitBytes * index));
-    }
-    
-    size_t size() const {return container_.size() / kUnitBytes;}
-    
-    void resize(size_t new_size) {
-        container_.resize(kUnitBytes * new_size);
-    }
-    
-    size_t size_in_bytes() const {return size_vec(container_);}
-    
-    void write(std::ostream& os) const {
-        write_vec(container_, os);
-    }
-    
-    void read(std::istream& is) {
-        read_vec(is, container_);
-    }
-    
-};
-
-
-// MARK: - Block reference
-
-template <class _Da>
-class _DoubleArrayBlockContainer;
-
-//  Double-array block implementation
-//             ---------------------------------------------------------------------------------------------------------------------------------------------------------
-//    Enabled  | Base bit field [256bit] | Unit bit field [256bit] | Pred[8Byte] | Succ[8Byte] | Number of empties [4Byte] | Error counts [4Byte] | Empty head [1Byte] |
-//             ---------------------------------------------------------------------------------------------------------------------------------------------------------
-//             |
-//          pointer_
-//
-template <class _Da>
-class _DoubleArrayBlockReferenceCommon {
-public:
-    using _container = _DoubleArrayBlockContainer<_Da>;
-    using _block_word_type = typename _container::_block_word_type;
-    static_assert(sizeof(_block_word_type) == 8, "Invalid block word type!");
-    using _index_type = typename _Da::_index_type;
-    using _inset_type = typename _Da::_inset_type;
-    
-    static constexpr size_t kWordBits = sizeof(_block_word_type)*8;
-    static constexpr size_t kBlockSize = _Da::kBlockSize;
-    
-    static constexpr size_t kPredOffset = 0;
-    static constexpr size_t kSuccOffset = kPredOffset + 1;
-    static constexpr size_t kNumEmptiesOffset = kSuccOffset + 1;
-    static constexpr size_t kErrorCountOffset = kNumEmptiesOffset;
-    static constexpr size_t kErrorCountInset = 32;
-    static constexpr size_t kEmptyHeadOffset = kNumEmptiesOffset + 1;
-    static constexpr size_t kFieldQBytes = kBlockSize / kWordBits; // 4
-    static constexpr size_t kBlockQBytes = kFieldQBytes*3;
-    
-    static constexpr _block_word_type kNumEmptiesMask = 0x1FF;
-    
-    static constexpr _block_word_type kDisabledFlag = 1ull << sizeof(_inset_type)*8;
-    static constexpr _block_word_type kEmptyHeadMask = kDisabledFlag-1;
-};
-
-
-template <class _Da>
-class _DoubleArrayBlockContainer;
-
-template <class _Dac>
-class _DoubleArrayBlockConstReference;
-
-template <class _Dac>
-class _DoubleArrayBlockReference : public _DoubleArrayBlockReferenceCommon<_Dac> {
-    using _common = _DoubleArrayBlockReferenceCommon<_Dac>;
-    using typename _common::_container;
-    
-    using typename _common::_block_word_type;
-    using _block_pointer = typename _container::_block_pointer;
-    using _const_block_pointer = typename _container::_const_block_pointer;
-    using typename _common::_index_type;
-    using typename _common::_inset_type;
-    
-private:
-    _block_pointer block_pointer_;
-    
-    friend class _DoubleArrayBlockContainer<_Dac>;
-    friend class _DoubleArrayBlockConstReference<_Dac>;
-    
-    template <size_t Offset>
-    _index_type _index() const {return *reinterpret_cast<const _index_type*>(basic_ptr() + Offset);}
-    
-    template <size_t Offset>
-    _index_type& _index() {return *reinterpret_cast<_index_type*>(basic_ptr() + Offset);}
-    
-    template <size_t Offset>
-    _inset_type _inset() const {return *reinterpret_cast<const _inset_type*>(basic_ptr() + Offset);}
-    
-    template <size_t Offset>
-    _inset_type& _inset() {return *reinterpret_cast<_inset_type*>(basic_ptr() + Offset);}
-    
-public:
-    _DoubleArrayBlockReference& init() {
-        bit_util::set256_epi1(1, base_field_ptr());
-        bit_util::set256_epi1(1, unit_field_ptr());
-        *(basic_ptr()+_common::kNumEmptiesOffset) = _common::kBlockSize;
-        error_reset();
-        set_empty_head(0);
-        return *this;
-    }
-    
-    _block_pointer base_field_ptr() {return block_pointer_;}
-    
-    _const_block_pointer base_field_ptr() const {return block_pointer_;}
-    
-    _block_pointer unit_field_ptr() {return block_pointer_ + _common::kFieldQBytes;}
-    
-    _const_block_pointer unit_field_ptr() const {return block_pointer_ + _common::kFieldQBytes;}
-    
-    _block_pointer basic_ptr() {return block_pointer_ + _common::kFieldQBytes * 2;}
-    
-    _const_block_pointer basic_ptr() const {return block_pointer_ + _common::kFieldQBytes * 2;}
-    
-    _index_type pred() const {return _index<_common::kPredOffset>();}
-    
-    void set_pred(_index_type pred) {
-        _index<_common::kPredOffset>() = pred;
-    }
-    
-    _index_type succ() const {return _index<_common::kSuccOffset>();}
-    
-    void set_succ(_index_type succ) {
-        _index<_common::kSuccOffset>() = succ;
-    }
-    
-    size_t num_empties() const {return *(basic_ptr()+_common::kNumEmptiesOffset) bitand _common::kNumEmptiesMask;}
-    
-    bool filled() const {return num_empties() == 0;}
-    
-    void consume(size_t num) {
-        assert(num_empties() >= num);
-        auto& t = *(basic_ptr()+_common::kNumEmptiesOffset);
-        t = (t bitand compl _common::kNumEmptiesMask) | (num_empties() - num);
-        assert(num_empties() == bit_util::popcnt256(unit_field_ptr()));
-    }
-    
-    void refill(size_t num) {
-        assert(num_empties() + num <= 256);
-        auto& t = *(basic_ptr()+_common::kNumEmptiesOffset);
-        t = (t bitand compl _common::kNumEmptiesMask) | (num_empties() + num);
-        assert(num_empties() == bit_util::popcnt256(unit_field_ptr()));
-    }
-    
-    size_t error_count() const {return (*(basic_ptr()+_common::kErrorCountOffset) >> _common::kErrorCountInset);}
-    
-    void errored() {
-        auto& v = *(basic_ptr()+_common::kErrorCountOffset) ;
-        v = ((v bitand bit_util::width_mask<_common::kErrorCountInset>) bitor
-             ((_block_word_type)(error_count()+1) << _common::kErrorCountInset));
-    }
-    
-    void error_reset() {
-        *(basic_ptr()+_common::kErrorCountOffset) &= bit_util::width_mask<_common::kErrorCountInset>;
-    }
-    
-    bool empty_base_at(size_t index) const {
-        return *(base_field_ptr()+(index/_common::kWordBits)) bitand bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    void freeze_base_at(size_t index) {
-        assert(empty_base_at(index));
-        *(base_field_ptr()+(index/_common::kWordBits)) &= compl bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    void thaw_base_at(size_t index) {
-        assert(not empty_base_at(index));
-        *(base_field_ptr()+(index/_common::kWordBits)) |= bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    bool empty_element_at(size_t index) const {
-        return *(unit_field_ptr()+(index/_common::kWordBits)) bitand bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    void freeze_element_at(size_t index) {
-        assert(empty_element_at(index));
-        *(unit_field_ptr()+(index/_common::kWordBits)) &= compl bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    void thaw_element_at(size_t index) {
-        assert(not empty_element_at(index));
-        *(unit_field_ptr()+(index/_common::kWordBits)) |= bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    bool link_enabled() const {return not (*(basic_ptr()+_common::kEmptyHeadOffset) bitand _common::kDisabledFlag);}
-    
-    void disable_link() {
-        *(basic_ptr()+_common::kEmptyHeadOffset) |= _common::kDisabledFlag;
-    }
-    
-    _inset_type empty_head() const {
-        assert(link_enabled());
-        return _inset<_common::kEmptyHeadOffset>();
-    }
-    
-    void set_empty_head(_inset_type empty_head) {
-        assert(empty_element_at(empty_head));
-        *(basic_ptr()+_common::kEmptyHeadOffset) = empty_head;
-    }
-    
-private:
-    _DoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
-    
-};
-
-
-template <class _Dac>
-class _DoubleArrayBlockConstReference : public _DoubleArrayBlockReferenceCommon<_Dac> {
-    using _common = _DoubleArrayBlockReferenceCommon<_Dac>;
-    using typename _common::_container;
-    
-    using typename _common::_block_word_type;
-    using _block_pointer = typename _container::_const_block_pointer;
-    using typename _common::_index_type;
-    using typename _common::_inset_type;
-    
-private:
-    _block_pointer block_pointer_;
-    
-    friend class _DoubleArrayBlockContainer<_Dac>;
-    
-    template <size_t Offset>
-    _index_type _index() const {return *reinterpret_cast<const _index_type*>(basic_ptr() + Offset);}
-    
-    template <size_t Offset>
-    _inset_type _inset() const {return *reinterpret_cast<const _inset_type*>(basic_ptr() + Offset);}
-    
-public:
-    _DoubleArrayBlockConstReference(const _DoubleArrayBlockReference<_Dac> x) : block_pointer_(x.block_pointer_) {}
-    
-    _block_pointer base_field_ptr() const {return block_pointer_;}
-    
-    _block_pointer unit_field_ptr() const {return block_pointer_ + _common::kFieldQBytes;}
-    
-    _block_pointer basic_ptr() const {return block_pointer_ + _common::kFieldQBytes * 2;}
-    
-    _index_type pred() const {return _index<_common::kPredOffset>();}
-    
-    _index_type succ() const {return _index<_common::kSuccOffset>();}
-    
-    size_t num_empties() const {return *(basic_ptr()+_common::kNumEmptiesOffset) & _common::kNumEmptiesMask;}
-    
-    size_t error_count() const {return (*(basic_ptr()+_common::kErrorCountOffset) >> _common::kErrorCountInset);}
-    
-    bool filled() const {return num_empties() == 0;}
-    
-    bool empty_base_at(size_t index) const {
-        return *(base_field_ptr()+(index/_common::kWordBits)) bitand bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    bool empty_element_at(size_t index) const {
-        return *(unit_field_ptr()+(index/_common::kWordBits)) bitand bit_util::OffsetMask(index%_common::kWordBits);
-    }
-    
-    bool link_enabled() const {return not (*(basic_ptr()+_common::kEmptyHeadOffset) bitand _common::kDisabledFlag);}
-    
-    _inset_type empty_head() const {return _inset<_common::kEmptyHeadOffset>();}
-    
-private:
-    _DoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
-    
-};
-
-
-template <class _Da>
-class _DoubleArrayBlockContainer {
-public:
-    using _block_word_type = uint64_t;
-    using _block_pointer = _block_word_type*;
-    using _const_block_pointer = const _block_word_type*;
-    
-    using _block_reference = _DoubleArrayBlockReference<_Da>;
-    using _const_block_reference = _DoubleArrayBlockConstReference<_Da>;
-    
-    static constexpr auto kBlockQBytes = _block_reference::kBlockQBytes;
-    
-private:
-    aligned_vector<_block_word_type, 32> container_;
-    
-public:
-    _block_reference operator[](size_t index) {
-        return _block_reference(container_.data() + (kBlockQBytes * index));
-    }
-    
-    _const_block_reference operator[](size_t index) const {
-        return _const_block_reference(container_.data() + (kBlockQBytes * index));
-    }
-    
-    size_t size() const {return container_.size() / kBlockQBytes;}
-    
-    void resize(size_t new_size) {
-        container_.resize(kBlockQBytes * new_size);
-    }
-    
-    size_t size_in_bytes() const {return size_vec(container_);}
-    
-    void write(std::ostream& os) const {
-        write_vec(container_, os);
-    }
-    
-    void read(std::istream& is) {
-        read_vec(is, container_);
-    }
-    
-};
-
-
 // MARK: - MPTrie
 
-template <typename ValueType, typename IndexType, unsigned MaxTrial, bool BitOperationalFind>
+template <typename ValueType, typename IndexType>
 class _DoubleArrayBcMpTrieImpl {
 public:
-    using _self = _DoubleArrayBcMpTrieImpl<ValueType, IndexType, MaxTrial, BitOperationalFind>;
+    using _self = _DoubleArrayBcMpTrieImpl<ValueType, IndexType>;
     using _value_type = ValueType;
     using _index_type = IndexType;
     using _char_type = uint8_t;
     using _inset_type = uint8_t;
     
-    
     static constexpr _index_type kRootIndex = 0;
-    static constexpr _char_type kLeafChar = graph_util::kLeafChar;
+    static constexpr _char_type kLeafChar = '\0';
     static constexpr _char_type kEmptyChar = 0xFF;
     
     using _unit_container = _DoubleArrayUnitContainer<_self>;
-    static constexpr auto kUnitBytes = _unit_container::kUnitBytes;
     using _unit_reference = typename _unit_container::_unit_reference;
+    using _const_unit_reference = typename _unit_container::_const_unit_reference;
+    static constexpr auto kUnitBytes = _unit_container::kUnitBytes;
     static constexpr auto kIndexMax = _unit_reference::kIndexMax;
     static constexpr auto kIndexMask = _unit_reference::kIndexMask;
     static constexpr auto kIndexBytes = _unit_reference::kIndexBytes;
@@ -610,48 +46,62 @@ public:
     
     static constexpr unsigned kBlockSize = 0x100;
     using _block_container = _DoubleArrayBlockContainer<_self>;
+    using _block_reference = typename _block_container::_block_reference;
+    using _const_block_reference = typename _block_container::_const_block_reference;
     static constexpr auto kBlockQBytes = _block_container::kBlockQBytes;
     static constexpr _index_type kInitialEmptyBlockHead = std::numeric_limits<_index_type>::max();
     
-    using _input_trie = graph_util::Trie<char>;
-    
-    static constexpr size_t kMaxTrial = MaxTrial;
-    
 protected:
-    _index_type general_blocks_head_;
+    _index_type enabled_blocks_head_;
     _block_container basic_block_;
     _unit_container container_;
     std::vector<_char_type> pool_;
     
-    _DoubleArrayBcMpTrieImpl() : general_blocks_head_(kInitialEmptyBlockHead) {
-        _set_new_node(kRootIndex, kEmptyChar);
-        _consume_block(_block_index_of(kRootIndex), 1);
-    }
+    _DoubleArrayBcMpTrieImpl() : enabled_blocks_head_(kInitialEmptyBlockHead) {}
     
     explicit _DoubleArrayBcMpTrieImpl(std::ifstream& ifs) {
-        general_blocks_head_ = read_val<_index_type>(ifs);
+        enabled_blocks_head_ = read_val<_index_type>(ifs);
         basic_block_.read(ifs);
         container_.read(ifs);
         read_vec(ifs, pool_);
     }
     
-    virtual ~_DoubleArrayBcMpTrieImpl() = default;
-    
     size_t _size_in_bytes() const {
-        return (sizeof(general_blocks_head_) +
+        return (sizeof(enabled_blocks_head_) +
                 basic_block_.size_in_bytes() +
                 container_.size_in_bytes() +
                 size_vec(pool_));
     }
     
     void _serialize(std::ofstream& ofs) const {
-        write_val(general_blocks_head_, ofs);
+        write_val(enabled_blocks_head_, ofs);
         basic_block_.write(ofs);
         container_.write(ofs);
         write_vec(pool_, ofs);
     }
     
+public:
+    _DoubleArrayBcMpTrieImpl(_DoubleArrayBcMpTrieImpl&&) = default;
+    _DoubleArrayBcMpTrieImpl& operator=(_DoubleArrayBcMpTrieImpl&&) = default;
+    
+    virtual ~_DoubleArrayBcMpTrieImpl() = default;
+    
+    _index_type enabled_blocks_head() const {return enabled_blocks_head_;}
+    
+    _unit_reference unit_at(_index_type index) {return container_[index];}
+    _const_unit_reference unit_at(_index_type index) const {return container_[index];}
+    
+    size_t bc_container_size() const {return container_.size();}
+    
     _index_type _block_index_of(_index_type index) const {return index/kBlockSize;}
+    
+    _block_reference block_at(_index_type index) {return basic_block_[index];}
+    _const_block_reference block_at(_index_type index) const {return basic_block_[index];}
+    
+    size_t block_container_size() const {return basic_block_.size();}
+    
+    std::vector<_char_type>& pool() {return pool_;}
+    const std::vector<_char_type>& pool_at(_index_type index) const {return pool_;}
     
     void _expand() {
         if (container_.size() > kIndexMax) {
@@ -678,19 +128,21 @@ protected:
         if (basic_block_.size() == 1)
             return;
         assert(basic_block_[container_.size()-1].num_empties() == kBlockSize);
+        if (_is_enabled_error_counts(basic_block_.back().error_count()))
+            _pop_block(basic_block_.size()-1);
         container_.resize(container_.size() - kBlockSize);
         basic_block_.resize(basic_block_.size() - 1);
     }
     
     bool _empty_at(size_t index) const {return basic_block_[_block_index_of(index)].empty_element_at(index%kBlockSize);}
     
-    void _check_expand(size_t index) {
+    void _expand_if_needed(size_t index) {
         if (index >= container_.size())
             _expand();
     }
     
     void _setup(size_t index) {
-        _check_expand(index);
+        _expand_if_needed(index);
         _freeze(index);
         container_[index].init_unit();
     }
@@ -699,14 +151,17 @@ protected:
         _thaw(index);
     }
     
-    virtual _index_type _base_at(_index_type node) const {return container_[node].base();}
+    virtual _index_type _base_at(_index_type node) const {
+        assert(not container_[node].is_leaf());
+        return container_[node].base();
+    }
     
     virtual void _set_base_at(_index_type node, _index_type new_base) {
         container_[node].set_base(new_base);
     }
     
     void _setup_base_at(_index_type base, _char_type child) {
-        _check_expand(base);
+        _expand_if_needed(base);
         basic_block_[_block_index_of(base)].freeze_base_at(base%kBlockSize);
         container_[base].set_child(child);
     }
@@ -733,35 +188,6 @@ protected:
     
     std::string_view _suffix_in_pool(_index_type pool_index) const {
         return std::string_view((char*)pool_.data() + pool_index);
-    }
-    
-    bool _is_general_error_counts(size_t errors) const {return errors < kMaxTrial;}
-    
-    void _error_block(_index_type block) {
-        auto b = basic_block_[block];
-        if (not _is_general_error_counts(b.error_count() + 1)) {
-            _pop_block(block);
-        }
-        b.errored();
-    }
-    
-    void _consume_block(_index_type block, size_t num) {
-        auto b = basic_block_[block];
-        b.consume(num);
-        if (b.filled() and _is_general_error_counts(b.error_count())) {
-            _pop_block(block);
-        }
-    }
-    
-    void _refill_block(_index_type block, size_t num) {
-        if (num == 0)
-            return;
-        auto b = basic_block_[block];
-        if (b.filled() or not _is_general_error_counts(b.error_count())) {
-            _push_block(block);
-        }
-        b.error_reset();
-        b.refill(num);
     }
     
     template <class Action>
@@ -810,13 +236,36 @@ protected:
         return reinterpret_cast<_value_type*>(&*(pool_.end()-kValueBytes));
     }
     
-    _index_type _find_base(const std::vector<_char_type>& children) {
-        auto [index, res] = _find_base_around_blocks(general_blocks_head_, children);
-        if (res)
-            return index;
-        return _new_base(children.front());
+    void _pop_block(_index_type block) {
+        auto succ = basic_block_[block].succ();
+        if (succ == block) {
+            assert(enabled_blocks_head_ == block);
+            enabled_blocks_head_ = kInitialEmptyBlockHead;
+        } else {
+            auto pred = basic_block_[block].pred();
+            basic_block_[pred].set_succ(succ);
+            basic_block_[succ].set_pred(pred);
+            if (block == enabled_blocks_head_) {
+                enabled_blocks_head_ = succ;
+            }
+        }
     }
     
+    void _push_block(_index_type block) {
+        if (enabled_blocks_head_ == kInitialEmptyBlockHead) {
+            basic_block_[block].set_pred(block);
+            basic_block_[block].set_succ(block);
+            enabled_blocks_head_ = block;
+        } else {
+            auto tail = basic_block_[enabled_blocks_head_].pred();
+            basic_block_[enabled_blocks_head_].set_pred(block);
+            basic_block_[block].set_succ(enabled_blocks_head_);
+            basic_block_[block].set_pred(tail);
+            basic_block_[tail].set_succ(block);
+        }
+    }
+    
+private:
     void _freeze(size_t index) {
         assert(_empty_at(index));
         // Remove empty-elements linking
@@ -860,440 +309,14 @@ protected:
         }
     }
     
-    // Compare number of children of each index (x,y).
-    // This function returns false if "num of x" less-equal than "num of y", otherwise return true.
-//    bool _compare_num_of_children_greater(_index_type x, _index_type y) const {
-//        auto x_base = _base_at(x), y_base = _base_at(y);
-//        for (auto x_c = container_[x_base].child(), y_c = container_[y_base].child(); ; ) {
-//            if ((x_c = container_[x_base xor x_c].sibling()) == kEmptyChar)
-//                return false;
-//            if ((y_c = container_[y_base xor y_c].sibling()) == kEmptyChar)
-//                return true;
-//        }
-//    }
-    
-    void _pop_block(_index_type block) {
-        auto succ = basic_block_[block].succ();
-        if (succ == block) {
-            assert(general_blocks_head_ == block);
-            general_blocks_head_ = kInitialEmptyBlockHead;
-        } else {
-            auto pred = basic_block_[block].pred();
-            basic_block_[pred].set_succ(succ);
-            basic_block_[succ].set_pred(pred);
-            if (block == general_blocks_head_) {
-                general_blocks_head_ = succ;
-            }
-        }
-    }
-    
-    void _push_block(_index_type block) {
-        if (general_blocks_head_ == kInitialEmptyBlockHead) {
-            basic_block_[block].set_pred(block);
-            basic_block_[block].set_succ(block);
-            general_blocks_head_ = block;
-        } else {
-            auto tail = basic_block_[general_blocks_head_].pred();
-            basic_block_[general_blocks_head_].set_pred(block);
-            basic_block_[block].set_succ(general_blocks_head_);
-            basic_block_[block].set_pred(tail);
-            basic_block_[tail].set_succ(block);
-        }
-    }
-    
-    _index_type _new_base(_char_type c) const {
-        if constexpr (BitOperationalFind) {
-            return container_.size();
-        } else {
-            return container_.size() xor c;
-        }
-    }
-    
-    std::pair<_index_type, bool> _find_base_around_blocks(_index_type& running_blocks_head, const std::vector<_char_type>& children) {
-        if (running_blocks_head == kInitialEmptyBlockHead)
-            return {0, false};
-        std::vector<size_t> visited;
-        for (_index_type block_i = running_blocks_head; ; ) {
-            auto [res, finish] = _find_base_in_block(block_i, children);
-            if (finish)
-                return {res, true};
-            auto fin = res == running_blocks_head;
-            _error_block(block_i);
-            visited.push_back(block_i);
-            block_i = res;
-            if (fin)
-                break;
-        }
-        return {0, false};
-    }
-    
-    std::pair<_index_type, bool> _find_base_in_block(_index_type block_i, const std::vector<_char_type>& children) const {
-        auto block = basic_block_[block_i];
-        auto offset = kBlockSize * block_i;
-        if constexpr (BitOperationalFind) {
-            auto ctz = da_util::xcheck_in_da_block(block.base_field_ptr(), block.unit_field_ptr(), children);
-            if (ctz < kBlockSize) {
-                return {offset + ctz, true};
-            }
-        } else {
-            auto begin = block.empty_head();
-            for (_inset_type i = begin; ; ) {
-                assert(block.empty_element_at(i));
-                auto base = i xor children.front();
-                if (block.empty_base_at(base)) {
-                    size_t j = 1;
-                    for (; j < children.size(); j++) {
-                        if (not block.empty_element_at(base xor children[j]))
-                            break;
-                    }
-                    if (j == children.size()) {
-                        return {offset + base, true};
-                    }
-                }
-                i = container_[offset + i].succ();
-                if (i == begin)
-                    break;
-            }
-        }
-        return {block.succ(), false};
-    }
-    
-};
-
-
-template <class _Impl, bool Ordered>
-class _DynamicDoubleArrayPatriciaTrieBehavior;
-
-template <class _Impl, bool Ordered>
-class _DynamicDoubleArrayMpTrieBehavior : protected _Impl {
-public:
-    using _impl = _Impl;
-    using typename _impl::_value_type;
-    using typename _impl::_index_type;
-    using typename _impl::_char_type;
-    
-    using _impl::kValueBytes;
-    using _impl::kBlockSize;
-    using _impl::kRootIndex;
-    using _impl::kInitialEmptyBlockHead;
-    using _impl::kLeafChar;
-    using _impl::kEmptyChar;
-    
-protected:
-    _DynamicDoubleArrayMpTrieBehavior() : _impl() {}
-    
-    _DynamicDoubleArrayMpTrieBehavior(std::ifstream& ifs) : _impl(ifs) {}
-    
-    virtual ~_DynamicDoubleArrayMpTrieBehavior() = default;
-    
-    _index_type _grow(_index_type node, _index_type base, _char_type c) {
-        assert(_impl::container_[node].is_leaf());
-        _impl::_set_new_edge(node, base, c);
-        auto next = base xor c;
-        _impl::_set_new_node(next, c);
-        _impl::_consume_block(_impl::_block_index_of(next), 1);
-        return next;
-    }
-    
-    virtual _value_type* _insert_in_bc(_index_type node, std::string_view additional_suffix) {
-        if (additional_suffix.size() > 0) {
-            node = _insert_trans(node, additional_suffix.front());
-            auto pool_index = _impl::_append_suffix_in_pool(additional_suffix.substr(1));
-            _impl::container_[node].set_pool_index(pool_index, true);
-            return reinterpret_cast<_value_type*>(&*(_impl::pool_.end()-kValueBytes));
-        } else {
-            node = _insert_trans(node, kLeafChar);
-            _impl::container_[node].set_pool_index(_impl::pool_.size(), true);
-            return _impl::_append_value();
-        }
-    }
-    
-    _value_type* _insert_in_tail(_index_type node, _index_type pool_pos, std::string_view additional_suffix) {
-        assert(_impl::container_[node].label_is_suffix());
-        auto pool_index = _impl::container_[node].pool_index();
-        while (pool_index < pool_pos) {
-            _char_type c = _impl::pool_[pool_index++];
-            node = _grow(node, _impl::_find_base({c}), c);
-        }
-        _char_type char_at_confliction = _impl::pool_[pool_pos];
-        auto next = _grow(node,
-                          _impl::_find_base({char_at_confliction, additional_suffix.empty() ? kLeafChar : (_char_type)additional_suffix.front()}),
-                          char_at_confliction);
-        
-        auto unit = _impl::container_[next];
-        unit.set_pool_index(pool_pos+1, true);
-        return _insert_in_bc(node, additional_suffix);
-    }
-    
-    struct _internal_label_container {
-        std::string_view label;
-        bool suffix:1;
-    };
-    
-    virtual void _insert_nodes(_index_type node, std::vector<_internal_label_container>& label_datas, _index_type base) {
-        _impl::_set_new_edge(node, base,
-                       label_datas.front().label.empty() ? kLeafChar : label_datas.front().label.front());
-        for (size_t i = 0; i < label_datas.size(); i++) {
-            auto label = label_datas[i].label;
-            _char_type c = label.empty() ? kLeafChar : label.front();
-            auto next = base xor c;
-            auto sibling = i+1<label_datas.size() ? label_datas[i+1].label.front() : kEmptyChar;
-            if (label.empty()) {
-                _impl::_set_new_node_by_label(next, c, sibling, _impl::pool_.size(), true);
-                _impl::_append_value();
-            } else if (label_datas[i].suffix) {
-                auto pool_index = _impl::_append_suffix_in_pool(label.substr(1));
-                _impl::_set_new_node_by_label(next, c, sibling, pool_index, true);
-            } else {
-                _impl::_set_new_node(next, c, sibling);
-            }
-        }
-        _impl::_consume_block(_impl::_block_index_of(base), label_datas.size());
-    }
-    
-    void _delete_leaf(_index_type node) {
-        assert(_impl::container_[node].is_leaf());
-        auto cur_node = node;
-        while (cur_node != kRootIndex and _impl::container_[cur_node].is_leaf()) {
-            auto parent = _impl::container_[cur_node].check();
-            _pop_sibling(cur_node, parent);
-            _impl::_erase(cur_node);
-            _impl::_refill_block(_impl::_block_index_of(cur_node), 1);
-            cur_node = parent;
-        }
-        // TODO: reduce method
-//        _reduce();
-    }
-    
-private:
-    friend class _DynamicDoubleArrayPatriciaTrieBehavior<_impl, Ordered>;
-    
-    struct _moving_luggage {
-        bool is_leaf:1;
-        bool has_label:1;
-        bool label_is_suffix:1;
-        _index_type target;
-        _moving_luggage(bool is_leaf, bool has_label, bool label_is_suffix, _index_type base) : is_leaf(is_leaf), has_label(has_label), label_is_suffix(label_is_suffix), target(base) {}
-    };
-    
-    struct _shelter {
-        std::vector<_char_type> children;
-        std::vector<_moving_luggage> luggages;
-    };
-    
-    void _evacuate(_index_type node, _shelter& shelter) {
-        auto base = _impl::_base_at(node);
-        _impl::_for_each_children(node, [&](_index_type index, _char_type child) {
-            shelter.children.push_back(child);
-            auto index_unit = _impl::container_[index];
-            shelter.luggages.emplace_back(index_unit.is_leaf(), index_unit.has_label(), index_unit.label_is_suffix(), index_unit.target());
-            _impl::_erase(index);
-        });
-        _impl::_thaw_base_at(base);
-        _impl::_refill_block(_impl::_block_index_of(base), shelter.children.size());
-    }
-    
-    void _update_node(_index_type index, _char_type check, _index_type sibling, const _moving_luggage& luggage) {
-        if (not luggage.has_label) {
-            _impl::_set_new_node(index, check, sibling);
-            if (not luggage.is_leaf)
-                _impl::container_[index].set_base(luggage.target);
-        } else {
-            _impl::_set_new_node_by_label(index, check, sibling, luggage.target, luggage.label_is_suffix);
-        }
-    }
-    
-    _index_type _move_nodes(_index_type node, _shelter& shelter, _index_type new_base,
-                            _index_type monitoring_node = kRootIndex) {
-        auto old_base = _impl::_base_at(node);
-        _impl::_set_new_edge(node, new_base, shelter.children.front());
-        for (size_t i = 0; i < shelter.children.size(); i++) {
-            auto child = shelter.children[i];
-            auto sibling = i+1<shelter.children.size() ? shelter.children[i+1] : kEmptyChar;
-            auto new_next = new_base xor child;
-            auto& luggage = shelter.luggages[i];
-            _update_node(new_next, child, sibling, luggage);
-            assert(not _impl::_empty_at(new_next));
-            if ((old_base xor child) == monitoring_node) {
-                monitoring_node = new_next;
-            }
-        }
-        _impl::_consume_block(_impl::_block_index_of(new_base), shelter.children.size());
-        
-        return monitoring_node;
-    }
-    
-//    void _compress_nodes(_index_type node, _shelter& shelter, _index_type target_base) {
-//        _impl::_set_new_edge(node, target_base);
-//        std::vector<_shelter> shelters;
-//        for (size_t i = 0; i < shelter.children.size(); i++) {
-//            auto child = shelter.children[i];
-//            auto sibling = i+1<shelter.children.size() ? shelter.children[i+1] : kEmptyChar;
-//            auto new_next = target_base xor child;
-//            if (not _impl::_empty(new_next)) {
-//                // Evacuate already placed siblings membering element at conflicting index to shelter.
-//                shelters.emplace_back();
-//                auto conflicting_node = _impl::container_[new_next].check();
-//                _evacuate(conflicting_node, shelters.back());
-//            }
-//            auto& luggage = shelter.luggages[i];
-//            _update_node(new_next, child, sibling, luggage);
-////            if (not _impl::container_[new_next].is_leaf())
-////                _update_check(_impl::_base_at(new_next), luggage.child, new_next);
-//        }
-//        _impl::_consume_block(_impl::_block_index_of(target_base), shelter.children.size());
-//
-//        // Compress sheltered siblings recursively.
-//        for (auto& sht : shelters) {
-//            _compress_nodes(sht, _find_compression_target(sht.children));
-//        }
-//
-//        return;
-//    }
-    
-//    _index_type _find_compression_target(std::vector<_char_type>& siblings) const {
-//        if (siblings.size() == 1 and _impl::personal_block_head_ != kInitialEmptyBlockHead) {
-//            _index_type pbh = _impl::personal_block_head_;
-//            return (kBlockSize * pbh + _impl::basic_block_[pbh].empty_head()) xor siblings.front();
-//        }
-//        if (_impl::general_block_head_ == kInitialEmptyBlockHead) {
-//            return _impl::container_.size();
-//        }
-//        _index_type b = _impl::general_block_head_;
-//        while (true) {
-//            if (b == _impl::_block_index_of(_impl::container_.size()-1)) {
-//                b = _impl::basic_block_[_impl::_block_index_of(_impl::container_.size()-1)].succ();
-//                if (b == _impl::general_block_head_)
-//                    return _impl::container_.size();
-//                continue;
-//            }
-//            auto block = _impl::basic_block_[b];
-//            assert(block.link_enabled());
-//            const auto offset = kBlockSize * b;
-//            for (auto index = offset + block.empty_head(); ; ) {
-//                _index_type n = index xor siblings.front();
-//                bool skip = false;
-//                for (_char_type c : siblings) {
-//                    auto target = n xor c;
-//                    if (not _impl::_empty(target) and
-//                        _impl::_num_of_children(_impl::container_[target].check()) >= siblings.size()) {
-//                        skip = true;
-//                        break;
-//                    }
-//                }
-//                if (not skip) {
-//                    return n;
-//                }
-//                auto succ = _impl::container_[index].succ();
-//                if (succ == block.empty_head())
-//                    break;
-//                index = offset + succ;
-//            }
-//            if (block.succ() == _impl::general_block_head_) {
-//                return _impl::container_.size();
-//            }
-//            b = block.succ();
-//        }
-//    }
-    
-//    void _reduce() {
-//        using bit_util::ctz256;
-//        for (_index_type b = _impl::_block_index_of(_impl::container_.size()-1); b > 0; b--) {
-//            for (size_t ctz = ctz256(_impl::basic_block_[b].field_ptr()); ctz < 256; ctz = ctz256(_impl::basic_block_[b].field_ptr())) {
-//                auto parent = _impl::container_[kBlockSize*b+ctz].check();
-//                auto base = _impl::_base_at(parent);
-//                _shelter shelter;
-//                shelter.node = parent;
-//                _impl::_for_each_children(parent, [&](auto, _char_type child) {
-//                    shelter.children.push_back(child);
-//                });
-//                auto compression_target = _find_compression_target(shelter.children);
-//                if (_impl::_block_index_of(compression_target) >= b)
-//                    return;
-//                _impl::_for_each_children(parent, [&](_index_type next, auto) {
-//                    auto unit = _impl::container_[next];
-//                    shelter.luggages.emplace_back(_impl::container_[next].is_leaf(), unit.has_label(), unit.label_is_suffix(), unit.target());
-//                    _impl::_erase(next);
-//                });
-//                _impl::_refill_block(_impl::_block_index_of(base), shelter.children.size());
-//                _compress_nodes(shelter, compression_target);
-//            }
-//            _impl::_shrink();
-//        }
-//    }
-    
-    _index_type _resolve_collision(_index_type node, _char_type c) {
-        _shelter shelter;
-        _evacuate(node, shelter);
-        shelter.children.push_back(c);
-        auto new_base = _impl::_find_base(shelter.children);
-        shelter.children.pop_back();
-        _move_nodes(node, shelter, new_base);
-        return node;
-    }
-    
-    void _push_sibling(_index_type node, _char_type c, _index_type base) {
-        assert(base == (node xor c));
-        auto base_unit = _impl::container_[base];
-        auto child = base_unit.child();
-        assert(child != c);
-        if (not Ordered or c < child) {
-            base_unit.set_child(c);
-            _impl::container_[node].set_sibling(child);
-        } else {
-            auto index = base xor child;
-            auto index_unit = _impl::container_[index];
-            _char_type sibling;
-            while ((sibling = index_unit.sibling()) < c) {
-                index_unit = _impl::container_[base xor sibling];
-            }
-            index_unit.set_sibling(c);
-            _impl::container_[node].set_sibling(sibling);
-        }
-    }
-    
-    void _pop_sibling(_index_type node, _index_type base) {
-        auto node_unit = _impl::container_[node];
-        auto succ_sibling = node_unit.sibling();
-        auto base_unit = _impl::container_[base];
-        if ((base xor base_unit.child()) == node)
-            base_unit.set_child(succ_sibling);
-        auto index_unit = node_unit;
-        _index_type next;
-        while ((next = base xor index_unit.sibling()) != node) {
-            index_unit = _impl::container_[next];
-        }
-        index_unit.set_sibling(succ_sibling);
-    }
-    
-    _index_type _insert_trans(_index_type node, _char_type c) {
-        if (_impl::container_[node].is_leaf()) {
-            return _grow(node, _impl::_find_base({c}), c);
-        }
-        auto base = _impl::_base_at(node);
-        auto next = base xor c;
-        if (not _impl::_empty_at(next)) {
-            node = _resolve_collision(node, c);
-            base = _impl::_base_at(node);
-            next = base xor c;
-        }
-        _impl::_setup(next);
-        auto next_unit = _impl::container_[next];
-        next_unit.set_check(c);
-        _push_sibling(next, c, base);
-        _impl::_consume_block(_impl::_block_index_of(base), 1);
-        
-        return next;
-    }
-    
 };
 
 
 // MARK: - Patricia Trie
 
-template <typename ValueType, typename IndexType, unsigned MaxTrial, bool BitOperationalFind>
-class _DoubleArrayBcPatriciaTrieImpl : protected _DoubleArrayBcMpTrieImpl<ValueType, IndexType, MaxTrial, BitOperationalFind> {
-    using _base = _DoubleArrayBcMpTrieImpl<ValueType, IndexType, MaxTrial, BitOperationalFind>;
+template <typename ValueType, typename IndexType>
+class _DoubleArrayBcPatriciaTrieImpl : public _DoubleArrayBcMpTrieImpl<ValueType, IndexType> {
+    using _base = _DoubleArrayBcMpTrieImpl<ValueType, IndexType>;
 public:
     using typename _base::_value_type;
     using typename _base::_index_type;
@@ -1305,10 +328,13 @@ public:
     using _base::kEmptyFlag;
     using _base::kIndexMask;
     
-protected:
+public:
     _DoubleArrayBcPatriciaTrieImpl() : _base() {}
     
     _DoubleArrayBcPatriciaTrieImpl(std::ifstream& ifs) : _base(ifs) {}
+    
+    _DoubleArrayBcPatriciaTrieImpl(_DoubleArrayBcPatriciaTrieImpl&&) = default;
+    _DoubleArrayBcPatriciaTrieImpl& operator=(_DoubleArrayBcPatriciaTrieImpl&&) = default;
     
     virtual ~_DoubleArrayBcPatriciaTrieImpl() = default;
     
@@ -1353,212 +379,64 @@ protected:
 };
 
 
-template <class _Impl, bool Ordered>
-class _DynamicDoubleArrayPatriciaTrieBehavior : protected _DynamicDoubleArrayMpTrieBehavior<_Impl, Ordered> {
-public:
-    using _impl = _Impl;
-    using _base = _DynamicDoubleArrayMpTrieBehavior<_Impl, Ordered>;
-    using typename _impl::_value_type;
-    using typename _impl::_index_type;
-    using typename _impl::_char_type;
-    
-    using _impl::kValueBytes;
-    using _impl::kIndexBytes;
-    using _impl::kLeafChar;
-    using _impl::kEmptyFlag;
-    using _impl::kEmptyChar;
-    
-protected:
-    _DynamicDoubleArrayPatriciaTrieBehavior() : _base() {}
-    
-    _DynamicDoubleArrayPatriciaTrieBehavior(std::ifstream& ifs) : _base(ifs) {}
-    
-    virtual ~_DynamicDoubleArrayPatriciaTrieBehavior() = default;
-    
-    _value_type* _insert_in_bc(_index_type node, std::string_view additional_suffix) override {
-        if (not additional_suffix.empty()) {
-            node = _base::_insert_trans(node, additional_suffix.front());
-            auto pool_index = _impl::_append_suffix_in_pool(additional_suffix.substr(1));
-            _impl::container_[node].set_pool_index(pool_index, true);
-            return reinterpret_cast<_value_type*>(&*(_impl::pool_.end()-kValueBytes));
-        } else {
-            node = _base::_insert_trans(node, kLeafChar);
-            _impl::container_[node].set_pool_index(_impl::pool_.size(), true);
-            return _impl::_append_value();
-        }
-    }
-    
-    _value_type* _insert_in_suffix(_index_type node, _index_type label_pos, std::string_view additional_suffix) {
-        assert(_impl::container_[node].has_label() and
-               _impl::container_[node].label_is_suffix());
-        auto forked_base = _impl::_find_base({_impl::pool_[label_pos], (_char_type)additional_suffix.front()});
-        _fork_in_suffix(node, label_pos, forked_base);
-        assert(not _impl::container_[node].is_leaf());
-        return _insert_in_bc(node, additional_suffix);
-    }
-    
-    _value_type* _insert_in_internal_label(_index_type node, _index_type label_pos, std::string_view additional_suffix) {
-        assert(_impl::container_[node].has_label() and
-               not _impl::container_[node].label_is_suffix());
-        auto forked_base = _impl::_find_base({_impl::pool_[label_pos], (_char_type)additional_suffix.front()});
-        _fork_in_internal_label(node, label_pos, forked_base);
-        return _insert_in_bc(node, additional_suffix);
-    }
-    
-    void _insert_nodes(_index_type node, std::vector<typename _base::_internal_label_container>& label_datas, _index_type base) override {
-        _impl::_set_new_edge(node, base, label_datas.front().label.empty() ? kLeafChar : label_datas.front().label.front());
-        for (size_t i = 0; i < label_datas.size(); i++) {
-            auto cur_label = label_datas[i].label;
-            _char_type c = cur_label.empty() ? kLeafChar : cur_label.front();
-            auto next = base xor c;
-            assert(_impl::_empty_at(next));
-            auto sibling = i+1 < label_datas.size() ? label_datas[i+1].label.front() : kEmptyChar;
-            if (label_datas[i].suffix) {
-                if (cur_label.empty()) {
-                    _impl::_set_new_node_by_label(next, c, sibling, _impl::pool_.size(), true);
-                    _impl::_append_value();
-                } else {
-                    auto pool_index = _impl::_append_suffix_in_pool(cur_label.substr(1));
-                    _impl::_set_new_node_by_label(next, c, sibling, pool_index, true);
-                }
-            } else {
-                if (cur_label.size() == 1) {
-                    _impl::_set_new_node(next, c, sibling);
-                } else {
-                    auto pool_index = _impl::_append_internal_label_in_pool(cur_label.substr(1), kEmptyFlag);
-                    _impl::_set_new_node_by_label(next, c, sibling, pool_index, false);
-                }
-            }
-        }
-        _impl::_consume_block(_impl::_block_index_of(base), label_datas.size());
-    }
-    
-private:
-    void _fork_in_suffix(_index_type node, _index_type label_pos, _index_type forked_base) {
-        assert(_impl::container_[node].has_label() and
-               _impl::container_[node].label_is_suffix());
-        _char_type char_at_confliction = _impl::pool_[label_pos];
-        _impl::_setup_base_at(forked_base, char_at_confliction);
-        
-        auto label_index = _impl::container_[node].pool_index();
-        auto left_label_length = label_pos - label_index;
-        std::vector<_char_type> cs;
-        for (int i = 0; i < left_label_length; i++)
-            cs.push_back(_impl::pool_[label_index+i]);
-        auto node_unit = _impl::container_[node];
-        if (left_label_length == 0) {
-            node_unit.set_base(forked_base);
-        } else {
-            std::string left_label((char*)_impl::pool_.data() + label_index, left_label_length);
-            auto relay_pool_index = _impl::_append_internal_label_in_pool(left_label, forked_base);
-            node_unit.set_pool_index(relay_pool_index, false);
-        }
-        assert(not node_unit.is_leaf());
-        auto relay_next = forked_base xor char_at_confliction;
-        _impl::_set_new_node_by_label(relay_next, char_at_confliction, kEmptyChar, label_pos+1, true);
-        _impl::_consume_block(_impl::_block_index_of(relay_next), 1);
-    }
-    
-    void _fork_in_internal_label(_index_type node, _index_type label_pos, _index_type forked_base) {
-        assert(_impl::container_[node].has_label() and
-               not _impl::container_[node].label_is_suffix());
-        _char_type char_at_confliction = _impl::pool_[label_pos];
-        assert(char_at_confliction != kLeafChar);
-        _impl::_setup_base_at(forked_base, char_at_confliction);
-        const auto pool_index = _impl::container_[node].pool_index();
-        const auto node_base = _impl::_base_in_pool(pool_index);
-        
-        auto label_index = pool_index + kIndexBytes;
-        auto left_label_length = label_pos - label_index;
-        auto right_label_length = 0;
-        bool small_prefix = false;
-        while (not small_prefix and _impl::pool_[label_pos + right_label_length] != kLeafChar) {
-            small_prefix = left_label_length < ++right_label_length;
-        }
-        auto relay_next = forked_base xor char_at_confliction;
-        if (small_prefix) {
-            // ||*|*|*||*|*|*|$||
-            //  |→   ←| conflict between this area
-            if (left_label_length == 0) {
-                _impl::container_[node].set_base(forked_base);
-            } else {
-                std::string left_label((char*)_impl::pool_.data() + label_index, left_label_length);
-                auto relay_pool_index = _impl::_append_internal_label_in_pool(left_label, forked_base);
-                _impl::container_[node].set_pool_index(relay_pool_index, false);
-            }
-            if (_impl::pool_[label_pos + 1] == kLeafChar) { // Length of right-label is 1.
-                _impl::_set_new_node(relay_next, char_at_confliction);
-                _impl::container_[relay_next].set_base(node_base);
-            } else {
-                _impl::_set_new_node_by_label(relay_next, char_at_confliction, kEmptyChar, label_pos+1-kIndexBytes, false);
-                _impl::_set_base_in_pool(label_pos+1-kIndexBytes, node_base);
-            }
-        } else {
-            // ||*|*|*||*|*|*|$||
-            //         |→   ←| conflict between this area
-            _impl::pool_[label_pos] = kLeafChar;
-            _impl::_set_base_in_pool(pool_index, forked_base);
-            if (right_label_length == 1) {
-                _impl::_set_new_node(relay_next, char_at_confliction, kEmptyChar);
-                _impl::container_[relay_next].set_base(node_base);
-            } else {
-                std::string right_label((char*)_impl::pool_.data() + label_pos + 1);
-                auto relay_pool_index = _impl::_append_internal_label_in_pool(right_label, node_base);
-                _impl::_set_new_node_by_label(relay_next, char_at_confliction, kEmptyChar, relay_pool_index, false);
-            }
-        }
-        _impl::_consume_block(_impl::_block_index_of(relay_next), 1);
-//        _base::_update_check(node_base, node_child, relay_next);
-    }
-    
-};
-
-
 // MARK: - Dynamic Double-array Interface
 
 template <typename ValueType,
           typename IndexType,
           bool     Ordered     = false,
-          unsigned MaxTrial    = 1,
+          size_t   MaxTrial    = 1,
           bool     LegacyBuild = true,
           bool     Patricia    = true>
 class DoubleArray;
 
 
-template <typename ValueType, typename IndexType, bool Ordered, unsigned MaxTrial, bool LegacyBuild>
-class DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, false> :
-private _DynamicDoubleArrayMpTrieBehavior<_DoubleArrayBcMpTrieImpl<ValueType, IndexType, MaxTrial, not LegacyBuild>, Ordered> {
-    using _impl = _DoubleArrayBcMpTrieImpl<ValueType, IndexType, MaxTrial, not LegacyBuild>;
-    using _behavior = _DynamicDoubleArrayMpTrieBehavior<_impl, Ordered>;
+template <typename ValueType, typename IndexType, bool Ordered, size_t MaxTrial, bool LegacyBuild>
+class DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, false> : public _DoubleArrayBcMpTrieImpl<ValueType, IndexType> {
     using _self = DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, false>;
+    using _impl = _DoubleArrayBcMpTrieImpl<ValueType, IndexType>;
+    
+    using _constructor = _DynamicDoubleArrayMpTrieConstructor<Ordered, MaxTrial, not LegacyBuild, _impl>;
+    
+    _constructor constructor_;
+    
 public:
     using value_type = typename _impl::_value_type;
     using index_type = typename _impl::_index_type;
     using char_type = typename _impl::_char_type;
     
     static constexpr index_type kRootIndex = _impl::kRootIndex;
-    static constexpr char_type kLeafChar = graph_util::kLeafChar;
+    static constexpr char_type kLeafChar = _impl::kLeafChar;
     
     static constexpr size_t kBlockSize = _impl::kBlockSize;
     
-    DoubleArray() : _behavior() {}
+    DoubleArray() : _impl(), constructor_(*this) {
+        constructor_.init();
+    }
     
-    DoubleArray(std::ifstream& ifs) : _behavior(ifs) {}
+    DoubleArray(std::ifstream& ifs) : _impl(ifs), constructor_(*this) {}
     
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
-    DoubleArray(StrIter begin, StrIter end) {
+    explicit DoubleArray(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
         _arrange_keysets(begin, end, 0, kRootIndex);
     }
     
     DoubleArray(const std::vector<std::string>& key_set) : DoubleArray(key_set.begin(), key_set.end()) {}
     
+    template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
+    explicit DoubleArray(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, false>&& x) : _impl(std::move(_impl(x))), constructor_(*this) {}
+    template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
+    DoubleArray& operator=(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, false>&& x) {
+        (_impl&) *this = std::move((_impl&) x);
+        return *this;
+    }
+    
     ~DoubleArray() = default;
     
     DoubleArray& rebuild() {
-        DoubleArray new_da;
+        DoubleArray<ValueType, IndexType, Ordered, 32, LegacyBuild, false> new_da;
         new_da._arrange_da(*this, kRootIndex, kRootIndex);
-        *this = new_da;
+        *this = std::move(new_da);
         return *this;
     }
     
@@ -1578,7 +456,7 @@ public:
             auto unit = _impl::container_[i];
             if (_impl::_empty_at(i) or not unit.has_label())
                 continue;
-            blank_size -= _impl::_suffix_in_pool(unit.pool_index()).size()+1;
+            blank_size -= _impl::_suffix_in_pool(unit.pool_index()).size()+1+_impl::kValueBytes;
         }
         return blank_size;
     }
@@ -1608,9 +486,9 @@ public:
     std::pair<value_type*, bool> insert(std::string_view key) {
         auto [ptr, res] = _traverse(key, [](auto){},
                              [&](index_type node, size_t key_pos) {
-                                 return _behavior::_insert_in_bc(node, key.substr(key_pos));
+                                 return constructor_._insert_in_bc(node, key.substr(key_pos));
                              }, [&](index_type node, size_t pool_pos, size_t key_pos) {
-                                 return _behavior::_insert_in_tail(node, pool_pos, key.substr(key_pos));
+                                 return constructor_._insert_in_tail(node, pool_pos, key.substr(key_pos));
                              });
         return {ptr, not res};
     }
@@ -1625,7 +503,7 @@ public:
     bool erase(std::string_view key) {
         return _traverse(key,
                          [&](index_type node) {
-                             _behavior::_delete_leaf(node);
+                             constructor_._delete_leaf(node);
                          },
                          [](auto, auto){return nullptr;}, [](auto, auto, auto){return nullptr;}).second;
     }
@@ -1675,15 +553,46 @@ public:
             std::cout << table[i] << std::endl;
     }
     
-private:
+    template <bool O, size_t MT, bool LB>
+    void _arrange_da(const DoubleArray<ValueType, IndexType, O, MT, LB, false>& da, const index_type node, const index_type co_node) {
+        std::vector<typename _constructor::_internal_label_container> label_datas;
+        std::vector<char_type> children;
+        da._for_each_children(node, [&](index_type index, char_type child) {
+            children.push_back(child);
+            std::string label;
+            label.push_back(child);
+            auto unit = da.unit_at(index);
+            if (unit.has_label())
+                label += da._suffix_in_pool(unit.pool_index());
+            while (da._is_single_node(index)) {
+                auto child = da.unit_at(da._base_at(index)).child();
+                label += child;
+                da._transition_bc(index, child);
+                unit = da.unit_at(index);
+                if (unit.has_label())
+                    label += da._suffix_in_pool(unit.pool_index());
+            }
+            label_datas.push_back({label, unit.label_is_suffix()});
+        });
+        
+        auto new_base = constructor_._find_base(children);
+        constructor_._insert_nodes(co_node, label_datas, new_base);
+        for (auto label_data : label_datas) {
+            auto target = node;
+            auto c = label_data.label.front();
+            da._transition_bc(target, c);
+            if (not label_data.suffix)
+                _arrange_da(da, target, new_base xor c);
+        }
+    }
+    
     template <class SuccessAction, class FailedInBcAction, class FailedInSuffixAction>
     std::pair<value_type*, bool> _traverse(std::string_view key, SuccessAction success, FailedInBcAction failed_in_bc, FailedInSuffixAction failed_in_suffix) const {
         index_type node = kRootIndex;
         size_t key_pos = 0;
         for (; key_pos < key.size(); key_pos++) {
             if (not _transition_bc(node, key[key_pos])) {
-                auto ptr = failed_in_bc(node, key_pos);
-                return {ptr, false};
+                return {failed_in_bc(node, key_pos), false};
             }
             if (_impl::container_[node].has_label()) {
                 auto [ptr, res] = _transition_suffix(node, key, ++key_pos, failed_in_suffix);
@@ -1695,8 +604,7 @@ private:
             }
         }
         if (not _transition_bc(node, kLeafChar)) {
-            auto ptr = failed_in_bc(node, key_pos);
-            return {ptr, false};
+            return {failed_in_bc(node, key_pos), false};
         }
         success(node);
         return {const_cast<value_type*>(reinterpret_cast<const value_type*>(_impl::pool_.data()+_impl::container_[node].pool_index())), true};
@@ -1723,52 +631,17 @@ private:
             char_type char_in_tail = *pool_ptr;
             if (char_in_tail == kLeafChar or
                 char_in_tail != (char_type)key[key_pos]) {
-                auto ptr = failed(node, pool_index+i, key_pos);
-                return {ptr, false};
+                return {failed(node, pool_index+i, key_pos), false};
             }
             ++pool_ptr;
             i++;
             key_pos++;
         }
         if (*pool_ptr != kLeafChar) {
-            auto ptr = failed(node, pool_index+i, key_pos);
-            return {ptr, false};
+            return {failed(node, pool_index+i, key_pos), false};
         }
         key_pos--;
         return {reinterpret_cast<value_type*>(pool_ptr+1), true};
-    }
-    
-    void _arrange_da(const _self& da, index_type node, index_type co_node) {
-        std::vector<typename _impl::_internal_label_container> label_datas;
-        std::vector<char_type> children;
-        auto base = _impl::_base_at(node);
-        da._behavior::_for_each_children(node, [&](index_type index, char_type child) {
-            children.push_back(child);
-            auto unit = _impl::container_[index];
-            std::string label = std::string(child);
-            if (unit.has_label())
-                _impl::_label_in_pool(index);
-            while (not unit.terminal() and _impl::_is_single_node(index)) {
-                label += unit.child;
-                _transition_bc(index, unit.child);
-                unit = _impl::container_[index];
-                if (unit.has_label())
-                    label += _impl::_suffix_in_tail(unit.pool_index());
-            }
-            label_datas.push_back({label,
-                unit.terminal(),
-                unit.label_is_suffix()});
-        });
-        
-        auto new_base = _impl::_find_base(children);
-        _impl::_insert_nodes(co_node, label_datas, new_base);
-        for (auto label_data : label_datas) {
-            auto target = node;
-            auto c = label_data.label.front();
-            da._transition(target, c);
-            if (not label_data.suffix)
-                _arrange_da(da, target, new_base xor c);
-        }
     }
     
     template <typename StrIter,
@@ -1777,7 +650,7 @@ private:
         if (begin >= end)
             return;
         
-        std::vector<typename _behavior::_internal_label_container> label_datas;
+        std::vector<typename _constructor::_internal_label_container> label_datas;
         std::vector<char_type> children;
         while (begin < end and ((*begin).size() == depth)) {
             label_datas.push_back({"", true});
@@ -1790,9 +663,9 @@ private:
         auto append = [&](auto it) {
             assert(not front_label.empty());
             if (it == iters.back()) {
-                label_datas.push_back({front_label, true});
+                label_datas.push_back({std::string(front_label), true});
             } else {
-                label_datas.push_back({front_label.substr(0,1), false});
+                label_datas.push_back({std::string(front_label.substr(0,1)), false});
             }
             children.push_back(prev_key);
             iters.push_back(it+1);
@@ -1807,8 +680,8 @@ private:
         }
         append(end-1);
         
-        auto new_base = _impl::_find_base(children);
-        _behavior::_insert_nodes(co_node, label_datas, new_base);
+        auto new_base = constructor_._find_base(children);
+        constructor_._insert_nodes(co_node, label_datas, new_base);
         for (size_t i = 0; i < label_datas.size(); i++) {
             auto label = label_datas[i].label;
             if (not label_datas[i].suffix)
@@ -1819,40 +692,54 @@ private:
 };
 
 
-template <typename ValueType, typename IndexType, bool Ordered, unsigned MaxTrial, bool LegacyBuild>
-class DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, true> :
-private _DynamicDoubleArrayPatriciaTrieBehavior<_DoubleArrayBcPatriciaTrieImpl<ValueType, IndexType, MaxTrial, not LegacyBuild>, Ordered> {
-    using _impl = _DoubleArrayBcPatriciaTrieImpl<ValueType, IndexType, MaxTrial, not LegacyBuild>;
-    using _behavior = _DynamicDoubleArrayPatriciaTrieBehavior<_impl, Ordered>;
+template <typename ValueType, typename IndexType, bool Ordered, size_t MaxTrial, bool LegacyBuild>
+class DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, true> : public _DoubleArrayBcPatriciaTrieImpl<ValueType, IndexType> {
     using _self = DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, true>;
+    using _impl = _DoubleArrayBcPatriciaTrieImpl<ValueType, IndexType>;
+    
+    using _constructor = _DynamicDoubleArrayPatriciaTrieConstructor<Ordered, MaxTrial, not LegacyBuild, _impl>;
+    
+private:
+    _constructor constructor_;
+    
 public:
     using value_type = typename _impl::_value_type;
     using index_type = typename _impl::_index_type;
     using char_type = typename _impl::_char_type;
     
     static constexpr index_type kRootIndex = _impl::kRootIndex;
-    static constexpr char_type kLeafChar = '\0';
+    static constexpr char_type kLeafChar = _impl::kLeafChar;
     
-    static constexpr size_t kBlockSize = _behavior::kBlockSize;
+    static constexpr size_t kBlockSize = _impl::kBlockSize;
     
-    DoubleArray() : _behavior() {}
+    DoubleArray() : _impl(), constructor_(*this) {
+        constructor_.init();
+    }
     
-    DoubleArray(std::ifstream& ifs) : _behavior(ifs) {}
+    DoubleArray(std::ifstream& ifs) : _impl(ifs), _constructor(*this) {}
     
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
-    DoubleArray(StrIter begin, StrIter end) {
+    DoubleArray(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
         _arrange_keysets(begin, end, 0, kRootIndex);
     }
     
     DoubleArray(const std::vector<std::string>& key_set) : DoubleArray(key_set.begin(), key_set.end()) {}
     
+    template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
+    explicit DoubleArray(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, true>&& x) : _impl(std::move(_impl(x))), constructor_(*this) {}
+    template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
+    DoubleArray& operator=(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, true>&& x) {
+        (_impl&) *this = std::move((_impl&) x);
+        return *this;
+    }
+    
     ~DoubleArray() = default;
     
     DoubleArray& rebuild() {
-        DoubleArray new_da;
+        DoubleArray<ValueType, IndexType, Ordered, 32, LegacyBuild, true> new_da;
         new_da._arrange_da(*this, kRootIndex, kRootIndex);
-        *this = new_da;
+        *this = std::move(new_da);
         return *this;
     }
     
@@ -1874,7 +761,7 @@ public:
                 continue;
             auto pool_index = unit.pool_index();
             if (unit.label_is_suffix())
-                blank_size -= _impl::_suffix_in_pool(pool_index).size()+1;
+                blank_size -= _impl::_suffix_in_pool(pool_index).size()+1+_impl::kValueBytes;
             else
                 blank_size -= _impl::kIndexBytes + _impl::_suffix_in_pool(pool_index+_impl::kIndexBytes).size()+1;
         }
@@ -1911,13 +798,13 @@ public:
     std::pair<value_type*, bool> insert(std::string_view key) {
         auto [ptr, res] = _traverse(key, [](auto){},
                              [&](index_type node, size_t key_pos) {
-                                 return _behavior::_insert_in_bc(node, key.substr(key_pos));
+                                 return constructor_._insert_in_bc(node, key.substr(key_pos));
                              },
                              [&](index_type node, size_t label_pos, size_t key_pos) {
-                                 return _behavior::_insert_in_internal_label(node, label_pos, key.substr(key_pos));
+                                 return constructor_._insert_in_internal_label(node, label_pos, key.substr(key_pos));
                              },
                              [&](index_type node, size_t label_pos, size_t key_pos) {
-                                 return _behavior::_insert_in_suffix(node, label_pos, key.substr(key_pos));
+                                 return constructor_._insert_in_suffix(node, label_pos, key.substr(key_pos));
                              });
         return {ptr, not res};
     }
@@ -1931,7 +818,7 @@ public:
     
     bool erase(std::string_view key) {
         return _traverse(key, [&](index_type node) {
-                             _behavior::_delete_leaf(node);
+                             constructor_._delete_leaf(node);
                          }, [](auto, auto){return nullptr;},
                          [](auto, auto, auto){return nullptr;},
                          [](auto, auto, auto) {return nullptr;}).second;
@@ -1982,13 +869,47 @@ public:
             std::cout << table[i] << std::endl;
     }
     
-private:
+    template <bool O, size_t MT, bool LB>
+    void _arrange_da(const DoubleArray<ValueType, IndexType, O, MT, LB>& da, const index_type node, const index_type co_node) {
+        std::vector<typename _constructor::_internal_label_container> label_datas;
+        std::vector<char_type> children;
+        da._for_each_children(node, [&](index_type index, char_type child) {
+            children.push_back(child);
+            std::string label;
+            label.push_back(child);
+            auto unit = da.unit_at(index);
+            assert(unit.check() == child);
+            if (unit.has_label())
+                label += da._suffix_in_pool(unit.pool_index()+(unit.label_is_suffix()?0:_impl::kIndexBytes));
+            while (da._is_single_node(index)) {
+                auto base = da._base_at(index);
+                auto child = da.unit_at(base).child();
+                label += child;
+                da._transition_bc(index, base, child);
+                unit = da.unit_at(index);
+                if (unit.has_label())
+                    label += da._suffix_in_pool(unit.pool_index()+(unit.label_is_suffix()?0:_impl::kIndexBytes));
+            }
+            label_datas.push_back({label, unit.label_is_suffix()});
+        });
+        
+        auto new_base = constructor_._find_base(children);
+        constructor_._insert_nodes(co_node, label_datas, new_base);
+        for (auto label_data : label_datas) {
+            auto target = node;
+            uint8_t c = label_data.label.front();
+            auto res = da._transition_bc(target, da._base_at(target), c);
+            assert(res);
+            if (not label_data.suffix)
+                _arrange_da(da, target, new_base xor c);
+        }
+    }
+    
     template <class SuccessAction, class FailedInBcAction, class FailedInInternalLabelAction, class FailedInSuffixAction>
     std::pair<value_type*, bool> _traverse(std::string_view key, SuccessAction success, FailedInBcAction failed_in_bc, FailedInInternalLabelAction failed_in_internal_label, FailedInSuffixAction failed_in_suffix) const {
         if (_impl::container_[kRootIndex].is_leaf()) {
             // First insertion
-            failed_in_bc(kRootIndex, 0);
-            return {nullptr, false};
+            return {failed_in_bc(kRootIndex, 0), false};
         }
         index_type node = kRootIndex;
         index_type base = _impl::_base_at(node);
@@ -2080,45 +1001,13 @@ private:
         return {reinterpret_cast<value_type*>(pool_ptr+1), true};
     }
     
-    void _arrange_da(const _self& da, index_type node, index_type co_node) {
-        std::vector<typename _impl::_internal_label_container> label_datas;
-        std::vector<char_type> children;
-        auto base = _impl::_base_at(node);
-        da._behavior::_for_each_children(node, [&](index_type index, char_type child) {
-            children.push_back(child);
-            auto unit = _impl::container_[index];
-            std::string label = std::string(child);
-            if (unit.has_label())
-                _impl::_label_in_pool(index);
-            while (_impl::_is_single_node(index)) {
-                label += unit.child;
-                _transition_bc(index, unit.child);
-                unit = _impl::container_[index];
-                if (unit.has_label())
-                    label += _impl::_label_in_pool(index);
-            }
-            label_datas.push_back({label,
-                                   unit.label_is_suffix()});
-        });
-        
-        auto new_base = _impl::_find_base(children);
-        _impl::_insert_nodes(co_node, label_datas, new_base);
-        for (auto label_data : label_datas) {
-            auto target = node;
-            auto c = label_data.label.front();
-            da._transition(target, c);
-            if (not label_data.suffix)
-                _arrange_da(da, target, new_base xor c);
-        }
-    }
-    
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
     void _arrange_keysets(StrIter begin, StrIter end, size_t depth, index_type co_node) {
         if (begin >= end)
             return;
         
-        std::vector<typename _behavior::_internal_label_container> label_datas;
+        std::vector<typename _constructor::_internal_label_container> label_datas;
         std::vector<char_type> children;
         if ((*begin).size() == depth) {
             label_datas.push_back({"", true});
@@ -2126,7 +1015,7 @@ private:
             ++begin;
         }
         if (begin == end) {
-            _behavior::_insert_nodes(co_node, label_datas, _impl::_find_base(children));
+            constructor_._insert_nodes(co_node, label_datas, constructor_._find_base(children));
         } else {
             assert(begin < end);
             assert(begin->size() > depth);
@@ -2139,8 +1028,7 @@ private:
                 while (label_length < front_label.size() and label_length < back_label.size() and
                        back_label[label_length] == front_label[label_length])
                     label_length++;
-                label_datas.push_back({front_label.substr(0, label_length),
-                    label_length == back_label.size()});
+                label_datas.push_back({std::string(front_label.substr(0, label_length)), label_length == back_label.size()});
                 children.push_back(prev_key);
                 iters.push_back(it+1);
             };
@@ -2153,8 +1041,8 @@ private:
                 }
             }
             append(end-1);
-            auto new_base = _impl::_find_base(children);
-            _behavior::_insert_nodes(co_node, label_datas, new_base);
+            auto new_base = constructor_._find_base(children);
+            constructor_._insert_nodes(co_node, label_datas, new_base);
             for (size_t i = 0; i < iters.size()-1; i++) {
                 auto& ld = label_datas[i+(children.front()==kLeafChar?1:0)];
                 auto label = ld.label;
@@ -2165,15 +1053,15 @@ private:
         
     }
     
-    
-    template <ValueType>
-    using u32DoubleArray = DoubleArray<ValueType, uint32_t>;
-    template <ValueType>
-    using u64DoubleArray = DoubleArray<ValueType, uint64_t>;
-    
 };
-    
-    } // namespace sim_ds
-    
+
+
+template <typename ValueType>
+using u32DoubleArray = DoubleArray<ValueType, uint32_t>;
+template <typename ValueType>
+using u64DoubleArray = DoubleArray<ValueType, uint64_t>;
+
+} // namespace sim_ds
+
 #endif /* DoubleArray_hpp */
     
