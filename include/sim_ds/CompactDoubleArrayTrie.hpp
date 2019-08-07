@@ -1,5 +1,5 @@
 //
-//  DoubleArray.hpp
+//  DoubleArrayTrie.hpp
 //  BitVector_test
 //
 //  Created by 松本拓真 on 2019/06/18.
@@ -21,9 +21,9 @@ namespace sim_ds {
 // MARK: - MPTrie
 
 template <typename ValueType, typename IndexType>
-class _DoubleArrayBcMpTrieImpl {
+class _CompactDoubleArrayMpTrieImpl {
 public:
-    using _self = _DoubleArrayBcMpTrieImpl<ValueType, IndexType>;
+    using _self = _CompactDoubleArrayMpTrieImpl<ValueType, IndexType>;
     using _value_type = ValueType;
     using _index_type = IndexType;
     using _char_type = uint8_t;
@@ -33,7 +33,7 @@ public:
     static constexpr _char_type kLeafChar = '\0';
     static constexpr _char_type kEmptyChar = 0xFF;
     
-    using _unit_container = _DoubleArrayUnitContainer<_self>;
+    using _unit_container = _CompactDoubleArrayUnitContainer<_self>;
     using _unit_reference = typename _unit_container::_unit_reference;
     using _const_unit_reference = typename _unit_container::_const_unit_reference;
     static constexpr auto kUnitBytes = _unit_container::kUnitBytes;
@@ -45,7 +45,7 @@ public:
     static constexpr size_t kValueBytes = std::is_void_v<ValueType> ? 0 : sizeof(ValueType);
     
     static constexpr unsigned kBlockSize = 0x100;
-    using _block_container = _DoubleArrayBlockContainer<_self>;
+    using _block_container = _CompactDoubleArrayBlockContainer<_self>;
     using _block_reference = typename _block_container::_block_reference;
     using _const_block_reference = typename _block_container::_const_block_reference;
     static constexpr auto kBlockQBytes = _block_container::kBlockQBytes;
@@ -57,9 +57,9 @@ protected:
     _unit_container container_;
     std::vector<_char_type> pool_;
     
-    _DoubleArrayBcMpTrieImpl() : enabled_blocks_head_(kInitialEmptyBlockHead) {}
+    _CompactDoubleArrayMpTrieImpl() : enabled_blocks_head_(kInitialEmptyBlockHead) {}
     
-    explicit _DoubleArrayBcMpTrieImpl(std::ifstream& ifs) {
+    explicit _CompactDoubleArrayMpTrieImpl(std::ifstream& ifs) {
         enabled_blocks_head_ = read_val<_index_type>(ifs);
         basic_block_.read(ifs);
         container_.read(ifs);
@@ -81,10 +81,10 @@ protected:
     }
     
 public:
-    _DoubleArrayBcMpTrieImpl(_DoubleArrayBcMpTrieImpl&&) = default;
-    _DoubleArrayBcMpTrieImpl& operator=(_DoubleArrayBcMpTrieImpl&&) = default;
+    _CompactDoubleArrayMpTrieImpl(_CompactDoubleArrayMpTrieImpl&&) = default;
+    _CompactDoubleArrayMpTrieImpl& operator=(_CompactDoubleArrayMpTrieImpl&&) = default;
     
-    virtual ~_DoubleArrayBcMpTrieImpl() = default;
+    virtual ~_CompactDoubleArrayMpTrieImpl() = default;
     
     _index_type enabled_blocks_head() const {return enabled_blocks_head_;}
     
@@ -315,8 +315,8 @@ private:
 // MARK: - Patricia Trie
 
 template <typename ValueType, typename IndexType>
-class _DoubleArrayBcPatriciaTrieImpl : public _DoubleArrayBcMpTrieImpl<ValueType, IndexType> {
-    using _base = _DoubleArrayBcMpTrieImpl<ValueType, IndexType>;
+class _CompactDoubleArrayBcPatriciaTrieImpl : public _CompactDoubleArrayMpTrieImpl<ValueType, IndexType> {
+    using _base = _CompactDoubleArrayMpTrieImpl<ValueType, IndexType>;
 public:
     using typename _base::_value_type;
     using typename _base::_index_type;
@@ -329,14 +329,14 @@ public:
     using _base::kIndexMask;
     
 public:
-    _DoubleArrayBcPatriciaTrieImpl() : _base() {}
+    _CompactDoubleArrayBcPatriciaTrieImpl() : _base() {}
     
-    _DoubleArrayBcPatriciaTrieImpl(std::ifstream& ifs) : _base(ifs) {}
+    _CompactDoubleArrayBcPatriciaTrieImpl(std::ifstream& ifs) : _base(ifs) {}
     
-    _DoubleArrayBcPatriciaTrieImpl(_DoubleArrayBcPatriciaTrieImpl&&) = default;
-    _DoubleArrayBcPatriciaTrieImpl& operator=(_DoubleArrayBcPatriciaTrieImpl&&) = default;
+    _CompactDoubleArrayBcPatriciaTrieImpl(_CompactDoubleArrayBcPatriciaTrieImpl&&) = default;
+    _CompactDoubleArrayBcPatriciaTrieImpl& operator=(_CompactDoubleArrayBcPatriciaTrieImpl&&) = default;
     
-    virtual ~_DoubleArrayBcPatriciaTrieImpl() = default;
+    virtual ~_CompactDoubleArrayBcPatriciaTrieImpl() = default;
     
     _index_type _base_in_pool(_index_type pool_index) const {
         const _index_type* base_ptr = reinterpret_cast<const _index_type*>(_base::pool_.data() + pool_index);
@@ -387,16 +387,17 @@ template <typename ValueType,
           size_t   MaxTrial    = 1,
           bool     LegacyBuild = true,
           bool     Patricia    = true>
-class DoubleArray;
+class CompactDoubleArrayTrie;
 
 
 template <typename ValueType, typename IndexType, bool Ordered, size_t MaxTrial, bool LegacyBuild>
-class DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, false> : public _DoubleArrayBcMpTrieImpl<ValueType, IndexType> {
-    using _self = DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, false>;
-    using _impl = _DoubleArrayBcMpTrieImpl<ValueType, IndexType>;
+class CompactDoubleArrayTrie<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, false> : public _CompactDoubleArrayMpTrieImpl<ValueType, IndexType> {
+    using _self = CompactDoubleArrayTrie<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, false>;
+    using _impl = _CompactDoubleArrayMpTrieImpl<ValueType, IndexType>;
     
     using _constructor = _DynamicDoubleArrayMpTrieConstructor<Ordered, MaxTrial, not LegacyBuild, _impl>;
-    
+
+private:
     _constructor constructor_;
     
 public:
@@ -409,35 +410,39 @@ public:
     
     static constexpr size_t kBlockSize = _impl::kBlockSize;
     
-    DoubleArray() : _impl(), constructor_(*this) {
+    CompactDoubleArrayTrie() : _impl(), constructor_(*this) {
         constructor_.init();
     }
     
-    DoubleArray(std::ifstream& ifs) : _impl(ifs), constructor_(*this) {}
+    CompactDoubleArrayTrie(std::ifstream& ifs) : _impl(ifs), constructor_(*this) {}
     
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
-    explicit DoubleArray(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
+    explicit CompactDoubleArrayTrie(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
         _arrange_keysets(begin, end, 0, kRootIndex);
     }
     
-    DoubleArray(const std::vector<std::string>& key_set) : DoubleArray(key_set.begin(), key_set.end()) {}
+    CompactDoubleArrayTrie(const std::vector<std::string>& key_set) : CompactDoubleArrayTrie(key_set.begin(), key_set.end()) {}
     
     template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
-    explicit DoubleArray(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, false>&& x) : _impl(std::move(_impl(x))), constructor_(*this) {}
+    explicit CompactDoubleArrayTrie(CompactDoubleArrayTrie<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, false>&& x) : _impl(std::move(_impl(x))), constructor_(*this) {}
     template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
-    DoubleArray& operator=(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, false>&& x) {
+    CompactDoubleArrayTrie& operator=(CompactDoubleArrayTrie<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, false>&& x) {
         (_impl&) *this = std::move((_impl&) x);
         return *this;
     }
     
-    ~DoubleArray() = default;
+    ~CompactDoubleArrayTrie() = default;
     
-    DoubleArray& rebuild() {
-        DoubleArray<ValueType, IndexType, Ordered, 32, LegacyBuild, false> new_da;
+    CompactDoubleArrayTrie& rebuild() {
+        CompactDoubleArrayTrie<ValueType, IndexType, Ordered, 32, LegacyBuild, false> new_da;
         new_da._arrange_da(*this, kRootIndex, kRootIndex);
         *this = std::move(new_da);
         return *this;
+    }
+
+    void shrink_to_fit() {
+        rebuild();
     }
     
     size_t size_in_bytes() const {return _impl::_size_in_bytes();}
@@ -478,13 +483,13 @@ public:
     }
     
     value_type* find(std::string_view key) const {
-        return _traverse(key, [](auto){},
-                         [](auto, auto){return nullptr;},
-                         [](auto, auto, auto){return nullptr;}).first;
+        return _traverse(key, [](auto) {},
+                         [](auto, auto) {return nullptr;},
+                         [](auto, auto, auto) {return nullptr;}).first;
     }
     
     std::pair<value_type*, bool> insert(std::string_view key) {
-        auto [ptr, res] = _traverse(key, [](auto){},
+        auto [ptr, res] = _traverse(key, [](auto) {},
                              [&](index_type node, size_t key_pos) {
                                  return constructor_._insert_in_bc(node, key.substr(key_pos));
                              }, [&](index_type node, size_t pool_pos, size_t key_pos) {
@@ -505,7 +510,7 @@ public:
                          [&](index_type node) {
                              constructor_._delete_leaf(node);
                          },
-                         [](auto, auto){return nullptr;}, [](auto, auto, auto){return nullptr;}).second;
+                         [](auto, auto) {return nullptr;}, [](auto, auto, auto) {return nullptr;}).second;
     }
     
     void print_for_debug() const {
@@ -554,7 +559,7 @@ public:
     }
     
     template <bool O, size_t MT, bool LB>
-    void _arrange_da(const DoubleArray<ValueType, IndexType, O, MT, LB, false>& da, const index_type node, const index_type co_node) {
+    void _arrange_da(const CompactDoubleArrayTrie<ValueType, IndexType, O, MT, LB, false>& da, const index_type node, const index_type co_node) {
         std::vector<typename _constructor::_internal_label_container> label_datas;
         std::vector<char_type> children;
         da._for_each_children(node, [&](index_type index, char_type child) {
@@ -693,9 +698,9 @@ public:
 
 
 template <typename ValueType, typename IndexType, bool Ordered, size_t MaxTrial, bool LegacyBuild>
-class DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, true> : public _DoubleArrayBcPatriciaTrieImpl<ValueType, IndexType> {
-    using _self = DoubleArray<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, true>;
-    using _impl = _DoubleArrayBcPatriciaTrieImpl<ValueType, IndexType>;
+class CompactDoubleArrayTrie<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, true> : public _CompactDoubleArrayBcPatriciaTrieImpl<ValueType, IndexType> {
+    using _self = CompactDoubleArrayTrie<ValueType, IndexType, Ordered, MaxTrial, LegacyBuild, true>;
+    using _impl = _CompactDoubleArrayBcPatriciaTrieImpl<ValueType, IndexType>;
     
     using _constructor = _DynamicDoubleArrayPatriciaTrieConstructor<Ordered, MaxTrial, not LegacyBuild, _impl>;
     
@@ -712,35 +717,39 @@ public:
     
     static constexpr size_t kBlockSize = _impl::kBlockSize;
     
-    DoubleArray() : _impl(), constructor_(*this) {
+    CompactDoubleArrayTrie() : _impl(), constructor_(*this) {
         constructor_.init();
     }
     
-    DoubleArray(std::ifstream& ifs) : _impl(ifs), _constructor(*this) {}
+    CompactDoubleArrayTrie(std::ifstream& ifs) : _impl(ifs), _constructor(*this) {}
     
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
-    DoubleArray(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
+    CompactDoubleArrayTrie(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
         _arrange_keysets(begin, end, 0, kRootIndex);
     }
     
-    DoubleArray(const std::vector<std::string>& key_set) : DoubleArray(key_set.begin(), key_set.end()) {}
+    CompactDoubleArrayTrie(const std::vector<std::string>& key_set) : CompactDoubleArrayTrie(key_set.begin(), key_set.end()) {}
     
     template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
-    explicit DoubleArray(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, true>&& x) : _impl(std::move(_impl(x))), constructor_(*this) {}
+    explicit CompactDoubleArrayTrie(CompactDoubleArrayTrie<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, true>&& x) : _impl(std::move(_impl(x))), constructor_(*this) {}
     template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
-    DoubleArray& operator=(DoubleArray<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, true>&& x) {
+    CompactDoubleArrayTrie& operator=(CompactDoubleArrayTrie<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, true>&& x) {
         (_impl&) *this = std::move((_impl&) x);
         return *this;
     }
     
-    ~DoubleArray() = default;
+    ~CompactDoubleArrayTrie() = default;
     
-    DoubleArray& rebuild() {
-        DoubleArray<ValueType, IndexType, Ordered, 32, LegacyBuild, true> new_da;
+    CompactDoubleArrayTrie& rebuild() {
+        CompactDoubleArrayTrie<ValueType, IndexType, Ordered, 32, LegacyBuild, true> new_da;
         new_da._arrange_da(*this, kRootIndex, kRootIndex);
         *this = std::move(new_da);
         return *this;
+    }
+
+    void shrink_to_fit() {
+        rebuild();
     }
     
     size_t size_in_bytes() const {return _impl::_size_in_bytes();}
@@ -819,8 +828,8 @@ public:
     bool erase(std::string_view key) {
         return _traverse(key, [&](index_type node) {
                              constructor_._delete_leaf(node);
-                         }, [](auto, auto){return nullptr;},
-                         [](auto, auto, auto){return nullptr;},
+                         }, [](auto, auto) {return nullptr;},
+                         [](auto, auto, auto) {return nullptr;},
                          [](auto, auto, auto) {return nullptr;}).second;
     }
     
@@ -870,7 +879,7 @@ public:
     }
     
     template <bool O, size_t MT, bool LB>
-    void _arrange_da(const DoubleArray<ValueType, IndexType, O, MT, LB>& da, const index_type node, const index_type co_node) {
+    void _arrange_da(const CompactDoubleArrayTrie<ValueType, IndexType, O, MT, LB>& da, const index_type node, const index_type co_node) {
         std::vector<typename _constructor::_internal_label_container> label_datas;
         std::vector<char_type> children;
         da._for_each_children(node, [&](index_type index, char_type child) {
@@ -1057,9 +1066,9 @@ public:
 
 
 template <typename ValueType>
-using u32DoubleArray = DoubleArray<ValueType, uint32_t>;
+using u32DoubleArray = CompactDoubleArrayTrie<ValueType, uint32_t>;
 template <typename ValueType>
-using u64DoubleArray = DoubleArray<ValueType, uint64_t>;
+using u64DoubleArray = CompactDoubleArrayTrie<ValueType, uint64_t>;
 
 } // namespace sim_ds
 

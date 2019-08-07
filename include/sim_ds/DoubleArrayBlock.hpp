@@ -13,7 +13,7 @@ namespace sim_ds {
 // MARK: - Block reference
 
 template <class _Da>
-class _DoubleArrayBlockContainer;
+class _CompactDoubleArrayBlockContainer;
 
 //  Double-array block implementation
 //             ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ class _DoubleArrayBlockContainer;
 //          pointer_
 //
 template <class _Ctnr>
-class _DoubleArrayBlockReferenceCommon {
+class _CompactDoubleArrayBlockReferenceCommon {
 public:
     using _container = _Ctnr;
     using _block_word_type = typename _container::_block_word_type;
@@ -51,11 +51,11 @@ public:
 
 
 template <class _Ctnr>
-class _DoubleArrayBlockConstReference;
+class _CompactDoubleArrayBlockConstReference;
 
 template <class _Ctnr>
-class _DoubleArrayBlockReference : public _DoubleArrayBlockReferenceCommon<_Ctnr> {
-    using _common = _DoubleArrayBlockReferenceCommon<_Ctnr>;
+class _CompactDoubleArrayBlockReference : public _CompactDoubleArrayBlockReferenceCommon<_Ctnr> {
+    using _common = _CompactDoubleArrayBlockReferenceCommon<_Ctnr>;
     using typename _common::_container;
     
     using typename _common::_block_word_type;
@@ -68,7 +68,7 @@ private:
     _block_pointer block_pointer_;
     
     friend typename _container::_self;
-    friend class _DoubleArrayBlockConstReference<_Ctnr>;
+    friend class _CompactDoubleArrayBlockConstReference<_Ctnr>;
     
     template <size_t Offset>
     _index_type _index() const {return *reinterpret_cast<const _index_type*>(basic_ptr() + Offset);}
@@ -83,7 +83,7 @@ private:
     _inset_type& _inset() {return *reinterpret_cast<_inset_type*>(basic_ptr() + Offset);}
     
 public:
-    _DoubleArrayBlockReference& init() {
+    _CompactDoubleArrayBlockReference& init() {
         bit_util::set256_epi1(1, base_field_ptr());
         bit_util::set256_epi1(1, unit_field_ptr());
         *(basic_ptr()+_common::kNumEmptiesOffset) = _common::kBlockSize;
@@ -191,14 +191,14 @@ public:
     }
     
 private:
-    _DoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
+    _CompactDoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
     
 };
 
 
 template <class _Da>
-class _DoubleArrayBlockConstReference : public _DoubleArrayBlockReferenceCommon<_Da> {
-    using _common = _DoubleArrayBlockReferenceCommon<_Da>;
+class _CompactDoubleArrayBlockConstReference : public _CompactDoubleArrayBlockReferenceCommon<_Da> {
+    using _common = _CompactDoubleArrayBlockReferenceCommon<_Da>;
     using typename _common::_container;
     
     using typename _common::_block_word_type;
@@ -218,7 +218,7 @@ private:
     _inset_type _inset() const {return *reinterpret_cast<const _inset_type*>(basic_ptr() + Offset);}
     
 public:
-    _DoubleArrayBlockConstReference(const _DoubleArrayBlockReference<_Da> x) : block_pointer_(x.block_pointer_) {}
+    _CompactDoubleArrayBlockConstReference(const _CompactDoubleArrayBlockReference<_Da> x) : block_pointer_(x.block_pointer_) {}
     
     _block_pointer base_field_ptr() const {return block_pointer_;}
     
@@ -249,21 +249,21 @@ public:
     _inset_type empty_head() const {return _inset<_common::kEmptyHeadOffset>();}
     
 private:
-    _DoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
+    _CompactDoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
     
 };
 
 
 template <class _Da>
-class _DoubleArrayBlockContainer {
+class _CompactDoubleArrayBlockContainer {
 public:
-    using _self = _DoubleArrayBlockContainer<_Da>;
+    using _self = _CompactDoubleArrayBlockContainer<_Da>;
     using _block_word_type = uint64_t;
     using _block_pointer = _block_word_type*;
     using _const_block_pointer = const _block_word_type*;
     
-    using _block_reference = _DoubleArrayBlockReference<_self>;
-    using _const_block_reference = _DoubleArrayBlockConstReference<_self>;
+    using _block_reference = _CompactDoubleArrayBlockReference<_self>;
+    using _const_block_reference = _CompactDoubleArrayBlockConstReference<_self>;
     
     using _index_type = typename _Da::_index_type;
     using _inset_type = typename _Da::_inset_type;

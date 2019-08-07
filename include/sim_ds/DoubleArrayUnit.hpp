@@ -23,7 +23,7 @@ namespace sim_ds {
 //          pointer_
 //
 template <class _Ctnr>
-class _DoubleArrayUnitBcpReferenceCommon {
+class _CompactDoubleArrayUnitBcpReferenceCommon {
 public:
     using _container = _Ctnr;
     using _unit_storage_type = typename _container::_unit_storage_type;
@@ -57,11 +57,11 @@ public:
 
 
 template <class _Ctnr>
-class _DoubleArrayUnitBcpConstReference;
+class _CompactDoubleArrayUnitBcpConstReference;
 
 template <class _Cntr>
-class _DoubleArrayUnitBcpReference : public _DoubleArrayUnitBcpReferenceCommon<_Cntr> {
-    using _common = _DoubleArrayUnitBcpReferenceCommon<_Cntr>;
+class _CompactDoubleArrayUnitBcpReference : public _CompactDoubleArrayUnitBcpReferenceCommon<_Cntr> {
+    using _common = _CompactDoubleArrayUnitBcpReferenceCommon<_Cntr>;
     using typename _common::_container;
     
     using _unit_storage_type = typename _common::_unit_storage_type;
@@ -75,7 +75,7 @@ private:
     _unit_storage_pointer pointer_;
     
     friend typename _container::_self;
-    friend class _DoubleArrayUnitBcpConstReference<_Cntr>;
+    friend class _CompactDoubleArrayUnitBcpConstReference<_Cntr>;
     
     template <size_t Offset>
     _char_type _char() const {return *(_char_type*)(pointer_ + Offset);}
@@ -172,14 +172,14 @@ public:
     }
     
 private:
-    _DoubleArrayUnitBcpReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
+    _CompactDoubleArrayUnitBcpReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
     
 };
 
 
 template <class _Cntr>
-class _DoubleArrayUnitBcpConstReference : public _DoubleArrayUnitBcpReferenceCommon<_Cntr> {
-    using _common = _DoubleArrayUnitBcpReferenceCommon<_Cntr>;
+class _CompactDoubleArrayUnitBcpConstReference : public _CompactDoubleArrayUnitBcpReferenceCommon<_Cntr> {
+    using _common = _CompactDoubleArrayUnitBcpReferenceCommon<_Cntr>;
     using typename _common::_container;
     
     using _unit_storage_type = typename _common::_unit_storage_type;
@@ -229,7 +229,7 @@ public:
     uint8_t succ() const {return *(uint8_t*)(pointer_+_common::kSuccInsets);}
     
 private:
-    _DoubleArrayUnitBcpConstReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
+    _CompactDoubleArrayUnitBcpConstReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
     
 };
 
@@ -237,16 +237,16 @@ private:
 struct _DoubleArrayUnitReference {
     template <class _Ctnr>
     struct LetterCheck {
-        using type = _DoubleArrayUnitBcpReference<_Ctnr>;
-        using const_type = _DoubleArrayUnitBcpConstReference<_Ctnr>;
+        using type = _CompactDoubleArrayUnitBcpReference<_Ctnr>;
+        using const_type = _CompactDoubleArrayUnitBcpConstReference<_Ctnr>;
     };
 };
 
 
 template <class _Da>
-class _DoubleArrayUnitContainer {
+class _CompactDoubleArrayUnitContainer {
 public:
-    using _self = _DoubleArrayUnitContainer;
+    using _self = _CompactDoubleArrayUnitContainer;
     using _unit_storage_type = uint8_t;
     using _unit_storage_pointer = _unit_storage_type*;
     using _const_unit_storage_pointer = const _unit_storage_type*;

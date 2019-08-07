@@ -192,7 +192,7 @@ inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
 
 inline int ctz(uint32_t x) {
 #ifdef __BMI__
-    return _mm_tzcnt_32(x);
+    return _tzcnt_u32(x);
 #else
     return popcnt32((x & -x) - 1);
 #endif
@@ -200,7 +200,7 @@ inline int ctz(uint32_t x) {
 
 inline int ctz(uint64_t x) {
 #ifdef __BMI__
-    return _mm_tzcnt_64(x);
+    return _tzcnt_u64(x);
 #else
     return popcnt64((x & -x) - 1);
 #endif

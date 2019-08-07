@@ -30,7 +30,7 @@ public:
     static constexpr size_t kBlockSize = _impl::kBlockSize;
     static constexpr _index_type kRootIndex = _impl::kRootIndex;
     static constexpr _index_type kInitialEmptyBlockHead = _impl::kInitialEmptyBlockHead;
-    static constexpr _char_type kEmptyFlag = _impl::kEmptyFlag;
+    static constexpr _index_type kEmptyFlag = _impl::kEmptyFlag;
     static constexpr _char_type kLeafChar = _impl::kLeafChar;
     static constexpr _char_type kEmptyChar = _impl::kEmptyChar;
     
