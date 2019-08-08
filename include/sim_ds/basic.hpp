@@ -122,6 +122,14 @@ inline size_t size_vec(const std::vector<T, A>& vec) {
     return sizeof(T) * vec.size() + sizeof(vec.size());
 }
 
+
+template <class Function>
+auto recursive(Function rec) {
+    return [&rec](auto&&... args) {
+        rec(rec, std::forward<decltype(args)>(args)...);
+    };
+}
+
 } // namespace sim_ds
 
 #endif /* basic_hpp */

@@ -534,10 +534,10 @@ public:
             std::cout << std::endl;
         }
     }
-    
+
     std::array<size_t, 257> get_num_of_children_table() const {
         std::array<size_t, 257> table = {};
-        auto make_table = [f=[&](auto dfs, index_type node) {
+        auto make_table = recursive([&](auto dfs, index_type node) {
             if (_impl::container_[node].is_leaf())
                 return;
             auto cnt = 0;
@@ -546,10 +546,8 @@ public:
                 ++cnt;
             });
             table[cnt]++;
-        }] {
-            f(f, kRootIndex);
-        };
-        make_table();
+        });
+        make_table(kRootIndex);
         return table;
     }
     
@@ -859,7 +857,7 @@ public:
     
     std::array<size_t, 257> get_num_of_children_table() const {
         std::array<size_t, 257> table = {};
-        auto make_table = [f = [&](auto dfs, index_type node) {
+        auto make_table = recursive([&](auto dfs, index_type node) {
             if (_impl::container_[node].is_leaf())
                 return;
             auto cnt = 0;
@@ -868,10 +866,8 @@ public:
                 ++cnt;
             });
             table[cnt]++;
-        }] {
-            f(f, kRootIndex);
-        };
-        make_table();
+        });
+        make_table(kRootIndex);
         return table;
     }
     
