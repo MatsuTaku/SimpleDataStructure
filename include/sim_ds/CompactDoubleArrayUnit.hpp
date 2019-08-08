@@ -13,6 +13,232 @@ namespace sim_ds {
 
 // MARK: - Unit reference
 
+
+// MARK: - Unit reference
+
+//  Double-array unit (Base/Check/LabelId) Implementation
+//      Base: Pointer
+//          if disabled:
+//              1 0 0 *(pred)
+//          else if basic base:
+//              0 0 0 *(base)
+//          else if label id:
+//              if suffix:
+//              0 1 1 *(label id)
+//              else:
+//              0 1 0 *(label id)
+//      Check: Pointer
+//          if disabled:
+//              1 0 *(succ)
+//          else:
+//              0 ?(terminal flag) *(check)
+//  Paremers for siblings link
+//      Child: Byte
+//          *(child char)
+//      Sibling: Byte
+//          *(child char)
+//
+template<class _Ctnr>
+class _DoubleArrayUnitBcpReferenceCommon {
+public:
+    using _index_type = typename _Ctnr::_index_type;
+    using _char_type = typename _Ctnr::_char_type;
+    using _inset_type = typename _Ctnr::_inset_type;
+
+    static constexpr size_t kIndexBytes = sizeof(_index_type);
+    static constexpr _index_type kUpperBit = 1ull << (kIndexBytes * 8 - 1);
+    static constexpr _index_type kSecondBit = kUpperBit >> 1;
+    static constexpr _index_type kThirdBit = kUpperBit >> 2;
+    static constexpr _index_type kEmptyFlag = kUpperBit;
+    static constexpr _index_type kTerminalFlag = kSecondBit;
+    static constexpr _index_type kLabelFlag = kSecondBit;
+    static constexpr _index_type kSuffixFlag = kThirdBit;
+    static constexpr _index_type kIndexMask = kThirdBit - 1;
+    static constexpr _index_type kIndexMax = kIndexMask;
+    static constexpr _char_type kEmptyChar = _Ctnr::kEmptyChar;
+
+    static constexpr size_t kCheckInsets = 0;
+    static constexpr size_t kEmptyFlagInsets = kCheckInsets + kIndexBytes - 1;
+    static constexpr size_t kSiblingInsets = kIndexBytes;
+    static constexpr size_t kBaseInsets = kIndexBytes + 1;
+    static constexpr size_t kChildInsets = kIndexBytes * 2 + 1;
+    static constexpr size_t kEdgeFlagInsets = kBaseInsets + kIndexBytes - 1;
+    static constexpr size_t kLabelFlagInsets = kEdgeFlagInsets;
+    static constexpr size_t kSuffixFlagInsets = kLabelFlagInsets;
+    static constexpr size_t kSuccInsets = kBaseInsets;
+    static constexpr size_t kPredInsets = kCheckInsets;
+    static constexpr size_t kUnitBytes = kIndexBytes * 2 + 2;
+};
+
+
+template<class _Ctnr>
+class _DoubleArrayUnitBcpConstReference;
+
+template<class _Ctnr>
+class _DoubleArrayUnitBcpReference : private _DoubleArrayUnitBcpReferenceCommon<_Ctnr> {
+    using _common = _DoubleArrayUnitBcpReferenceCommon<_Ctnr>;
+
+    using _unit_storage_type = typename _Ctnr::_unit_storage_type;
+    static_assert(sizeof(_unit_storage_type) == 1, "Invalid unit storage type!");
+    using _unit_storage_pointer = typename _Ctnr::_unit_storage_pointer;
+
+    using typename _common::_index_type;
+    using typename _common::_char_type;
+
+private:
+    _unit_storage_pointer pointer_;
+
+    friend typename _Ctnr::_self;
+
+    friend class _DoubleArrayUnitBcpConstReference<_Ctnr>;
+
+    template<size_t Offset>
+    _index_type _index() const { return *reinterpret_cast<const _index_type *>(pointer_ + Offset); }
+
+    template<size_t Offset>
+    _index_type &_index() { return *reinterpret_cast<_index_type *>(pointer_ + Offset); }
+
+public:
+    _index_type check() const { return _index<_common::kCheckInsets>() bitand _common::kIndexMask; }
+
+    void set_check(_index_type new_check) {
+        _index_type &target = _index<_common::kCheckInsets>();
+        target = new_check bitor (target bitand _common::kTerminalFlag);
+    }
+
+    _index_type base() const { return _index<_common::kBaseInsets>() bitand _common::kIndexMask; }
+
+    void set_base(_index_type new_base) {
+        _index<_common::kBaseInsets>() = new_base bitand _common::kIndexMask;
+    }
+
+    bool has_label() const { return *(pointer_ + _common::kLabelFlagInsets) bitand 0x40; }
+
+    bool label_is_suffix() const { return *(pointer_ + _common::kSuffixFlagInsets) bitand 0x20; }
+
+    _index_type pool_index() const {
+        assert(has_label());
+        return base();
+    }
+
+    void set_pool_index(_index_type new_pool_index, bool label_is_suffix) {
+        _index<_common::kBaseInsets>() = ((new_pool_index bitand _common::kIndexMask) bitor
+                                          _common::kLabelFlag bitor
+                                          (label_is_suffix ? _common::kSuffixFlag : 0));
+    }
+
+    _char_type child() const { return *(pointer_ + _common::kChildInsets); }
+
+    void set_child(_char_type new_child) {
+        *(pointer_ + _common::kChildInsets) = new_child;
+    }
+
+    _char_type sibling() const { return *(pointer_ + _common::kSiblingInsets); }
+
+    void set_sibling(_char_type new_sibling) {
+        *(pointer_ + _common::kSiblingInsets) = new_sibling;
+    }
+
+    bool base_empty() const { return *(pointer_ + _common::kEdgeFlagInsets) bitand 0x80; }
+
+    bool check_empty() const { return *(pointer_ + _common::kEmptyFlagInsets) bitand 0x80; }
+
+    _index_type pred() const {
+        assert(_index<_common::kPredInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kPredInsets>() bitand _common::kIndexMask;
+    }
+
+    void set_pred(_index_type new_pred) {
+        _index<_common::kPredInsets>() = (new_pred bitand _common::kIndexMask) bitor _common::kEmptyFlag;
+    }
+
+    _index_type succ() const {
+        assert(_index<_common::kSuccInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kSuccInsets>() bitand _common::kIndexMask;
+    }
+
+    void set_succ(_index_type new_succ) {
+        _index<_common::kSuccInsets>() = (new_succ bitand _common::kIndexMask) bitor _common::kEmptyFlag;
+    }
+
+    void init(_index_type pred, _index_type succ) {
+        set_pred(pred);
+        set_sibling(_common::kEmptyChar);
+        set_succ(succ);
+        set_child(_common::kEmptyChar);
+    }
+
+    void clean() {
+        init(0, 0);
+    }
+
+private:
+    _DoubleArrayUnitBcpReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
+
+};
+
+
+template<class _Da>
+class _DoubleArrayUnitBcpConstReference : private _DoubleArrayUnitBcpReferenceCommon<_Da> {
+    using _common = _DoubleArrayUnitBcpReferenceCommon<_Da>;
+
+    using _unit_storage_type = typename _Da::_unit_storage_type;
+    static_assert(sizeof(_unit_storage_type) == 1, "Invalid unit storage type!");
+    using _unit_storage_pointer = typename _Da::_const_unit_storage_pointer;
+
+    using typename _common::_index_type;
+    using typename _common::_char_type;
+
+private:
+    _unit_storage_pointer pointer_;
+
+    friend typename _Da::_self;
+
+    template<size_t Offset>
+    _index_type _index() const { return *reinterpret_cast<const _index_type *>(pointer_ + Offset); }
+
+public:
+    _DoubleArrayUnitBcpConstReference(const _DoubleArrayUnitBcpReference<_Da> &x) : pointer_(x.pointer_) {}
+
+    _index_type check() const { return _index<_common::kCheckInsets>() bitand _common::kIndexMask; }
+
+    _index_type base() const { return _index<_common::kBaseInsets>() bitand _common::kIndexMask; }
+
+    bool has_label() const { return *(pointer_ + _common::kLabelFlagInsets) bitand 0x40; }
+
+    bool label_is_suffix() const { return *(pointer_ + _common::kSuffixFlagInsets) bitand 0x20; }
+
+    _index_type pool_index() const {
+        assert(has_label());
+        return base();
+    }
+
+    _char_type child() const { return *(pointer_ + _common::kChildInsets); }
+
+    _char_type sibling() const { return *(pointer_ + _common::kSiblingInsets); }
+
+    bool base_empty() const { return *(pointer_ + _common::kEdgeFlagInsets) bitand 0x80; }
+
+    bool check_empty() const { return *(pointer_ + _common::kEmptyFlagInsets) bitand 0x80; }
+
+    _index_type pred() const {
+        assert(_index<_common::kPredInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kPredInsets>() bitand _common::kIndexMask;
+    }
+
+    _index_type succ() const {
+        assert(_index<_common::kSuccInsets>() bitand _common::kEmptyFlag);
+        return _index<_common::kSuccInsets>() bitand _common::kIndexMask;
+    }
+
+private:
+    _DoubleArrayUnitBcpConstReference(_unit_storage_pointer pointer) : pointer_(pointer) {}
+
+};
+
+
+// MARK: compact unit
+
 //  Double-array unit implementation
 //             ---------------------------------------------------------------------------------------------------------------------------------------------
 //    Enabled  |             | Check[Byte] | Sibling[Byte] | Target(base or label-idx)[Word] | flag-Suffix[bit] | flag-Label[bit] | flag-Target-empty[bit] |
@@ -236,6 +462,11 @@ private:
 
 struct _DoubleArrayUnitReference {
     template <class _Ctnr>
+    struct Basic {
+        using type = _DoubleArrayUnitBcpReference<_Ctnr>;
+        using const_type = _DoubleArrayUnitBcpConstReference<_Ctnr>;
+    };
+    template <class _Ctnr>
     struct LetterCheck {
         using type = _CompactDoubleArrayUnitBcpReference<_Ctnr>;
         using const_type = _CompactDoubleArrayUnitBcpConstReference<_Ctnr>;
@@ -243,15 +474,15 @@ struct _DoubleArrayUnitReference {
 };
 
 
-template <class _Da>
+template <class _Da, bool Compact>
 class _CompactDoubleArrayUnitContainer {
 public:
     using _self = _CompactDoubleArrayUnitContainer;
     using _unit_storage_type = uint8_t;
     using _unit_storage_pointer = _unit_storage_type*;
     using _const_unit_storage_pointer = const _unit_storage_type*;
-    
-    using _unit_reference_type = _DoubleArrayUnitReference::LetterCheck<_self>;
+
+    using _unit_reference_type = std::conditional_t<not Compact, _DoubleArrayUnitReference::Basic<_self>, _DoubleArrayUnitReference::LetterCheck<_self>>;
     using _unit_reference = typename _unit_reference_type::type;
     using _const_unit_reference = typename _unit_reference_type::const_type;
     

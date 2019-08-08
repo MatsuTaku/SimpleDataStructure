@@ -33,7 +33,7 @@ public:
     static constexpr _char_type kLeafChar = '\0';
     static constexpr _char_type kEmptyChar = 0xFF;
     
-    using _unit_container = _CompactDoubleArrayUnitContainer<_self>;
+    using _unit_container = _CompactDoubleArrayUnitContainer<_self, true>;
     using _unit_reference = typename _unit_container::_unit_reference;
     using _const_unit_reference = typename _unit_container::_const_unit_reference;
     static constexpr auto kUnitBytes = _unit_container::kUnitBytes;
@@ -537,17 +537,19 @@ public:
     
     std::array<size_t, 257> get_num_of_children_table() const {
         std::array<size_t, 257> table = {};
-        std::function<void(index_type)> dfs = [&](index_type node) {
+        auto make_table = [f=[&](auto dfs, index_type node) {
             if (_impl::container_[node].is_leaf())
                 return;
             auto cnt = 0;
             _impl::_for_each_children(node, [&](index_type index, auto) {
-                dfs(index);
+                dfs(dfs, index);
                 ++cnt;
             });
             table[cnt]++;
+        }] {
+            f(f, kRootIndex);
         };
-        dfs(kRootIndex);
+        make_table();
         return table;
     }
     
