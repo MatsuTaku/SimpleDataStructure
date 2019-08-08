@@ -9,9 +9,9 @@
 #define DoubleArray_hpp
 
 #include "basic.hpp"
-#include "DoubleArrayUnit.hpp"
-#include "DoubleArrayBlock.hpp"
-#include "DoubleArrayConstructor.hpp"
+#include "CompactDoubleArrayUnit.hpp"
+#include "CompactDoubleArrayBlock.hpp"
+#include "CompactDoubleArrayConstructor.hpp"
 #include "bit_util256.hpp"
 #include "da_util.hpp"
 
