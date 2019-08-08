@@ -864,7 +864,7 @@ public:
                 return;
             auto cnt = 0;
             _impl::_for_each_children(node, [&](index_type index, auto) {
-                dfs(index);
+                dfs(dfs, index);
                 ++cnt;
             });
             table[cnt]++;
