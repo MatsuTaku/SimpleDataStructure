@@ -130,6 +130,84 @@ public:
             return index;
         return _new_base(children.front());
     }
+
+    template <class CoImpl>
+    void _arrange_da(const CoImpl& da, const _index_type node, const _index_type co_node) {
+        std::vector<_internal_label_container> label_datas;
+        std::vector<_char_type> children;
+        da._for_each_children(node, [&](_index_type index, _char_type child) {
+            children.push_back(child);
+            std::string label;
+            label.push_back(child);
+            auto unit = da.unit_at(index);
+            if (unit.has_label())
+                label += da._suffix_in_pool(unit.pool_index());
+            while (da._is_single_node(index)) {
+                auto child = da.unit_at(da._base_at(index)).child();
+                label += child;
+                index = da._base_at(index) xor child;
+                unit = da.unit_at(index);
+                if (unit.has_label())
+                    label += da._suffix_in_pool(unit.pool_index());
+            }
+            label_datas.push_back({label, unit.label_is_suffix()});
+        });
+
+        auto new_base = _find_base(children);
+        _insert_nodes(co_node, label_datas, new_base);
+        for (auto label_data : label_datas) {
+            auto target = node;
+            auto c = label_data.label.front();
+            da._transition_bc(target, c);
+            if (not label_data.suffix)
+                _arrange_da(da, target, new_base xor c);
+        }
+    }
+
+    template <typename StrIter,
+            typename Traits = std::iterator_traits<StrIter>>
+    void _arrange_keysets(StrIter begin, StrIter end, size_t depth, _index_type co_node) {
+        if (begin >= end)
+            return;
+
+        std::vector<_internal_label_container> label_datas;
+        std::vector<_char_type> children;
+        while (begin < end and ((*begin).size() == depth)) {
+            label_datas.push_back({"", true});
+            children.push_back(kLeafChar);
+            ++begin;
+        }
+        std::vector<StrIter> iters = {begin};
+        std::string_view front_label((*begin).data() + depth);
+        _char_type prev_key = (*begin)[depth];
+        auto append = [&](auto it) {
+            assert(not front_label.empty());
+            if (it == iters.back()) {
+                label_datas.push_back({std::string(front_label), true});
+            } else {
+                label_datas.push_back({std::string(front_label.substr(0,1)), false});
+            }
+            children.push_back(prev_key);
+            iters.push_back(it+1);
+        };
+        for (auto it = begin+1; it != end; ++it) {
+            _char_type c = (*it)[depth];
+            if (c != prev_key) {
+                append(it-1);
+                front_label = std::string_view((*it).data() + depth);
+                prev_key = c;
+            }
+        }
+        append(end-1);
+
+        auto new_base = _find_base(children);
+        _insert_nodes(co_node, label_datas, new_base);
+        for (size_t i = 0; i < label_datas.size(); i++) {
+            auto label = label_datas[i].label;
+            if (not label_datas[i].suffix)
+                _arrange_keysets(iters[i], iters[i+1], depth+label.size(), new_base xor (_char_type)label.front());
+        }
+    }
     
 protected:
     struct _moving_luggage {
@@ -418,6 +496,94 @@ public:
             }
         }
         _base::_consume_block(da_impl_._block_index_of(base), label_datas.size());
+    }
+
+    template <class CoImpl>
+    void _arrange_da(const CoImpl& da, const _index_type node, const _index_type co_node) {
+        std::vector<typename _base::_internal_label_container> label_datas;
+        std::vector<_char_type> children;
+        da._for_each_children(node, [&](_index_type index, _char_type child) {
+            children.push_back(child);
+            std::string label;
+            label.push_back(child);
+            auto unit = da.unit_at(index);
+            assert(unit.check() == child);
+            if (unit.has_label())
+                label += da._suffix_in_pool(unit.pool_index()+(unit.label_is_suffix()?0:_impl::kIndexBytes));
+            while (da._is_single_node(index)) {
+                auto base = da._base_at(index);
+                auto child = da.unit_at(base).child();
+                label += child;
+                da._transition_bc(index, base, child);
+                unit = da.unit_at(index);
+                if (unit.has_label())
+                    label += da._suffix_in_pool(unit.pool_index()+(unit.label_is_suffix()?0:_impl::kIndexBytes));
+            }
+            label_datas.push_back({label, unit.label_is_suffix()});
+        });
+
+        auto new_base = _base::_find_base(children);
+        _insert_nodes(co_node, label_datas, new_base);
+        for (auto label_data : label_datas) {
+            auto target = node;
+            uint8_t c = label_data.label.front();
+            auto res = da._transition_bc(target, da._base_at(target), c);
+            assert(res);
+            if (not label_data.suffix)
+                _arrange_da(da, target, new_base xor c);
+        }
+    }
+
+    template <typename StrIter,
+            typename Traits = std::iterator_traits<StrIter>>
+    void _arrange_keysets(StrIter begin, StrIter end, size_t depth, _index_type co_node) {
+        if (begin >= end)
+            return;
+
+        std::vector<typename _base::_internal_label_container> label_datas;
+        std::vector<_char_type> children;
+        if ((*begin).size() == depth) {
+            label_datas.push_back({"", true});
+            children.push_back(kLeafChar);
+            ++begin;
+        }
+        if (begin == end) {
+            _insert_nodes(co_node, label_datas, _base::_find_base(children));
+        } else {
+            assert(begin < end);
+            assert(begin->size() > depth);
+            std::vector<StrIter> iters = {begin};
+            std::string_view front_label(begin->data() + depth);
+            _char_type prev_key = begin->size() <= depth ? kLeafChar : (*begin)[depth];
+            auto append = [&](auto it) {
+                size_t label_length = 1;
+                std::string_view back_label(it->data() + depth);
+                while (label_length < front_label.size() and label_length < back_label.size() and
+                       back_label[label_length] == front_label[label_length])
+                    label_length++;
+                label_datas.push_back({std::string(front_label.substr(0, label_length)), label_length == back_label.size()});
+                children.push_back(prev_key);
+                iters.push_back(it+1);
+            };
+            for (auto it = begin+1; it < end; ++it) {
+                _char_type c = (*it)[depth];
+                if (c != prev_key) {
+                    append(it-1);
+                    front_label = std::string_view(it->data() + depth);
+                    prev_key = c;
+                }
+            }
+            append(end-1);
+            auto new_base = _base::_find_base(children);
+            _insert_nodes(co_node, label_datas, new_base);
+            for (size_t i = 0; i < iters.size()-1; i++) {
+                auto& ld = label_datas[i+(children.front()==kLeafChar?1:0)];
+                auto label = ld.label;
+                if (not ld.suffix)
+                    _arrange_keysets(iters[i], iters[i+1], depth+label.size(), new_base xor (_char_type)label.front());
+            }
+        }
+
     }
     
 private:

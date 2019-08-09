@@ -235,10 +235,10 @@ private:
 
 // MARK: - MPTrie
 
-template<typename IndexType, bool BitOperationalFind>
+template<typename IndexType, bool BitOperationalFind, size_t MaxTrial>
 class _DoubleArrayMpTrieImpl {
 public:
-    using _self = _DoubleArrayMpTrieImpl<IndexType, BitOperationalFind>;
+    using _self = _DoubleArrayMpTrieImpl<IndexType, BitOperationalFind, MaxTrial>;
     using _index_type = IndexType;
     using _char_type = uint8_t;
     using _inset_type = uint8_t;
@@ -269,8 +269,6 @@ public:
     static constexpr size_t kBlockQBytes = 8;
     static constexpr unsigned kBlockSize = 0x100;
     static constexpr _index_type kInitialEmptyBlockHead = std::numeric_limits<_index_type>::max();
-
-    static constexpr size_t kErrorThreshold = 32;
 
 protected:
     _index_type general_block_head_;
@@ -464,7 +462,7 @@ protected:
 
     void _freeze_block_in_general(_index_type block) {
         auto target_block_ref = _block_at(block);
-        assert(target_block_ref.error_count() < kErrorThreshold);
+        assert(target_block_ref.error_count() < MaxTrial);
         auto succ = target_block_ref.succ();
         if (succ == block) {
             assert(general_block_head_ == block);
@@ -482,7 +480,7 @@ protected:
 
     void _freeze_block_in_personal(_index_type block) {
         auto target_block_ref = _block_at(block);
-        assert(target_block_ref.error_count() >= kErrorThreshold);
+        assert(target_block_ref.error_count() >= MaxTrial);
         auto succ = target_block_ref.succ();
         if (succ == block) {
             assert(personal_block_head_ == block);
@@ -531,8 +529,8 @@ protected:
 
     void _error_block(_index_type block) {
         auto b = _block_at(block);
-        assert(_block_at(block).error_count() < kErrorThreshold);
-        if (b.error_count() + 1 >= kErrorThreshold) {
+        assert(_block_at(block).error_count() < MaxTrial);
+        if (b.error_count() + 1 >= MaxTrial) {
             _freeze_block_in_general(block);
             _modify_block_to_personal(block);
         }
@@ -543,7 +541,7 @@ protected:
         auto b = _block_at(block);
         b.consume(num);
         if (b.filled()) {
-            if (b.error_count() >= kErrorThreshold) {
+            if (b.error_count() >= MaxTrial) {
                 _freeze_block_in_personal(block);
             } else {
                 _freeze_block_in_general(block);
@@ -557,7 +555,7 @@ protected:
         auto b = _block_at(block);
         if (b.filled()) {
             _modify_block_to_general(block);
-        } else if (b.error_count() >= kErrorThreshold) {
+        } else if (b.error_count() >= MaxTrial) {
             _freeze_block_in_personal(block);
             _modify_block_to_general(block);
         }
@@ -669,7 +667,7 @@ protected:
             const auto offset = kBlockSize * b;
 
             if constexpr (BitOperationalFind) {
-                assert(block.error_count() < kErrorThreshold);
+                assert(block.error_count() < MaxTrial);
                 auto ctz = da_util::xcheck_in_da_block(block.field_ptr(), children);
                 if (ctz < kBlockSize) {
                     return offset + ctz;
@@ -1060,9 +1058,9 @@ private:
 
 // MARK: - Patricia Trie
 
-template<typename IndexType, bool BitOperationalFind>
-class _DoubleArrayBcPatriciaTrieImpl : protected _DoubleArrayMpTrieImpl<IndexType, BitOperationalFind> {
-    using _base = _DoubleArrayMpTrieImpl<IndexType, BitOperationalFind>;
+template<typename IndexType, bool BitOperationalFind, size_t MaxTrial>
+class _DoubleArrayBcPatriciaTrieImpl : protected _DoubleArrayMpTrieImpl<IndexType, BitOperationalFind, MaxTrial> {
+    using _base = _DoubleArrayMpTrieImpl<IndexType, BitOperationalFind, MaxTrial>;
 public:
     using typename _base::_index_type;
     using typename _base::_char_type;
@@ -1304,8 +1302,8 @@ class DoubleArrayTrie;
 
 template<typename IndexType, bool Ordered, size_t MaxTrial, bool LegacyBuild>
 class DoubleArrayTrie<IndexType, Ordered, MaxTrial, LegacyBuild, false> :
-        private _DynamicDoubleArrayMpTrieBehavior<_DoubleArrayMpTrieImpl<IndexType, not LegacyBuild>, Ordered> {
-    using _impl = _DoubleArrayMpTrieImpl<IndexType, not LegacyBuild>;
+        private _DynamicDoubleArrayMpTrieBehavior<_DoubleArrayMpTrieImpl<IndexType, not LegacyBuild, MaxTrial>, Ordered> {
+    using _impl = _DoubleArrayMpTrieImpl<IndexType, not LegacyBuild, MaxTrial>;
     using _behavior = _DynamicDoubleArrayMpTrieBehavior<_impl, Ordered>;
     using _self = DoubleArrayTrie<IndexType, Ordered, MaxTrial, LegacyBuild, false>;
 public:
@@ -1559,8 +1557,8 @@ private:
 
 template<typename IndexType, bool Ordered, size_t MaxTrial, bool LegacyBuild>
 class DoubleArrayTrie<IndexType, Ordered, MaxTrial, LegacyBuild, true> :
-        private _DynamicDoubleArrayPatriciaTrieBehavior<_DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild>, Ordered> {
-    using _impl = _DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild>;
+        private _DynamicDoubleArrayPatriciaTrieBehavior<_DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild, MaxTrial>, Ordered> {
+    using _impl = _DoubleArrayBcPatriciaTrieImpl<IndexType, not LegacyBuild, MaxTrial>;
     using _behavior = _DynamicDoubleArrayPatriciaTrieBehavior<_impl, Ordered>;
     using _self = DoubleArrayTrie<IndexType, Ordered, MaxTrial, LegacyBuild, false>;
 public:

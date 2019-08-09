@@ -66,13 +66,6 @@ protected:
         read_vec(ifs, pool_);
     }
     
-    size_t _size_in_bytes() const {
-        return (sizeof(enabled_blocks_head_) +
-                basic_block_.size_in_bytes() +
-                container_.size_in_bytes() +
-                size_vec(pool_));
-    }
-    
     void _serialize(std::ofstream& ofs) const {
         write_val(enabled_blocks_head_, ofs);
         basic_block_.write(ofs);
@@ -85,6 +78,97 @@ public:
     _CompactDoubleArrayMpTrieImpl& operator=(_CompactDoubleArrayMpTrieImpl&&) = default;
     
     virtual ~_CompactDoubleArrayMpTrieImpl() = default;
+
+    // MARK: Basic informations
+
+    size_t size_in_bytes() const {
+        return (sizeof(enabled_blocks_head_) +
+                basic_block_.size_in_bytes() +
+                container_.size_in_bytes() +
+                size_vec(pool_));
+    }
+
+    size_t bc_size_in_bytes() const {return container_.size_in_bytes();}
+
+    size_t pool_size_in_bytes() const {return size_vec(pool_);}
+
+    size_t succinct_size_in_bytes() const {return size_in_bytes() - bc_size_in_bytes() - pool_size_in_bytes();}
+
+    size_t bc_blank_size_in_bytes() const {return kUnitBytes * (container_.size() - num_nodes());}
+
+    virtual size_t pool_blank_size_in_bytes() const {
+        size_t blank_size = pool_.size();
+        for (size_t i = 0; i < container_.size(); i++) {
+            auto unit = container_[i];
+            if (_empty_at(i) or not unit.has_label())
+                continue;
+            blank_size -= _suffix_in_pool(unit.pool_index()).size()+1+kValueBytes;
+        }
+        return blank_size;
+    }
+
+    size_t blank_size_in_bytes() const {return bc_blank_size_in_bytes() + pool_blank_size_in_bytes();}
+
+    float load_factor() const {return (float)1 - ((float)blank_size_in_bytes() / size_in_bytes());}
+
+    float load_factor_bc() const {return (float)1 - ((float)bc_blank_size_in_bytes() / bc_size_in_bytes());}
+
+    float load_factor_pool() const {return (float)1 - ((float)pool_blank_size_in_bytes() / pool_size_in_bytes());}
+
+    size_t num_nodes() const {
+        size_t cnt = 0;
+        for (size_t i = 0; i < basic_block_.size(); i++) {
+            cnt += 256 - basic_block_[i].num_empties();
+        }
+        return cnt;
+    }
+
+    void print_for_debug() const {
+        std::cout << "------------ Double-array implementation ------------" << std::endl;
+        std::cout << "\tindex] \texists, \tcheck, \tsibling, \tbase, \tchild"  << std::endl;
+        for (size_t i = 0; i < std::min(container_.size(), (size_t)0x10000); i++) {
+            if (i % 0x100 == 0)
+                std::cout << std::endl;
+            auto unit = container_[i];
+            std::cout << "\t\t"<<i<<"] \t" << unit.child()<<"| \t";
+            auto empty = _empty_at(i);
+            if (not empty) {
+                std::cout<<unit.check()<<", \t"<<unit.sibling()<<", \t"<<unit.has_label();
+                if (unit.has_label())
+                    std::cout<<", \t"<<unit.pool_index();
+                if (not unit.is_leaf())
+                    std::cout<<", \t"<< _base_at(i);
+            } else {
+                std::cout<<(size_t)unit.pred()<<", \t"<<(size_t)unit.succ();
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::array<size_t, 257> get_num_of_children_table() const {
+        std::array<size_t, 257> table = {};
+        auto make_table = recursive([&](auto dfs, _index_type node) {
+            if (container_[node].is_leaf())
+                return;
+            auto cnt = 0;
+            _for_each_children(node, [&](_index_type index, auto) {
+                dfs(dfs, index);
+                ++cnt;
+            });
+            table[cnt]++;
+        });
+        make_table(kRootIndex);
+        return table;
+    }
+
+    void print_num_of_children_table() const {
+        auto table = get_num_of_children_table();
+        std::cout << "num of children | counts" << std::endl;
+        for (int i = 0; i <= 256; i++)
+            std::cout << table[i] << std::endl;
+    }
+
+    // MARK: For construction
     
     _index_type enabled_blocks_head() const {return enabled_blocks_head_;}
     
@@ -337,6 +421,21 @@ public:
     _CompactDoubleArrayBcPatriciaTrieImpl& operator=(_CompactDoubleArrayBcPatriciaTrieImpl&&) = default;
     
     virtual ~_CompactDoubleArrayBcPatriciaTrieImpl() = default;
+
+    size_t pool_blank_size_in_bytes() const override {
+        size_t blank_size = _base::pool_.size();
+        for (size_t i = 0; i < _base::container_.size(); i++) {
+            auto unit = _base::container_[i];
+            if (_base::_empty_at(i) or not unit.has_label())
+                continue;
+            auto pool_index = unit.pool_index();
+            if (unit.label_is_suffix())
+                blank_size -= _base::_suffix_in_pool(pool_index).size()+1+_base::kValueBytes;
+            else
+                blank_size -= _base::kIndexBytes + _base::_suffix_in_pool(pool_index+_base::kIndexBytes).size()+1;
+        }
+        return blank_size;
+    }
     
     _index_type _base_in_pool(_index_type pool_index) const {
         const _index_type* base_ptr = reinterpret_cast<const _index_type*>(_base::pool_.data() + pool_index);
@@ -419,7 +518,7 @@ public:
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
     explicit CompactDoubleArrayTrie(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
-        _arrange_keysets(begin, end, 0, kRootIndex);
+        constructor_._arrange_keysets(begin, end, 0, kRootIndex);
     }
     
     CompactDoubleArrayTrie(const std::vector<std::string>& key_set) : CompactDoubleArrayTrie(key_set.begin(), key_set.end()) {}
@@ -433,53 +532,21 @@ public:
     }
     
     ~CompactDoubleArrayTrie() = default;
+
+    template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
+    void build_from(const CompactDoubleArrayTrie<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, false>& da) {
+        constructor_._arrange_da(da, kRootIndex, kRootIndex);
+    }
     
     CompactDoubleArrayTrie& rebuild() {
         CompactDoubleArrayTrie<ValueType, IndexType, Ordered, 32, LegacyBuild, false> new_da;
-        new_da._arrange_da(*this, kRootIndex, kRootIndex);
+        new_da.build_from(*this);
         *this = std::move(new_da);
         return *this;
     }
 
     void shrink_to_fit() {
         rebuild();
-    }
-    
-    size_t size_in_bytes() const {return _impl::_size_in_bytes();}
-    
-    size_t bc_size_in_bytes() const {return _impl::container_.size_in_bytes();}
-    
-    size_t pool_size_in_bytes() const {return size_vec(_impl::pool_);}
-    
-    size_t succinct_size_in_bytes() const {return size_in_bytes() - bc_size_in_bytes() - pool_size_in_bytes();}
-    
-    size_t bc_blank_size_in_bytes() const {return _impl::kUnitBytes * (_impl::container_.size() - num_nodes());}
-    
-    size_t pool_blank_size_in_bytes() const {
-        size_t blank_size = _impl::pool_.size();
-        for (size_t i = 0; i < _impl::container_.size(); i++) {
-            auto unit = _impl::container_[i];
-            if (_impl::_empty_at(i) or not unit.has_label())
-                continue;
-            blank_size -= _impl::_suffix_in_pool(unit.pool_index()).size()+1+_impl::kValueBytes;
-        }
-        return blank_size;
-    }
-    
-    size_t blank_size_in_bytes() const {return bc_blank_size_in_bytes() + pool_blank_size_in_bytes();}
-    
-    float load_factor() const {return (float)1 - ((float)blank_size_in_bytes() / size_in_bytes());}
-    
-    float load_factor_bc() const {return (float)1 - ((float)bc_blank_size_in_bytes() / bc_size_in_bytes());}
-    
-    float load_factor_pool() const {return (float)1 - ((float)pool_blank_size_in_bytes() / pool_size_in_bytes());}
-    
-    size_t num_nodes() const {
-        size_t cnt = 0;
-        for (size_t i = 0; i < _impl::basic_block_.size(); i++) {
-            cnt += 256 - _impl::basic_block_[i].num_empties();
-        }
-        return cnt;
     }
     
     value_type* find(std::string_view key) const {
@@ -511,84 +578,6 @@ public:
                              constructor_._delete_leaf(node);
                          },
                          [](auto, auto) {return nullptr;}, [](auto, auto, auto) {return nullptr;}).second;
-    }
-    
-    void print_for_debug() const {
-        std::cout << "------------ Double-array implementation ------------" << std::endl;
-        std::cout << "\tindex] \tterminal, \tcheck, \tsibling, \thas label, \tbase, \tchild"  << std::endl;
-        for (size_t i = 0; i < std::min(_impl::container_.size(), (size_t)0x10000); i++) {
-            if (i % 0x100 == 0)
-                std::cout << std::endl;
-            auto unit = _impl::container_[i];
-            std::cout << "\t\t"<<i<<"] \t" << unit.child()<<"| \t";
-            auto empty =_impl::_empty_at(i);
-            if (not empty) {
-                std::cout<<unit.check()<<", \t"<<unit.sibling()<<", \t"<<unit.has_label();
-                if (unit.has_label())
-                    std::cout<<", \t"<<unit.pool_index();
-                if (not unit.is_leaf())
-                    std::cout<<", \t"<<_impl::_base_at(i);
-            } else {
-                std::cout<<(size_t)unit.pred()<<", \t"<<(size_t)unit.succ();
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    std::array<size_t, 257> get_num_of_children_table() const {
-        std::array<size_t, 257> table = {};
-        auto make_table = recursive([&](auto dfs, index_type node) {
-            if (_impl::container_[node].is_leaf())
-                return;
-            auto cnt = 0;
-            _impl::_for_each_children(node, [&](index_type index, auto) {
-                dfs(dfs, index);
-                ++cnt;
-            });
-            table[cnt]++;
-        });
-        make_table(kRootIndex);
-        return table;
-    }
-    
-    void print_num_of_children_table() const {
-        auto table = get_num_of_children_table();
-        std::cout << "num of children | counts" << std::endl;
-        for (int i = 0; i <= 256; i++)
-            std::cout << table[i] << std::endl;
-    }
-    
-    template <bool O, size_t MT, bool LB>
-    void _arrange_da(const CompactDoubleArrayTrie<ValueType, IndexType, O, MT, LB, false>& da, const index_type node, const index_type co_node) {
-        std::vector<typename _constructor::_internal_label_container> label_datas;
-        std::vector<char_type> children;
-        da._for_each_children(node, [&](index_type index, char_type child) {
-            children.push_back(child);
-            std::string label;
-            label.push_back(child);
-            auto unit = da.unit_at(index);
-            if (unit.has_label())
-                label += da._suffix_in_pool(unit.pool_index());
-            while (da._is_single_node(index)) {
-                auto child = da.unit_at(da._base_at(index)).child();
-                label += child;
-                da._transition_bc(index, child);
-                unit = da.unit_at(index);
-                if (unit.has_label())
-                    label += da._suffix_in_pool(unit.pool_index());
-            }
-            label_datas.push_back({label, unit.label_is_suffix()});
-        });
-        
-        auto new_base = constructor_._find_base(children);
-        constructor_._insert_nodes(co_node, label_datas, new_base);
-        for (auto label_data : label_datas) {
-            auto target = node;
-            auto c = label_data.label.front();
-            da._transition_bc(target, c);
-            if (not label_data.suffix)
-                _arrange_da(da, target, new_base xor c);
-        }
     }
     
     template <class SuccessAction, class FailedInBcAction, class FailedInSuffixAction>
@@ -649,51 +638,6 @@ public:
         return {reinterpret_cast<value_type*>(pool_ptr+1), true};
     }
     
-    template <typename StrIter,
-    typename Traits = std::iterator_traits<StrIter>>
-    void _arrange_keysets(StrIter begin, StrIter end, size_t depth, index_type co_node) {
-        if (begin >= end)
-            return;
-        
-        std::vector<typename _constructor::_internal_label_container> label_datas;
-        std::vector<char_type> children;
-        while (begin < end and ((*begin).size() == depth)) {
-            label_datas.push_back({"", true});
-            children.push_back(kLeafChar);
-            ++begin;
-        }
-        std::vector<StrIter> iters = {begin};
-        std::string_view front_label((*begin).data() + depth);
-        char_type prev_key = (*begin)[depth];
-        auto append = [&](auto it) {
-            assert(not front_label.empty());
-            if (it == iters.back()) {
-                label_datas.push_back({std::string(front_label), true});
-            } else {
-                label_datas.push_back({std::string(front_label.substr(0,1)), false});
-            }
-            children.push_back(prev_key);
-            iters.push_back(it+1);
-        };
-        for (auto it = begin+1; it != end; ++it) {
-            char_type c = (*it)[depth];
-            if (c != prev_key) {
-                append(it-1);
-                front_label = std::string_view((*it).data() + depth);
-                prev_key = c;
-            }
-        }
-        append(end-1);
-        
-        auto new_base = constructor_._find_base(children);
-        constructor_._insert_nodes(co_node, label_datas, new_base);
-        for (size_t i = 0; i < label_datas.size(); i++) {
-            auto label = label_datas[i].label;
-            if (not label_datas[i].suffix)
-                _arrange_keysets(iters[i], iters[i+1], depth+label.size(), new_base xor (char_type)label.front());
-        }
-    }
-    
 };
 
 
@@ -726,7 +670,7 @@ public:
     template <typename StrIter,
     typename Traits = std::iterator_traits<StrIter>>
     CompactDoubleArrayTrie(StrIter begin, StrIter end) : _impl(), constructor_(*this) {
-        _arrange_keysets(begin, end, 0, kRootIndex);
+        constructor_._arrange_keysets(begin, end, 0, kRootIndex);
     }
     
     CompactDoubleArrayTrie(const std::vector<std::string>& key_set) : CompactDoubleArrayTrie(key_set.begin(), key_set.end()) {}
@@ -740,61 +684,21 @@ public:
     }
     
     ~CompactDoubleArrayTrie() = default;
-    
+
+    template <bool _Ordered, size_t _MaxTrial, bool _LegacyBuild>
+    void build_from(const CompactDoubleArrayTrie<ValueType, IndexType, _Ordered, _MaxTrial, _LegacyBuild, true>& da) {
+        constructor_._arrange_da(da, kRootIndex, kRootIndex);
+    }
+
     CompactDoubleArrayTrie& rebuild() {
         CompactDoubleArrayTrie<ValueType, IndexType, Ordered, 32, LegacyBuild, true> new_da;
-        new_da._arrange_da(*this, kRootIndex, kRootIndex);
+        new_da.build_from(*this);
         *this = std::move(new_da);
         return *this;
     }
 
     void shrink_to_fit() {
         rebuild();
-    }
-    
-    size_t size_in_bytes() const {return _impl::_size_in_bytes();}
-    
-    size_t bc_size_in_bytes() const {return _impl::container_.size_in_bytes();}
-    
-    size_t pool_size_in_bytes() const {return size_vec(_impl::pool_);}
-    
-    size_t succinct_size_in_bytes() const {return size_in_bytes() - bc_size_in_bytes() - pool_size_in_bytes();}
-    
-    size_t bc_blank_size_in_bytes() const {return _impl::kUnitBytes * (_impl::container_.size() - num_nodes());}
-    
-    size_t pool_blank_size_in_bytes() const {
-        size_t blank_size = _impl::pool_.size();
-        for (size_t i = 0; i < _impl::container_.size(); i++) {
-            auto unit = _impl::container_[i];
-            if (_impl::_empty_at(i) or not unit.has_label())
-                continue;
-            auto pool_index = unit.pool_index();
-            if (unit.label_is_suffix())
-                blank_size -= _impl::_suffix_in_pool(pool_index).size()+1+_impl::kValueBytes;
-            else
-                blank_size -= _impl::kIndexBytes + _impl::_suffix_in_pool(pool_index+_impl::kIndexBytes).size()+1;
-        }
-        return blank_size;
-    }
-    
-    size_t blank_size_in_bytes() const {return bc_blank_size_in_bytes() + pool_blank_size_in_bytes();}
-    
-    float load_factor() const {return (float)1 - ((float)blank_size_in_bytes() / size_in_bytes());}
-    
-    float load_factor_bc() const {return (float)1 - ((float)bc_blank_size_in_bytes() / bc_size_in_bytes());}
-    
-    float load_factor_pool() const {return (float)1 - ((float)pool_blank_size_in_bytes() / pool_size_in_bytes());}
-    
-    size_t num_nodes() const {
-        size_t cnt = 0;
-        for (size_t i = 0; i < _impl::basic_block_.size(); i++) {
-            cnt += 256 - _impl::basic_block_[i].num_empties();
-        }
-        return cnt;
-    }
-    
-    void serialize(std::ifstream& ifs) const {
-        _impl::_serialize(ifs);
     }
     
     value_type* find(std::string_view key) const {
@@ -831,87 +735,6 @@ public:
                          }, [](auto, auto) {return nullptr;},
                          [](auto, auto, auto) {return nullptr;},
                          [](auto, auto, auto) {return nullptr;}).second;
-    }
-    
-    void print_for_debug() const {
-        std::cout << "------------ Double-array implementation ------------" << std::endl;
-        std::cout << "\tindex] \texists, \tcheck, \tsibling, \tbase, \tchild"  << std::endl;
-        for (size_t i = 0; i < std::min(_impl::container_.size(), (size_t)0x10000); i++) {
-            if (i % 0x100 == 0)
-                std::cout << std::endl;
-            auto unit = _impl::container_[i];
-            std::cout << "\t\t"<<i<<"] \t" << unit.child()<<"| \t";
-            auto empty =_impl::_empty_at(i);
-            if (not empty) {
-                std::cout<<unit.check()<<", \t"<<unit.sibling()<<", \t"<<unit.has_label();
-                if (unit.has_label())
-                    std::cout<<", \t"<<unit.pool_index();
-                if (not unit.is_leaf())
-                    std::cout<<", \t"<<_impl::_base_at(i);
-            } else {
-                std::cout<<(size_t)unit.pred()<<", \t"<<(size_t)unit.succ();
-            }
-            std::cout << std::endl;
-        }
-    }
-    
-    std::array<size_t, 257> get_num_of_children_table() const {
-        std::array<size_t, 257> table = {};
-        auto make_table = recursive([&](auto dfs, index_type node) {
-            if (_impl::container_[node].is_leaf())
-                return;
-            auto cnt = 0;
-            _impl::_for_each_children(node, [&](index_type index, auto) {
-                dfs(dfs, index);
-                ++cnt;
-            });
-            table[cnt]++;
-        });
-        make_table(kRootIndex);
-        return table;
-    }
-    
-    void print_num_of_children_table() const {
-        auto table = get_num_of_children_table();
-        std::cout << "num of children | counts" << std::endl;
-        for (int i = 0; i <= 256; i++)
-            std::cout << table[i] << std::endl;
-    }
-    
-    template <bool O, size_t MT, bool LB>
-    void _arrange_da(const CompactDoubleArrayTrie<ValueType, IndexType, O, MT, LB>& da, const index_type node, const index_type co_node) {
-        std::vector<typename _constructor::_internal_label_container> label_datas;
-        std::vector<char_type> children;
-        da._for_each_children(node, [&](index_type index, char_type child) {
-            children.push_back(child);
-            std::string label;
-            label.push_back(child);
-            auto unit = da.unit_at(index);
-            assert(unit.check() == child);
-            if (unit.has_label())
-                label += da._suffix_in_pool(unit.pool_index()+(unit.label_is_suffix()?0:_impl::kIndexBytes));
-            while (da._is_single_node(index)) {
-                auto base = da._base_at(index);
-                auto child = da.unit_at(base).child();
-                label += child;
-                da._transition_bc(index, base, child);
-                unit = da.unit_at(index);
-                if (unit.has_label())
-                    label += da._suffix_in_pool(unit.pool_index()+(unit.label_is_suffix()?0:_impl::kIndexBytes));
-            }
-            label_datas.push_back({label, unit.label_is_suffix()});
-        });
-        
-        auto new_base = constructor_._find_base(children);
-        constructor_._insert_nodes(co_node, label_datas, new_base);
-        for (auto label_data : label_datas) {
-            auto target = node;
-            uint8_t c = label_data.label.front();
-            auto res = da._transition_bc(target, da._base_at(target), c);
-            assert(res);
-            if (not label_data.suffix)
-                _arrange_da(da, target, new_base xor c);
-        }
     }
     
     template <class SuccessAction, class FailedInBcAction, class FailedInInternalLabelAction, class FailedInSuffixAction>
@@ -1008,58 +831,6 @@ public:
         }
         --key_pos;
         return {reinterpret_cast<value_type*>(pool_ptr+1), true};
-    }
-    
-    template <typename StrIter,
-    typename Traits = std::iterator_traits<StrIter>>
-    void _arrange_keysets(StrIter begin, StrIter end, size_t depth, index_type co_node) {
-        if (begin >= end)
-            return;
-        
-        std::vector<typename _constructor::_internal_label_container> label_datas;
-        std::vector<char_type> children;
-        if ((*begin).size() == depth) {
-            label_datas.push_back({"", true});
-            children.push_back(kLeafChar);
-            ++begin;
-        }
-        if (begin == end) {
-            constructor_._insert_nodes(co_node, label_datas, constructor_._find_base(children));
-        } else {
-            assert(begin < end);
-            assert(begin->size() > depth);
-            std::vector<StrIter> iters = {begin};
-            std::string_view front_label(begin->data() + depth);
-            char_type prev_key = begin->size() <= depth ? kLeafChar : (*begin)[depth];
-            auto append = [&](auto it) {
-                size_t label_length = 1;
-                std::string_view back_label(it->data() + depth);
-                while (label_length < front_label.size() and label_length < back_label.size() and
-                       back_label[label_length] == front_label[label_length])
-                    label_length++;
-                label_datas.push_back({std::string(front_label.substr(0, label_length)), label_length == back_label.size()});
-                children.push_back(prev_key);
-                iters.push_back(it+1);
-            };
-            for (auto it = begin+1; it < end; ++it) {
-                char_type c = (*it)[depth];
-                if (c != prev_key) {
-                    append(it-1);
-                    front_label = std::string_view(it->data() + depth);
-                    prev_key = c;
-                }
-            }
-            append(end-1);
-            auto new_base = constructor_._find_base(children);
-            constructor_._insert_nodes(co_node, label_datas, new_base);
-            for (size_t i = 0; i < iters.size()-1; i++) {
-                auto& ld = label_datas[i+(children.front()==kLeafChar?1:0)];
-                auto label = ld.label;
-                if (not ld.suffix)
-                    _arrange_keysets(iters[i], iters[i+1], depth+label.size(), new_base xor (char_type)label.front());
-            }
-        }
-        
     }
     
 };
