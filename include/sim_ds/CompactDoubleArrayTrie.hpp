@@ -835,12 +835,6 @@ public:
     
 };
 
-
-template <typename ValueType>
-using u32DoubleArray = CompactDoubleArrayTrie<ValueType, uint32_t>;
-template <typename ValueType>
-using u64DoubleArray = CompactDoubleArrayTrie<ValueType, uint64_t>;
-
 } // namespace sim_ds
 
 #endif /* DoubleArray_hpp */

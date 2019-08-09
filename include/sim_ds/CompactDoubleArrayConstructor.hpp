@@ -38,7 +38,7 @@ protected:
     _impl& da_impl_;
     
 public:
-    _DynamicDoubleArrayMpTrieConstructor(_impl& da_impl) : da_impl_(da_impl) {}
+    explicit _DynamicDoubleArrayMpTrieConstructor(_impl& da_impl) : da_impl_(da_impl) {}
     
     virtual ~_DynamicDoubleArrayMpTrieConstructor() = default;
     
@@ -57,7 +57,7 @@ public:
     }
     
     virtual _value_type* _insert_in_bc(_index_type node, std::string_view additional_suffix) {
-        if (additional_suffix.size() > 0) {
+        if (not additional_suffix.empty()) {
             node = _insert_trans(node, additional_suffix.front());
             auto pool_index = da_impl_._append_suffix_in_pool(additional_suffix.substr(1));
             da_impl_.unit_at(node).set_pool_index(pool_index, true);
@@ -436,7 +436,7 @@ public:
     using _base::da_impl_;
     
 public:
-    _DynamicDoubleArrayPatriciaTrieConstructor(_impl& da_impl) : _base(da_impl) {}
+    explicit _DynamicDoubleArrayPatriciaTrieConstructor(_impl& da_impl) : _base(da_impl) {}
     
     virtual ~_DynamicDoubleArrayPatriciaTrieConstructor() = default;
     
@@ -498,8 +498,8 @@ public:
         _base::_consume_block(da_impl_._block_index_of(base), label_datas.size());
     }
 
-    template <class CoImpl>
-    void _arrange_da(const CoImpl& da, const _index_type node, const _index_type co_node) {
+    template <class SrcDa>
+    void _arrange_da(const SrcDa& da, const _index_type node, const _index_type co_node) {
         std::vector<typename _base::_internal_label_container> label_datas;
         std::vector<_char_type> children;
         da._for_each_children(node, [&](_index_type index, _char_type child) {

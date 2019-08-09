@@ -1856,10 +1856,6 @@ private:
         }
     }
 
-
-    using u32DoubleArray = DoubleArrayTrie<uint32_t>;
-    using u64DoubleArray = DoubleArrayTrie<uint64_t>;
-
 };
 
 } // namespace sim_ds
