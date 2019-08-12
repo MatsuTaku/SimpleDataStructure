@@ -12,36 +12,37 @@ namespace sim_ds {
 
 // MARK: - Block reference
 
-template <class _Da>
-class _CompactDoubleArrayBlockContainer;
-
 //  Double-array block implementation
 //             ---------------------------------------------------------------------------------------------------------------------------------------------------------
-//    Enabled  | Base bit field [256bit] | Unit bit field [256bit] | Pred[8Byte] | Succ[8Byte] | Number of empties [4Byte] | Error counts [4Byte] | Empty head [1Byte] |
+//    Enabled  | Base bit field [(256 or 0)bit] | Unit bit field [256bit] | Pred[8Byte] | Succ[8Byte] | Number of empties [4Byte] | Error counts [4Byte] | Empty head [1Byte] |
 //             ---------------------------------------------------------------------------------------------------------------------------------------------------------
 //             |
 //          pointer_
 //
-template <class _Ctnr>
-class _CompactDoubleArrayBlockReferenceCommon {
+template <class _Ctnr, bool HasBaseExists>
+class _DoubleArrayBlockReferenceCommon {
 public:
     using _container = _Ctnr;
     using _block_word_type = typename _container::_block_word_type;
     static_assert(sizeof(_block_word_type) == 8, "Invalid block word type!");
-    using _index_type = typename _Ctnr::_index_type;
-    using _inset_type = typename _Ctnr::_inset_type;
-    
+    using _index_type = typename _Ctnr::index_type;
+    using _inset_type = typename _Ctnr::inset_type;
+
     static constexpr size_t kWordBits = sizeof(_block_word_type)*8;
-    static constexpr size_t kBlockSize = _Ctnr::kBlockSize;
-    
+    static constexpr size_t kNumUnitsPerBlock = _Ctnr::kNumUnitsPerBlock;
+
+    static constexpr size_t kFieldQBytes = kNumUnitsPerBlock / kWordBits; // 4
+    static constexpr size_t kBlockQBytes = kFieldQBytes*(2+(HasBaseExists?1:0));
+    static constexpr size_t kBlockSize = kBlockQBytes * 8;
+    static constexpr size_t kBaseFieldOffset = 0;
+    static constexpr size_t kUnitFieldOffset = (HasBaseExists?kFieldQBytes:0);
+    static constexpr size_t kBasicOffset = kUnitFieldOffset + kFieldQBytes;
     static constexpr size_t kPredOffset = 0;
     static constexpr size_t kSuccOffset = kPredOffset + 1;
     static constexpr size_t kNumEmptiesOffset = kSuccOffset + 1;
     static constexpr size_t kErrorCountOffset = kNumEmptiesOffset;
     static constexpr size_t kErrorCountInset = 32;
     static constexpr size_t kEmptyHeadOffset = kNumEmptiesOffset + 1;
-    static constexpr size_t kFieldQBytes = kBlockSize / kWordBits; // 4
-    static constexpr size_t kBlockQBytes = kFieldQBytes*3;
     
     static constexpr _block_word_type kNumEmptiesMask = 0x1FF;
     
@@ -50,12 +51,12 @@ public:
 };
 
 
-template <class _Ctnr>
-class _CompactDoubleArrayBlockConstReference;
+template <class _Ctnr, bool HasBaseExists>
+class _DoubleArrayBlockConstReference;
 
-template <class _Ctnr>
-class _CompactDoubleArrayBlockReference : public _CompactDoubleArrayBlockReferenceCommon<_Ctnr> {
-    using _common = _CompactDoubleArrayBlockReferenceCommon<_Ctnr>;
+template <class _Ctnr, bool HasBaseExists>
+class _DoubleArrayBlockReference : public _DoubleArrayBlockReferenceCommon<_Ctnr, HasBaseExists> {
+    using _common = _DoubleArrayBlockReferenceCommon<_Ctnr, HasBaseExists>;
     using typename _common::_container;
     
     using typename _common::_block_word_type;
@@ -68,7 +69,7 @@ private:
     _block_pointer block_pointer_;
     
     friend typename _container::_self;
-    friend class _CompactDoubleArrayBlockConstReference<_Ctnr>;
+    friend class _DoubleArrayBlockConstReference<_Ctnr, HasBaseExists>;
     
     template <size_t Offset>
     _index_type _index() const {return *reinterpret_cast<const _index_type*>(basic_ptr() + Offset);}
@@ -83,26 +84,27 @@ private:
     _inset_type& _inset() {return *reinterpret_cast<_inset_type*>(basic_ptr() + Offset);}
     
 public:
-    _CompactDoubleArrayBlockReference& init() {
-        bit_util::set256_epi1(1, base_field_ptr());
+    _DoubleArrayBlockReference& init() {
+        if constexpr (HasBaseExists)
+            bit_util::set256_epi1(1, base_field_ptr());
         bit_util::set256_epi1(1, unit_field_ptr());
-        *(basic_ptr()+_common::kNumEmptiesOffset) = _common::kBlockSize;
+        *(basic_ptr()+_common::kNumEmptiesOffset) = _common::kNumUnitsPerBlock;
         error_reset();
         set_empty_head(0);
         return *this;
     }
     
-    _block_pointer base_field_ptr() {return block_pointer_;}
+    _block_pointer base_field_ptr() {return block_pointer_ + _common::kBaseFieldOffset;}
     
-    _const_block_pointer base_field_ptr() const {return block_pointer_;}
+    _const_block_pointer base_field_ptr() const {return block_pointer_ + _common::kBaseFieldOffset;}
     
-    _block_pointer unit_field_ptr() {return block_pointer_ + _common::kFieldQBytes;}
+    _block_pointer unit_field_ptr() {return block_pointer_ + _common::kUnitFieldOffset;}
     
-    _const_block_pointer unit_field_ptr() const {return block_pointer_ + _common::kFieldQBytes;}
+    _const_block_pointer unit_field_ptr() const {return block_pointer_ + _common::kUnitFieldOffset;}
     
-    _block_pointer basic_ptr() {return block_pointer_ + _common::kFieldQBytes * 2;}
+    _block_pointer basic_ptr() {return block_pointer_ + _common::kBasicOffset;}
     
-    _const_block_pointer basic_ptr() const {return block_pointer_ + _common::kFieldQBytes * 2;}
+    _const_block_pointer basic_ptr() const {return block_pointer_ + _common::kBasicOffset;}
     
     _index_type pred() const {return _index<_common::kPredOffset>();}
     
@@ -191,14 +193,14 @@ public:
     }
     
 private:
-    _CompactDoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
+    _DoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
     
 };
 
 
-template <class _Da>
-class _CompactDoubleArrayBlockConstReference : public _CompactDoubleArrayBlockReferenceCommon<_Da> {
-    using _common = _CompactDoubleArrayBlockReferenceCommon<_Da>;
+template <class _Ctnr, bool HasBaseExists>
+class _DoubleArrayBlockConstReference : public _DoubleArrayBlockReferenceCommon<_Ctnr, HasBaseExists> {
+    using _common = _DoubleArrayBlockReferenceCommon<_Ctnr, HasBaseExists>;
     using typename _common::_container;
     
     using typename _common::_block_word_type;
@@ -218,13 +220,13 @@ private:
     _inset_type _inset() const {return *reinterpret_cast<const _inset_type*>(basic_ptr() + Offset);}
     
 public:
-    _CompactDoubleArrayBlockConstReference(const _CompactDoubleArrayBlockReference<_Da> x) : block_pointer_(x.block_pointer_) {}
+    _DoubleArrayBlockConstReference(const _DoubleArrayBlockReference<_Ctnr, HasBaseExists> x) : block_pointer_(x.block_pointer_) {}
     
-    _block_pointer base_field_ptr() const {return block_pointer_;}
+    _block_pointer base_field_ptr() const {return block_pointer_ + _common::kBaseFieldOffset;}
     
-    _block_pointer unit_field_ptr() const {return block_pointer_ + _common::kFieldQBytes;}
+    _block_pointer unit_field_ptr() const {return block_pointer_ + _common::kUnitFieldOffset;}
     
-    _block_pointer basic_ptr() const {return block_pointer_ + _common::kFieldQBytes * 2;}
+    _block_pointer basic_ptr() const {return block_pointer_ + _common::kBasicOffset;}
     
     _index_type pred() const {return _index<_common::kPredOffset>();}
     
@@ -249,27 +251,29 @@ public:
     _inset_type empty_head() const {return _inset<_common::kEmptyHeadOffset>();}
     
 private:
-    _CompactDoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
+    _DoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
     
 };
 
 
-template <class _Da>
-class _CompactDoubleArrayBlockContainer {
+template <typename IndexType, typename InsetType, size_t NumUnitsPerBlock, bool UseUniqueBase>
+class _DoubleArrayBlockContainer {
 public:
-    using _self = _CompactDoubleArrayBlockContainer<_Da>;
+    using _self = _DoubleArrayBlockContainer<IndexType, InsetType, NumUnitsPerBlock, UseUniqueBase>;
     using _block_word_type = uint64_t;
     using _block_pointer = _block_word_type*;
     using _const_block_pointer = const _block_word_type*;
+
+    using _block_reference = _DoubleArrayBlockReference<_self, UseUniqueBase>;
+    using _const_block_reference = _DoubleArrayBlockConstReference<_self, UseUniqueBase>;
     
-    using _block_reference = _CompactDoubleArrayBlockReference<_self>;
-    using _const_block_reference = _CompactDoubleArrayBlockConstReference<_self>;
-    
-    using _index_type = typename _Da::_index_type;
-    using _inset_type = typename _Da::_inset_type;
-    static constexpr size_t kBlockSize = _Da::kBlockSize;
+    using index_type = IndexType;
+    using inset_type = InsetType;
+
+    static constexpr size_t kNumUnitsPerBlock = NumUnitsPerBlock;
     
     static constexpr auto kBlockQBytes = _block_reference::kBlockQBytes;
+    static constexpr auto kBlockSize = _block_reference::kBlockSize;
     
 private:
     aligned_vector<_block_word_type, 32> container_;

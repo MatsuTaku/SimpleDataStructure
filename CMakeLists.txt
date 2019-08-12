@@ -15,7 +15,7 @@ set(SiDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB HEADERS ${SiDS_INCLUDE_DIR}/sim_ds.hpp ${SiDS_INCLUDE_DIR}/sim_ds/*.hpp)
 
 # Build Public Library
-add_library(sim_ds STATIC ${SiDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS} include/sim_ds/DoubleArrayTrie.hpp)
+add_library(sim_ds STATIC ${SiDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS} include/sim_ds/DoubleArrayTrie.hpp include/sim_ds/DoubleArrayContainer.hpp include/sim_ds/DoubleArrayTrieDictImpl.hpp include/sim_ds/DoubleArrayMpTrie.hpp include/sim_ds/DoubleArrayPatriciaTrie.hpp include/sim_ds/DoubleArrayBaseFinder.hpp include/sim_ds/DoubleArrayTrieDict.hpp)
 target_include_directories(sim_ds INTERFACE ${SiDS_INCLUDE_DIR})
 
 find_package(Boost 1.53.0 REQUIRED

@@ -19,7 +19,7 @@
 #include "sim_ds/sort.hpp"
 #include "sim_ds/PatternMatching.hpp"
 #include "sim_ds/graph_util.hpp"
-#include "sim_ds/CompactDoubleArrayTrie.hpp"
+#include "sim_ds/DoubleArrayTrieDict.hpp"
 #include "sim_ds/Samc.hpp"
 #include "sim_ds/EmptyLinkedVector.hpp"
 #include "sim_ds/bit_util.hpp"
