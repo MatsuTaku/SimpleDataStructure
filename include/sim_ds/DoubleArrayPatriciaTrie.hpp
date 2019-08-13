@@ -59,7 +59,7 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
             return {ptr, false};
           base = nbase;
         } else {
-          auto [ptr, res] =  TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
+          auto [ptr, res] =  _base::TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
           if (not res)
             return {ptr, false};
           success(node);
@@ -101,7 +101,7 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
             return {ptr, false};
           base = nbase;
         } else {
-          auto [ptr, res] =  TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
+          auto [ptr, res] =  _base::TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
           if (not res)
             return {ptr, false};
           success(node);
@@ -192,57 +192,57 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
     return {base, nullptr, true};
   }
 
-  template <class FailedAction>
-  std::pair<_value_pointer, bool>
-  TransitionSuffix(_index_type node,
-                   std::string_view key,
-                   size_t &key_pos,
-                   FailedAction failed) {
-    auto label_index = _base::unit_at(node).pool_index();
-    auto pool_ptr = (_char_type*)_base::pool_ptr_at(label_index);
-    size_t i = 0;
-    while (key_pos < key.size()) {
-      _char_type char_in_label = *pool_ptr;
-      if (char_in_label == kLeafChar or
-          char_in_label != (_char_type)key[key_pos]) {
-        return {failed(node, label_index+i, key_pos), false};
-      }
-      ++pool_ptr;
-      i++;
-      key_pos++;
-    }
-    if (*pool_ptr != kLeafChar) {
-      return {failed(node, label_index+i, key_pos), false};
-    }
-    --key_pos;
-    return {reinterpret_cast<_value_pointer>(pool_ptr+1), true};
-  }
-
-  template <class FailedAction>
-  std::pair<_const_value_pointer, bool>
-  TransitionSuffix(_index_type node,
-                   std::string_view key,
-                   size_t &key_pos,
-                   FailedAction failed) const {
-    auto label_index = _base::unit_at(node).pool_index();
-    auto pool_ptr = (const _char_type*)_base::pool_ptr_at(label_index);
-    size_t i = 0;
-    while (key_pos < key.size()) {
-      _char_type char_in_label = *pool_ptr;
-      if (char_in_label == kLeafChar or
-          char_in_label != (_char_type)key[key_pos]) {
-        return {failed(node, label_index+i, key_pos), false};
-      }
-      ++pool_ptr;
-      i++;
-      key_pos++;
-    }
-    if (*pool_ptr != kLeafChar) {
-      return {failed(node, label_index+i, key_pos), false};
-    }
-    --key_pos;
-    return {reinterpret_cast<_const_value_pointer>(pool_ptr+1), true};
-  }
+//  template <class FailedAction>
+//  std::pair<_value_pointer, bool>
+//  TransitionSuffix(_index_type node,
+//                   std::string_view key,
+//                   size_t &key_pos,
+//                   FailedAction failed) {
+//    auto label_index = _base::unit_at(node).pool_index();
+//    auto pool_ptr = (_char_type*)_base::pool_ptr_at(label_index);
+//    size_t i = 0;
+//    while (key_pos < key.size()) {
+//      _char_type char_in_label = *pool_ptr;
+//      if (char_in_label == kLeafChar or
+//          char_in_label != (_char_type)key[key_pos]) {
+//        return {failed(node, label_index+i, key_pos), false};
+//      }
+//      ++pool_ptr;
+//      i++;
+//      key_pos++;
+//    }
+//    if (*pool_ptr != kLeafChar) {
+//      return {failed(node, label_index+i, key_pos), false};
+//    }
+//    --key_pos;
+//    return {reinterpret_cast<_value_pointer>(pool_ptr+1), true};
+//  }
+//
+//  template <class FailedAction>
+//  std::pair<_const_value_pointer, bool>
+//  TransitionSuffix(_index_type node,
+//                   std::string_view key,
+//                   size_t &key_pos,
+//                   FailedAction failed) const {
+//    auto label_index = _base::unit_at(node).pool_index();
+//    auto pool_ptr = (const _char_type*)_base::pool_ptr_at(label_index);
+//    size_t i = 0;
+//    while (key_pos < key.size()) {
+//      _char_type char_in_label = *pool_ptr;
+//      if (char_in_label == kLeafChar or
+//          char_in_label != (_char_type)key[key_pos]) {
+//        return {failed(node, label_index+i, key_pos), false};
+//      }
+//      ++pool_ptr;
+//      i++;
+//      key_pos++;
+//    }
+//    if (*pool_ptr != kLeafChar) {
+//      return {failed(node, label_index+i, key_pos), false};
+//    }
+//    --key_pos;
+//    return {reinterpret_cast<_const_value_pointer>(pool_ptr+1), true};
+//  }
 
 };
 
@@ -634,7 +634,8 @@ class DoubleArrayPatriciaTrie : public _DoubleArrayBcPatriciaTrieBehavior<ValueT
   bool erase(std::string_view key) {
     return _behavior::Traverse(key, [&](index_type node) {
                                  constructor_.DeleteLeaf(node);
-                               }, [](auto, auto) { return nullptr; },
+                               },
+                               [](auto, auto) { return nullptr; },
                                [](auto, auto, auto) { return nullptr; },
                                [](auto, auto, auto) { return nullptr; }).second;
   }
