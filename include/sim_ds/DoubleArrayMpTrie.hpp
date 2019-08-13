@@ -70,21 +70,20 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
     }
   }
 
+  void make_table(_index_type node, std::array<size_t, 257>& table) const {
+    if (_base::unit_at(node).is_leaf())
+      return;
+    auto cnt = 0;
+    for_each_children(node, [&](_index_type index, auto) {
+      make_table(index, table);
+      ++cnt;
+    });
+    table[cnt]++;
+  }
+
   std::array<size_t, 257> get_num_of_children_table() const {
     std::array<size_t, 257> table = {};
-    auto make_table = [f=[&](auto dfs, _index_type node) {
-      if (_base::unit_at(node).is_leaf())
-        return;
-      auto cnt = 0;
-      for_each_children(node, [&](_index_type index, auto) {
-        dfs(dfs, index);
-        ++cnt;
-      });
-      table[cnt]++;
-    }] (auto index) {
-      f(f, index);
-    };
-    make_table(kRootIndex);
+    make_table(kRootIndex, table);
     return table;
   }
 
