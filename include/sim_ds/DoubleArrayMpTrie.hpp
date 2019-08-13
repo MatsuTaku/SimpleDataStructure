@@ -131,9 +131,9 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
 
   template <class SuccessAction, class FailedInBcAction, class FailedInSuffixAction>
   std::pair<_value_pointer, bool>
-  Traverse(std::string_view key,
-           SuccessAction success,
-           FailedInBcAction failed_in_bc,
+  Traverse(std::string_view     key,
+           SuccessAction        success,
+           FailedInBcAction     failed_in_bc,
            FailedInSuffixAction failed_in_suffix) {
     _index_type node = kRootIndex;
     size_t key_pos = 0;
@@ -287,7 +287,7 @@ class _DoubleArrayMpTrieConstructor {
  protected:
   _da_trie& da_;
   _base_finder base_finder_;
-
+  
   friend typename _base_finder::_self;
 
   struct _MovingLuggage {
@@ -325,7 +325,12 @@ class _DoubleArrayMpTrieConstructor {
 
   _index_type Grow(_index_type node, _index_type base, _char_type c) {
     assert(da_.unit_at(node).is_leaf());
-    _SetNewEdge(node, base, c);
+    if constexpr (kUseUniqueBase) {
+      _UseBaseAt(base, c);
+    } else {
+      da_.unit_at(node).set_child(c);
+    }
+    da_.unit_at(node).set_base(base);
     auto next = base xor c;
     if constexpr (kLetterCheck) {
       _SetNewNode(next, c);
@@ -356,10 +361,12 @@ class _DoubleArrayMpTrieConstructor {
       node = Grow(node, base_finder_.get({c}), c);
     }
     _char_type char_at_confliction = da_.char_in_pool_at(pool_pos);
+    auto new_base = base_finder_.get({char_at_confliction,
+      additional_suffix.empty() ? kLeafChar : (_char_type) additional_suffix.front()});
     auto next = Grow(node,
-                     base_finder_.get({char_at_confliction,
-                                       additional_suffix.empty() ? kLeafChar : (_char_type) additional_suffix.front()}),
+                     new_base,
                      char_at_confliction);
+    assert(da_.base_at(node) == new_base);
 
     auto unit = da_.unit_at(next);
     unit.set_pool_index(pool_pos+1, true);
@@ -537,18 +544,6 @@ class _DoubleArrayMpTrieConstructor {
       if (not label_datas[i].suffix)
         ArrangeKeysets(iters[i], iters[i + 1], depth + label.size(), new_base xor (_char_type) label.front());
     }
-  }
-
-  // Called only by base_finder_
-  void ErrorBlock(_index_type block) {
-    auto b = da_.block_at(block);
-    if (not _is_general_error_counts(b.error_count() + 1)) {
-      da_.PopBlockFrom(block, kLinkLayerIdGeneral);
-      if constexpr (kUsePersonalLink) {
-        da_.PushBlockTo(block, kLinkLayerIdPersonal);
-      }
-    }
-    b.errored();
   }
 
  protected:
@@ -783,6 +778,18 @@ class _DoubleArrayMpTrieConstructor {
   }
 
   bool _is_general_error_counts(size_t errors) const {return errors < MaxTrial;}
+  
+  // Called only by base_finder_
+  void _ErrorBlock(_index_type block) {
+    auto b = da_.block_at(block);
+    if (not _is_general_error_counts(b.error_count() + 1)) {
+      da_.PopBlockFrom(block, kLinkLayerIdGeneral);
+      if constexpr (kUsePersonalLink) {
+        da_.PushBlockTo(block, kLinkLayerIdPersonal);
+      }
+    }
+    b.errored();
+  }
 
   void _ConsumeBlock(_index_type block, size_t num) {
     auto b = da_.block_at(block);
@@ -804,6 +811,11 @@ class _DoubleArrayMpTrieConstructor {
       return;
     auto b = da_.block_at(block);
     if (b.filled()) {
+      da_.PushBlockTo(block, kLinkLayerIdGeneral);
+    } else if (not _is_general_error_counts(b.error_count())) {
+      if constexpr (kUsePersonalLink) {
+        da_.PopBlockFrom(block, kLinkLayerIdPersonal);
+      }
       da_.PushBlockTo(block, kLinkLayerIdGeneral);
     }
     b.error_reset();

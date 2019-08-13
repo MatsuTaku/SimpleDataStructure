@@ -73,9 +73,11 @@ class _DoubleArrayContainer {
 
   float load_factor() const {return float(num_nodes()) / unit_size();}
 
-  auto block_link_head_of(int id) const {return block_link_head_[id];}
+  size_t block_link_head_of(int id) const {return block_link_head_[id];}
 
-  auto& block_link_head_of(int id) {return block_link_head_[id];}
+  void set_block_link_head_of(int id, size_t new_value) {
+    block_link_head_[id] = new_value;
+  }
 
   _block_reference block_at(size_t index) {return block_[index];}
 
@@ -84,12 +86,12 @@ class _DoubleArrayContainer {
   size_t block_size() const {return block_.size();}
 
   void PushBlockTo(size_t index, int link_layer_id) {
-    auto& link_head = block_link_head_of(link_layer_id);
+    auto link_head = block_link_head_of(link_layer_id);
     if (link_head == kDisabledBlockLinkHead) {
       auto block = block_[index];
       block.set_pred(index);
       block.set_succ(index);
-      link_head = index;
+      set_block_link_head_of(link_layer_id, index);
     } else {
       auto head = block_[link_head];
       auto pred_index = head.pred();
@@ -101,20 +103,20 @@ class _DoubleArrayContainer {
     }
   }
 
-  void PopBlockFrom(size_t index, int link_layer_id) {
-    auto& link_head = block_link_head_[link_layer_id];
+  void PopBlockFrom(size_t index, const int link_layer_id) {
+    auto link_head = block_link_head_of(link_layer_id);
     assert(link_head != kDisabledBlockLinkHead);
     auto block = block_[index];
     auto succ_index = block.succ();
     if (succ_index == index) {
       assert(link_head == index);
-      link_head = kDisabledBlockLinkHead;
+      set_block_link_head_of(link_layer_id, kDisabledBlockLinkHead);
     } else {
       auto pred_index = block.pred();
       block_[succ_index].set_pred(pred_index);
       block_[pred_index].set_succ(succ_index);
       if (index == link_head)
-        link_head = succ_index;
+        set_block_link_head_of(link_layer_id, succ_index);
     }
   }
 
@@ -127,6 +129,7 @@ class _DoubleArrayContainer {
   void PushEmptyUnit(size_t index) {
     Index2 id(index);
     auto block = block_[id.block_index];
+    block.thaw_element_at(id.unit_insets);
     if (not block.link_enabled()) {
       unit_[index].init_disabled_unit(id.unit_insets, id.unit_insets);
       block.set_empty_head(id.unit_insets);
@@ -138,7 +141,6 @@ class _DoubleArrayContainer {
       unit_[offset+pred_insets].set_succ(id.unit_insets);
       unit_[index].init_disabled_unit(pred_insets, head_insets);
     }
-    block.thaw_element_at(id.unit_insets);
   }
 
   void PopEmptyUnit(size_t index) {

@@ -250,7 +250,7 @@ class _DoubleArrayUnitBasicConstReference : public _DoubleArrayUnitBasicReferenc
 
   bool check_empty() const { return *(pointer_ + _common::kEmptyFlagInsets) bitand 0x80; }
 
-  bool is_leaf() const {return base_empty() or (has_label() and label_is_suffix());}
+  bool is_leaf() const { return base_empty() or (has_label() and label_is_suffix()); }
 
   _index_type pred() const {
     assert(_index<_common::kPredInsets>() bitand _common::kEmptyFlag);
@@ -334,33 +334,33 @@ class _DoubleArrayUnitLetterCheckReference : public _DoubleArrayUnitLetterCheckR
   friend class _DoubleArrayUnitLetterCheckConstReference<_Cntr>;
 
   template <size_t Offset>
-  _char_type _char() const {return *(_char_type*)(pointer_ + Offset);}
+  _char_type _char() const { return *(_char_type*)(pointer_ + Offset); }
 
   template <size_t Offset>
-  _char_type& _char() {return *(_char_type*)(pointer_ + Offset);}
+  _char_type& _char() { return *(_char_type*)(pointer_ + Offset); }
 
   template <size_t Offset>
-  _index_type _index() const {return *reinterpret_cast<const _index_type*>(pointer_ + Offset);}
+  _index_type _index() const { return *reinterpret_cast<const _index_type*>(pointer_ + Offset); }
 
   template <size_t Offset>
-  _index_type& _index() {return *reinterpret_cast<_index_type*>(pointer_ + Offset);}
+  _index_type& _index() { return *reinterpret_cast<_index_type*>(pointer_ + Offset); }
 
-  _unit_storage_type _flags() const {return *(pointer_ + _common::kFlagsInsets);}
+  _unit_storage_type _flags() const { return *(pointer_ + _common::kFlagsInsets); }
 
  public:
-  _char_type child() const {return _char<_common::kChildInsets>();}
+  _char_type child() const { return _char<_common::kChildInsets>(); }
 
   void set_child(_char_type new_child) {
     _char<_common::kChildInsets>() = new_child;
   }
 
-  _char_type check() const {return _char<_common::kCheckInsets>();}
+  _char_type check() const { return _char<_common::kCheckInsets>(); }
 
   void set_check(_char_type new_check) {
     _char<_common::kCheckInsets>() = new_check;
   }
 
-  _char_type sibling() const {return _char<_common::kSiblingInsets>();}
+  _char_type sibling() const { return _char<_common::kSiblingInsets>(); }
 
   void set_sibling(_char_type new_sibling) {
     _char<_common::kSiblingInsets>() = new_sibling;
@@ -374,11 +374,11 @@ class _DoubleArrayUnitLetterCheckReference : public _DoubleArrayUnitLetterCheckR
     _index<_common::kTargetInsets>() = new_base bitand _common::kIndexMask;
   }
 
-  bool has_label() const {return _flags() bitand 0x40;}
+  bool has_label() const { return _flags() bitand 0x40; }
 
-  bool label_is_suffix() const {return _flags() bitand 0x20;}
+  bool label_is_suffix() const { return _flags() bitand 0x20; }
 
-  _index_type pool_index() const {assert(has_label()); return target();}
+  _index_type pool_index() const { assert(has_label()); return target(); }
 
   void set_pool_index(_index_type new_pool_index, bool label_is_suffix) {
     _index<_common::kTargetInsets>() = ((new_pool_index bitand _common::kIndexMask) bitor
@@ -386,19 +386,19 @@ class _DoubleArrayUnitLetterCheckReference : public _DoubleArrayUnitLetterCheckR
         (label_is_suffix ? _common::kSuffixFlag : 0));
   }
 
-  bool target_empty() const {return _flags() bitand 0x80;}
+  bool target_empty() const { return _flags() bitand 0x80; }
 
-  bool is_leaf() const {return target_empty() or (has_label() and label_is_suffix());}
+  bool is_leaf() const { return target_empty() or (has_label() and label_is_suffix()); }
 
-  bool check_empty() const {return check() == _common::kEmptyChar;}
+  bool check_empty() const { return check() == _common::kEmptyChar; }
 
-  _inset_type pred() const {return (_inset_type)*(pointer_+_common::kPredInsets);}
+  _inset_type pred() const { return (_inset_type)*(pointer_+_common::kPredInsets); }
 
   void set_pred(_inset_type new_pred) {
     *(pointer_+_common::kPredInsets) = new_pred;
   }
 
-  _inset_type succ() const {return (_inset_type)*(pointer_+_common::kSuccInsets);}
+  _inset_type succ() const { return (_inset_type)*(pointer_+_common::kSuccInsets); }
 
   void set_succ(_inset_type new_succ) {
     *(pointer_+_common::kSuccInsets) = new_succ;
@@ -451,12 +451,12 @@ class _DoubleArrayUnitLetterCheckConstReference : public _DoubleArrayUnitLetterC
   friend typename _container::_self;
 
   template <size_t Offset>
-  _char_type _char() const {return *(_char_type*)(pointer_ + Offset);}
+  _char_type _char() const { return *(_char_type*)(pointer_ + Offset); }
 
   template <size_t Offset>
-  _index_type _index() const {return *reinterpret_cast<const _index_type*>(pointer_ + Offset);}
+  _index_type _index() const { return *reinterpret_cast<const _index_type*>(pointer_ + Offset); }
 
-  _unit_storage_type _flags() const {return *(pointer_ + _common::kFlagsInsets);}
+  _unit_storage_type _flags() const { return *(pointer_ + _common::kFlagsInsets); }
 
  public:
   explicit _DoubleArrayUnitLetterCheckConstReference(const _DoubleArrayUnitLetterCheckReference<_Ctnr>& x) : pointer_(x.pointer_) {}
