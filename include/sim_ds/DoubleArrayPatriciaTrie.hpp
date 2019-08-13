@@ -293,8 +293,8 @@ class _DynamicDoubleArrayPatriciaTrieConstructor : public _DoubleArrayMpTrieCons
   }
 
   void InsertNodes(_index_type node, std::vector<typename _base::_InternalLabelContainer>& label_datas, _index_type base) override {
-    _base::_SetNewEdge(node, base, label_datas.front().label.empty() ? kLeafChar : label_datas.front().label.front());
     da_.ExpandIfNeeded(base);
+    _base::_SetNewEdge(node, base, label_datas.front().label.empty() ? kLeafChar : label_datas.front().label.front());
     for (size_t i = 0; i < label_datas.size(); i++) {
       auto cur_label = label_datas[i].label;
       _char_type c = cur_label.empty() ? kLeafChar : cur_label.front();
@@ -573,7 +573,7 @@ class DoubleArrayPatriciaTrie : public _DoubleArrayBcPatriciaTrieBehavior<ValueT
 
   template <typename StrIter,
       typename Traits = std::iterator_traits<StrIter>>
-  DoubleArrayPatriciaTrie(StrIter begin, StrIter end) : _behavior(), constructor_(*this) {
+  DoubleArrayPatriciaTrie(StrIter begin, StrIter end) : DoubleArrayPatriciaTrie() {
     constructor_.ArrangeKeysets(begin, end, 0, kRootIndex);
   }
 

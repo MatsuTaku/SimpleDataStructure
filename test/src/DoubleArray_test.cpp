@@ -6,7 +6,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "sim_ds/DoubleArray.hpp"
+#include "sim_ds/DoubleArrayTrieDict.hpp"
 
 using namespace sim_ds;
 
@@ -43,7 +43,7 @@ TEST(DoubleArrayTest, SampleLegacy) {
         "bb"
     };
     assert(set.end() - set.begin() == 5);
-    using double_array_type = DoubleArray<char, uint32_t>;
+    using double_array_type = string_map32<char>;
     double_array_type da(set);
     for (std::string_view s : set) {
         EXPECT_TRUE(da.find(s) != nullptr);
@@ -58,7 +58,7 @@ TEST(DoubleArrayTest, Sample) {
         "bac",
         "bb"
     };
-    using double_array_type = DoubleArray<char, uint32_t>;
+    using double_array_type = string_map32<char>;
     double_array_type da(set);
     for (std::string_view s : set) {
         EXPECT_TRUE(da.find(s) != nullptr);
@@ -66,7 +66,7 @@ TEST(DoubleArrayTest, Sample) {
 }
 
 TEST(DoubleArrayTest, SampleLargeLegacy) {
-    using double_array_type = DoubleArray<char, uint32_t>;
+    using double_array_type = string_map32<char>;
     sim_ds::Stopwatch sw;
     double_array_type da(large_keyset);
     std::cout << "Build time(m): " << sw.get_milli_sec() << std::endl;
@@ -76,7 +76,7 @@ TEST(DoubleArrayTest, SampleLargeLegacy) {
 }
 
 TEST(DoubleArrayTest, SampleLarge) {
-    using double_array_type = DoubleArray<char, uint32_t>;
+    using double_array_type = string_map32<char>;
     sim_ds::Stopwatch sw;
     double_array_type da(large_keyset);
     std::cout << "Build time(m): " << sw.get_milli_sec() << std::endl;
