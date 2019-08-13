@@ -31,11 +31,7 @@ public:
   
   template <class Action, class Failure>
   size_t _get_for_blocks(Action action, Failure failure) const {
-    std::set<size_t> bvisited;
     for (size_t block_index = da_.block_link_head_of(kGeneralLinkId); ; ) {
-      assert(bvisited.find(block_index) == bvisited.end());
-      bvisited.insert(block_index);
-      
       auto succ_block_index = da_.block_at(block_index).succ();
       bool is_end = succ_block_index == da_.block_link_head_of(kGeneralLinkId);
       
