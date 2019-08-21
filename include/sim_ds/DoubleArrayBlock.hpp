@@ -193,7 +193,7 @@ public:
     }
     
 private:
-    _DoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
+    explicit _DoubleArrayBlockReference(_block_pointer pointer) : block_pointer_(pointer) {}
     
 };
 
@@ -220,7 +220,7 @@ private:
     _inset_type _inset() const {return *reinterpret_cast<const _inset_type*>(basic_ptr() + Offset);}
     
 public:
-    _DoubleArrayBlockConstReference(const _DoubleArrayBlockReference<_Ctnr, HasBaseExists> x) : block_pointer_(x.block_pointer_) {}
+    explicit _DoubleArrayBlockConstReference(const _DoubleArrayBlockReference<_Ctnr, HasBaseExists> x) : block_pointer_(x.block_pointer_) {}
     
     _block_pointer base_field_ptr() const {return block_pointer_ + _common::kBaseFieldOffset;}
     
@@ -251,7 +251,7 @@ public:
     _inset_type empty_head() const {return _inset<_common::kEmptyHeadOffset>();}
     
 private:
-    _DoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
+    explicit _DoubleArrayBlockConstReference(_block_pointer pointer) : block_pointer_(pointer) {}
     
 };
 

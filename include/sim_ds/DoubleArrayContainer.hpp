@@ -36,7 +36,6 @@ class _DoubleArrayContainer {
   using _block_container = _DoubleArrayBlockContainer<_index_type, _inset_type, kNumUnitsPerBlock, kUseUniqueBase>;
   using _block_reference = typename _block_container::_block_reference;
   using _const_block_reference = typename _block_container::_const_block_reference;
-  static constexpr size_t kBlockSize = _unit_reference::kBlockSize;
 
   static constexpr size_t kDisabledBlockLinkHead = std::numeric_limits<size_t>::max();
   static constexpr int kLinkLayerIdGeneral = 0;

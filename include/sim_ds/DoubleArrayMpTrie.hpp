@@ -280,8 +280,8 @@ class _DoubleArrayMpTrieConstructor {
   static constexpr _char_type kEmptyChar = _da_trie::kEmptyChar;
 
   using _base_finder = std::conditional_t<not BitOperationalFind,
-                                          DoubleArrayBaseFinderBasic<_da_trie, _self>,
-                                          DoubleArrayBaseFinderBitOperational<_da_trie, _self>>;
+                                          BasicDoubleArrayBaseFinder<_da_trie, _self>,
+                                          BitOperationalDoubleArrayBaseFinder<_da_trie, _self>>;
 
  protected:
   _da_trie& da_;

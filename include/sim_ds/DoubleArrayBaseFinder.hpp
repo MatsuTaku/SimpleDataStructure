@@ -88,10 +88,11 @@ public:
     }
     
     return _get_for_blocks([&](size_t block_index) -> std::pair<size_t, bool> {
+
       auto block = da_.block_at(block_index);
       auto offset = block_index * kNumUnitsPerBlock;
       if constexpr (not BitOperationalBuild) {
-        
+        // Basic algorithm which using empty-element link.
         for (auto inset = block.empty_head(); ; ) {
           auto base = inset xor label_set.front();
           bool is_candidate = not kUniqueBase;
@@ -114,7 +115,7 @@ public:
         }
         
       } else {
-        
+        // Proposal algorithm which using bit operations.
         auto ctz = da_util::xcheck_in_da_block(block.unit_field_ptr(), label_set, block.base_field_ptr());
         if (ctz < kNumUnitsPerBlock) {
           return {block_index * kNumUnitsPerBlock + ctz, true};
@@ -171,10 +172,10 @@ public:
 };
 
 template <class _DaTrie, class _DaConstructor>
-using DoubleArrayBaseFinderBasic = _DoubleArrayBaseFinder<_DaTrie, _DaConstructor, false>;
+using BasicDoubleArrayBaseFinder = _DoubleArrayBaseFinder<_DaTrie, _DaConstructor, false>;
 
 template <class _DaTrie, class _DaConstructor>
-using DoubleArrayBaseFinderBitOperational = _DoubleArrayBaseFinder<_DaTrie, _DaConstructor, true>;
+using BitOperationalDoubleArrayBaseFinder = _DoubleArrayBaseFinder<_DaTrie, _DaConstructor, true>;
 
 }
 

@@ -18,8 +18,7 @@ file(GLOB HEADERS ${SiDS_INCLUDE_DIR}/sim_ds.hpp ${SiDS_INCLUDE_DIR}/sim_ds/*.hp
 add_library(sim_ds STATIC ${SiDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
 target_include_directories(sim_ds INTERFACE ${SiDS_INCLUDE_DIR})
 
-find_package(Boost 1.53.0 REQUIRED
-    COMPONENTS unit_test_framework iostreams system thread filesystem)
+find_package(Boost 1.53.0 REQUIRED)
 target_include_directories(sim_ds PUBLIC ${Boost_INCLUDE_DIRS})
 
 target_compile_options(sim_ds PRIVATE -march=native)
