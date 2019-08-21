@@ -891,7 +891,7 @@ class DoubleArrayMpTrie : public _DoubleArrayMpTrieBehavior<ValueType, IndexType
 
   template <typename StrIter,
       typename Traits = std::iterator_traits<StrIter>>
-  explicit DoubleArrayMpTrie(StrIter begin, StrIter end) : _behavior(), constructor_(*this) {
+  explicit DoubleArrayMpTrie(StrIter begin, StrIter end) : DoubleArrayMpTrie() {
     constructor_.ArrangeKeysets(begin, end, 0, kRootIndex);
   }
 
