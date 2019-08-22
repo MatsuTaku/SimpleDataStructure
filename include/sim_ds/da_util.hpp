@@ -10,11 +10,11 @@
 
 #include "bit_util256.hpp"
 
-namespace sim_ds::da_util {
-
 #if defined(__AVX2__)
 #define BLOCK_UTIL_BUILTIN
 #endif
+
+namespace sim_ds::da_util {
 
 #ifdef BLOCK_UTIL_BUILTIN
 int _xcheck_in_da_block_builtin(const uint64_t* unit_field, const std::vector<uint8_t>& cs, __m256i temp) {
