@@ -70,7 +70,7 @@ class _DoubleArrayContainer {
     return cnt;
   }
 
-  float load_factor() const {return float(num_nodes()) / unit_size();}
+  virtual float load_factor() const {return float(num_nodes()) / unit_size();}
 
   size_t block_link_head_of(int id) const {return block_link_head_[id];}
 

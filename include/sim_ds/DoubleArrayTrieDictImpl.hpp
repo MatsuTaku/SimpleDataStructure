@@ -84,6 +84,10 @@ class _DoubleArrayTrieDictImpl : public _DoubleArrayContainer<IndexType, LetterC
     return float(pool_blank_size_in_bytes()) / label_pool_.size();
   }
 
+  float load_factor() const override {
+    return float(bc_size_in_bytes() + pool_size_in_bytes() - bc_blank_size_in_bytes() - pool_blank_size_in_bytes()) / float(bc_size_in_bytes() + pool_size_in_bytes());
+  }
+
   // MARK: Double-array Trie dict behavior
 
   bool unit_empty_at(size_t index) const {
