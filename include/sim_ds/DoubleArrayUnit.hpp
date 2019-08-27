@@ -64,6 +64,7 @@ class _DoubleArrayUnitBasicReferenceCommon {
   static constexpr _index_type kLabelFlag = kSecondBit;
   static constexpr _index_type kSuffixFlag = kThirdBit;
   static constexpr _index_type kIndexMask = kThirdBit - 1;
+  static constexpr _index_type kIndexMax = kIndexMask;
   static constexpr _char_type kEmptyChar = 0xff;
 
   static constexpr size_t kCheckInsets = 0;
@@ -297,6 +298,7 @@ class _DoubleArrayUnitLetterCheckReferenceCommon {
   static constexpr _index_type kLabelFlag = kSecondBit;
   static constexpr _index_type kSuffixFlag = kThirdBit;
   static constexpr _index_type kIndexMask = kThirdBit - 1;
+  static constexpr _index_type kIndexMax = kIndexMask;
 
   static constexpr auto kEmptyChar = 0xff;
 
@@ -510,17 +512,17 @@ struct _DoubleArrayUnitReference {
 template <typename IndexType, typename CharType, typename InsetType, bool LetterCheck>
 class _DoubleArrayUnitContainer {
  public:
-  using _self = _DoubleArrayUnitContainer;
-  using _unit_storage_type = uint8_t;
-  using _unit_storage_pointer = _unit_storage_type*;
+  using _self                       = _DoubleArrayUnitContainer;
+  using _unit_storage_type          = uint8_t;
+  using _unit_storage_pointer       = _unit_storage_type*;
   using _const_unit_storage_pointer = const _unit_storage_type*;
 
   using index_type = IndexType;
-  using char_type = CharType;
+  using char_type  = CharType;
   using inset_type = InsetType;
 
-  using _unit_reference_type = std::conditional_t<not LetterCheck, _DoubleArrayUnitReference::Basic<_self>, _DoubleArrayUnitReference::LetterCheck<_self>>;
-  using _unit_reference = typename _unit_reference_type::type;
+  using _unit_reference_type  = std::conditional_t<not LetterCheck, _DoubleArrayUnitReference::Basic<_self>, _DoubleArrayUnitReference::LetterCheck<_self>>;
+  using _unit_reference       = typename _unit_reference_type::type;
   using _const_unit_reference = typename _unit_reference_type::const_type;
 
   static constexpr auto kUnitSize = _unit_reference::kUnitSize;

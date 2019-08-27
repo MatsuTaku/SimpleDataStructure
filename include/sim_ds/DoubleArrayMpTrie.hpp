@@ -137,11 +137,11 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
     _index_type node = kRootIndex;
     size_t key_pos = 0;
     for (; key_pos < key.size(); key_pos++) {
-      if (not TransitionBc(node, key[key_pos])) {
+      if (not _TransitionBc(node, key[key_pos])) {
         return {failed_in_bc(node, key_pos), false};
       }
       if (_base::unit_at(node).has_label()) {
-        auto [ptr, res] = TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
+        auto [ptr, res] = _TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
         if (not res) {
           return {ptr, false};
         }
@@ -149,7 +149,7 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
         return {ptr, true};
       }
     }
-    if (not TransitionBc(node, kLeafChar)) {
+    if (not _TransitionBc(node, kLeafChar)) {
       return {failed_in_bc(node, key_pos), false};
     }
     success(node);
@@ -165,11 +165,11 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
     _index_type node = kRootIndex;
     size_t key_pos = 0;
     for (; key_pos < key.size(); key_pos++) {
-      if (not TransitionBc(node, key[key_pos])) {
+      if (not _TransitionBc(node, key[key_pos])) {
         return {failed_in_bc(node, key_pos), false};
       }
       if (_base::unit_at(node).has_label()) {
-        auto [ptr, res] = TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
+        auto [ptr, res] = _TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
         if (not res) {
           return {ptr, false};
         }
@@ -177,14 +177,15 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
         return {ptr, true};
       }
     }
-    if (not TransitionBc(node, kLeafChar)) {
+    if (not _TransitionBc(node, kLeafChar)) {
       return {failed_in_bc(node, key_pos), false};
     }
     success(node);
     return {_base::value_ptr_in_pool_at(_base::unit_at(node).pool_index()), true};
   }
 
-  bool TransitionBc(_index_type &node, _char_type c) const {
+ protected:
+  bool _TransitionBc(_index_type &node, _char_type c) const {
     if (_base::unit_at(node).is_leaf())
       return false;
     auto next = _base::base_at(node) xor c;
@@ -197,10 +198,10 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
 
   template <class FailedAction>
   std::pair<_value_pointer, bool>
-  TransitionSuffix(_index_type node,
-                   std::string_view key,
-                   size_t &key_pos,
-                   FailedAction failed) {
+  _TransitionSuffix(_index_type node,
+                    std::string_view key,
+                    size_t &key_pos,
+                    FailedAction failed) {
     assert(_base::unit_at(node).has_label());
     auto pool_index = _base::unit_at(node).pool_index();
     auto pool_ptr = (_char_type*)_base::pool_ptr_at(pool_index);
@@ -224,10 +225,10 @@ class _DoubleArrayMpTrieBehavior : public _DoubleArrayTrieDictImpl<ValueType, In
 
   template <class FailedAction>
   std::pair<_const_value_pointer, bool>
-  TransitionSuffix(_index_type node,
-                   std::string_view key,
-                   size_t &key_pos,
-                   FailedAction failed) const {
+  _TransitionSuffix(_index_type node,
+                    std::string_view key,
+                    size_t &key_pos,
+                    FailedAction failed) const {
     assert(_base::unit_at(node).has_label());
     auto pool_index = _base::unit_at(node).pool_index();
     auto pool_ptr = (const _char_type*)_base::pool_ptr_at(pool_index);
@@ -265,7 +266,7 @@ class _DoubleArrayMpTrieConstructor {
   using _inset_type = typename _da_trie::_inset_type;
   using Index2 = typename _da_trie::Index2;
   static constexpr bool kLetterCheck = _da_trie::kLetterCheck;
-  using check_type = std::conditional_t<kLetterCheck, _char_type, _index_type>;
+  using _check_type = std::conditional_t<kLetterCheck, _char_type, _index_type>;
 
   static constexpr bool kUseUniqueBase = _da_trie::kUseUniqueBase;
   static constexpr bool kUsePersonalLink = not kUseUniqueBase;
@@ -580,13 +581,13 @@ class _DoubleArrayMpTrieConstructor {
     da_.set_base_at(node, new_base);
   }
 
-  void _SetNewNode(_index_type index, check_type new_check, _char_type new_sibling = kEmptyChar) {
+  void _SetNewNode(_index_type index, _check_type new_check, _char_type new_sibling = kEmptyChar) {
     _PrepareToUseUnitAt(index);
     da_.unit_at(index).init_unit(new_check, new_sibling);
   }
 
   void _SetNewNodeWithLabel(_index_type index,
-                            check_type  new_check,
+                            _check_type  new_check,
                             _char_type  new_sibling,
                             _index_type new_pool_index,
                             bool        label_is_suffix) {
@@ -636,7 +637,7 @@ class _DoubleArrayMpTrieConstructor {
     _RefillBlock(Index2(base).block_index, shelter.children.size());
   }
 
-  void _UpdateNode(_index_type index, check_type new_check, _index_type sibling, const _MovingLuggage &luggage) {
+  void _UpdateNode(_index_type index, _check_type new_check, _index_type sibling, const _MovingLuggage &luggage) {
     if (not luggage.has_label) {
       _SetNewNode(index, new_check, sibling);
       if (not luggage.is_leaf) {

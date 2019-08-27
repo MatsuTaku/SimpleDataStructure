@@ -48,18 +48,18 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
     _index_type node = kRootIndex;
     _index_type base = _base::base_at(node);
     for (size_t key_pos = 0; key_pos < key.size(); key_pos++) {
-      if (not TransitionBc(node, base, key[key_pos])) {
+      if (not _TransitionBc(node, base, key[key_pos])) {
         return {failed_in_bc(node, key_pos), false};
       }
       auto unit = _base::unit_at(node);
       if (unit.has_label()) {
         if (not unit.label_is_suffix()) {
-          auto [nbase, ptr, res] = TransitionInternalLabel(node, key, ++key_pos, failed_in_internal_label);
+          auto [nbase, ptr, res] = _TransitionInternalLabel(node, key, ++key_pos, failed_in_internal_label);
           if (not res)
             return {ptr, false};
           base = nbase;
         } else {
-          auto [ptr, res] =  _base::TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
+          auto [ptr, res] =  _base::_TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
           if (not res)
             return {ptr, false};
           success(node);
@@ -69,7 +69,7 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
         base = unit.base();
       }
     }
-    if (not TransitionBc(node, base, kLeafChar)) {
+    if (not _TransitionBc(node, base, kLeafChar)) {
       return {failed_in_bc(node, key.size()), false};
     }
     success(node);
@@ -90,18 +90,18 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
     _index_type node = kRootIndex;
     _index_type base = _base::base_at(node);
     for (size_t key_pos = 0; key_pos < key.size(); key_pos++) {
-      if (not TransitionBc(node, base, key[key_pos])) {
+      if (not _TransitionBc(node, base, key[key_pos])) {
         return {failed_in_bc(node, key_pos), false};
       }
       auto unit = _base::unit_at(node);
       if (unit.has_label()) {
         if (not unit.label_is_suffix()) {
-          auto [nbase, ptr, res] = TransitionInternalLabel(node, key, ++key_pos, failed_in_internal_label);
+          auto [nbase, ptr, res] = _TransitionInternalLabel(node, key, ++key_pos, failed_in_internal_label);
           if (not res)
             return {ptr, false};
           base = nbase;
         } else {
-          auto [ptr, res] =  _base::TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
+          auto [ptr, res] =  _base::_TransitionSuffix(node, key, ++key_pos, failed_in_suffix);
           if (not res)
             return {ptr, false};
           success(node);
@@ -111,14 +111,15 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
         base = unit.base();
       }
     }
-    if (not TransitionBc(node, base, kLeafChar)) {
+    if (not _TransitionBc(node, base, kLeafChar)) {
       return {failed_in_bc(node, key.size()), false};
     }
     success(node);
     return {_base::value_ptr_in_pool_at(_base::unit_at(node).pool_index()), true};
   }
 
-  bool TransitionBc(_index_type &node, _index_type base, _char_type c) const {
+ private:
+  bool _TransitionBc(_index_type &node, _index_type base, _char_type c) const {
     auto next = base xor c;
     auto unit = _base::unit_at(next);
     if (unit.check_empty() or
@@ -130,10 +131,10 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
 
   template <class FailedAction>
   std::tuple<_index_type, _value_pointer, bool>
-  TransitionInternalLabel(_index_type node,
-                          std::string_view key,
-                          size_t &key_pos,
-                          FailedAction failed) {
+  _TransitionInternalLabel(_index_type node,
+                           std::string_view key,
+                           size_t &key_pos,
+                           FailedAction failed) {
     auto pool_index = _base::unit_at(node).pool_index();
     auto base = _base::target_in_pool_at(pool_index);
     auto label_index = pool_index + kIndexSize;
@@ -162,10 +163,10 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
 
   template <class FailedAction>
   std::tuple<_index_type, _const_value_pointer, bool>
-  TransitionInternalLabel(_index_type node,
-                          std::string_view key,
-                          size_t &key_pos,
-                          FailedAction failed) const {
+  _TransitionInternalLabel(_index_type node,
+                           std::string_view key,
+                           size_t &key_pos,
+                           FailedAction failed) const {
     auto pool_index = _base::unit_at(node).pool_index();
     auto base = _base::target_in_pool_at(pool_index);
     auto label_index = pool_index + kIndexSize;
@@ -191,58 +192,6 @@ class _DoubleArrayBcPatriciaTrieBehavior : public _DoubleArrayMpTrieBehavior<Val
     --key_pos;
     return {base, nullptr, true};
   }
-
-//  template <class FailedAction>
-//  std::pair<_value_pointer, bool>
-//  TransitionSuffix(_index_type node,
-//                   std::string_view key,
-//                   size_t &key_pos,
-//                   FailedAction failed) {
-//    auto label_index = _base::unit_at(node).pool_index();
-//    auto pool_ptr = (_char_type*)_base::pool_ptr_at(label_index);
-//    size_t i = 0;
-//    while (key_pos < key.size()) {
-//      _char_type char_in_label = *pool_ptr;
-//      if (char_in_label == kLeafChar or
-//          char_in_label != (_char_type)key[key_pos]) {
-//        return {failed(node, label_index+i, key_pos), false};
-//      }
-//      ++pool_ptr;
-//      i++;
-//      key_pos++;
-//    }
-//    if (*pool_ptr != kLeafChar) {
-//      return {failed(node, label_index+i, key_pos), false};
-//    }
-//    --key_pos;
-//    return {reinterpret_cast<_value_pointer>(pool_ptr+1), true};
-//  }
-//
-//  template <class FailedAction>
-//  std::pair<_const_value_pointer, bool>
-//  TransitionSuffix(_index_type node,
-//                   std::string_view key,
-//                   size_t &key_pos,
-//                   FailedAction failed) const {
-//    auto label_index = _base::unit_at(node).pool_index();
-//    auto pool_ptr = (const _char_type*)_base::pool_ptr_at(label_index);
-//    size_t i = 0;
-//    while (key_pos < key.size()) {
-//      _char_type char_in_label = *pool_ptr;
-//      if (char_in_label == kLeafChar or
-//          char_in_label != (_char_type)key[key_pos]) {
-//        return {failed(node, label_index+i, key_pos), false};
-//      }
-//      ++pool_ptr;
-//      i++;
-//      key_pos++;
-//    }
-//    if (*pool_ptr != kLeafChar) {
-//      return {failed(node, label_index+i, key_pos), false};
-//    }
-//    --key_pos;
-//    return {reinterpret_cast<_const_value_pointer>(pool_ptr+1), true};
-//  }
 
 };
 
@@ -373,8 +322,7 @@ class _DynamicDoubleArrayPatriciaTrieConstructor : public _DoubleArrayMpTrieCons
     }
   }
 
-  template <typename StrIter,
-      typename Traits = std::iterator_traits<StrIter>>
+  template <typename StrIter, typename Traits = std::iterator_traits<StrIter>>
   void ArrangeKeysets(StrIter begin, StrIter end, size_t depth, _index_type co_node) {
     if (begin >= end)
       return;

@@ -8,14 +8,15 @@
 #include "DoubleArrayUnit.hpp"
 #include "DoubleArrayBlock.hpp"
 
+#include "DoubleArrayException.h"
+
 namespace sim_ds {
 
 
 template <typename IndexType, bool LetterCheck>
 class _DoubleArrayContainer {
-  using _self = _DoubleArrayContainer<IndexType, LetterCheck>;
-
  public:
+  using _self = _DoubleArrayContainer;
   using _index_type = IndexType;
   using _char_type = uint8_t;
   using _inset_type = uint8_t;
@@ -30,6 +31,7 @@ class _DoubleArrayContainer {
   using _const_unit_reference = typename _unit_container::_const_unit_reference;
   static constexpr size_t kUnitSize = _unit_reference::kUnitSize;
   static constexpr _index_type kEmptyFlag = _unit_reference::kEmptyFlag;
+  static constexpr _index_type kIndexMax = _unit_reference::kIndexMax;
 
   static constexpr size_t kNumUnitsPerBlock = 0x100;
   static constexpr bool kUseUniqueBase = LetterCheck;
@@ -163,6 +165,10 @@ class _DoubleArrayContainer {
   }
 
   void Expand() {
+    if (unit_.size() + kNumUnitsPerBlock - 1 > kIndexMax) {
+      throw _DoubleArrayExceptionSizeOver<_self>();
+    }
+
     size_t block_index = block_.size();
     block_.resize(block_index+1);
     block_[block_index].init();
