@@ -13,11 +13,13 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <numeric>
 #include <algorithm>
 #include <vector>
 #include <array>
 #include <map>
 #include <unordered_map>
+#include <set>
 #include <queue>
 #include <string>
 #include <string_view>
@@ -59,6 +61,20 @@ public:
         return std::chrono::duration<double, std::micro>(time_process()).count();
     }
 };
+
+template <class Process>
+double millisec_time_in_process(Process process) {
+    Stopwatch sw;
+    process();
+    return sw.get_milli_sec();
+}
+
+template <class Process>
+double microsec_time_in_process(Process process) {
+    Stopwatch sw;
+    process();
+    return sw.get_micro_sec();
+}
 
 // MARK: Read
 
@@ -104,6 +120,14 @@ inline void write_string(const std::string &str, std::ostream &os) {
 template<typename T, class A>
 inline size_t size_vec(const std::vector<T, A>& vec) {
     return sizeof(T) * vec.size() + sizeof(vec.size());
+}
+
+
+template <class Function>
+auto recursive(Function rec) {
+    return [&rec](auto&&... args) {
+        rec(rec, std::forward<decltype(args)>(args)...);
+    };
 }
 
 } // namespace sim_ds

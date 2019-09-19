@@ -192,7 +192,7 @@ inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
 
 inline int ctz(uint32_t x) {
 #ifdef __BMI__
-    return _mm_tzcnt_32(x);
+    return _tzcnt_u32(x);
 #else
     return popcnt32((x & -x) - 1);
 #endif
@@ -200,7 +200,7 @@ inline int ctz(uint32_t x) {
 
 inline int ctz(uint64_t x) {
 #ifdef __BMI__
-    return _mm_tzcnt_64(x);
+    return _tzcnt_u64(x);
 #else
     return popcnt64((x & -x) - 1);
 #endif
@@ -237,7 +237,6 @@ inline int clz(uint32_t x) {
         c |= 2;
     }
     if (x & 0xAAAAAAAA) {
-        x &= 0xAAAAAAAA;
         c |= 1;
     }
     return c ^ 63;
@@ -280,7 +279,6 @@ inline int clz(uint64_t x) {
         c |= 2;
     }
     if (x & 0xAAAAAAAAAAAAAAAA) {
-        x &= 0xAAAAAAAAAAAAAAAA;
         c |= 1;
     }
     return c ^ 63;
@@ -501,7 +499,7 @@ inline uint64_t swap_pi4(uint64_t x) {
 
 inline uint64_t swap_pi8(uint64_t x) {
 #ifdef __MMX__
-    __m64 xx = (__m64) x;
+    auto xx = (__m64) x;
     return (uint64_t) _mm_or_si64(_mm_slli_pi16(xx, 8), _mm_srli_pi16(xx, 8));
 #else
     return ((x & 0xFF00FF00FF00FF00) >> 8) | ((x & 0x00FF00FF00FF00FF) << 8);
@@ -510,7 +508,7 @@ inline uint64_t swap_pi8(uint64_t x) {
 
 inline uint64_t swap_pi16(uint64_t x) {
 #ifdef __MMX__
-    __m64 xx = (__m64) x;
+    auto xx = (__m64) x;
     return (uint64_t) _mm_or_si64(_mm_slli_pi32(xx, 16), _mm_srli_pi32(xx, 16));
 #else
     return ((x & 0xFFFF0000FFFF0000) >> 16) | ((x & 0x0000FFFF0000FFFF) << 16);

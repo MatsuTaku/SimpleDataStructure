@@ -6,7 +6,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "sim_ds/DoubleArray.hpp"
+#include "sim_ds/DoubleArrayTrieDict.hpp"
 
 using namespace sim_ds;
 
@@ -15,15 +15,17 @@ namespace {
 std::vector<std::string> make_sample_keyset(size_t size) {
     std::vector<std::string> keyset;
     const size_t kMaxKeySize = 32;
-    const size_t kCharPattern = 32;
+    const size_t kCharPattern = 'z'-'a'+1;
     for (size_t i = 0; i < size; i++) {
         std::string s;
-        auto key_size = rand() % kMaxKeySize;
+        auto key_size = rand() % kMaxKeySize+1;
         for (size_t j = 0; j < key_size; j++) {
-            s.push_back(uint8_t(kCharPattern - rand() % kCharPattern));
+            s.push_back('a'+uint8_t(rand() % kCharPattern));
         }
         keyset.push_back(s);
     }
+    sort(keyset.begin(), keyset.end());
+    keyset.erase(std::unique(keyset.begin(), keyset.end()), keyset.end());
     return keyset;
 }
 
@@ -40,14 +42,11 @@ TEST(DoubleArrayTest, SampleLegacy) {
         "bac",
         "bb"
     };
-    using double_array_type = DoubleArray<uint32_t, true>;
-    double_array_type::input_trie trie;
+    assert(set.end() - set.begin() == 5);
+    using double_array_type = string_map32<char>;
+    double_array_type da(set);
     for (std::string_view s : set) {
-        trie.insert(s, 1);
-    }
-    double_array_type da(trie);
-    for (std::string_view s : set) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }
 
@@ -59,41 +58,29 @@ TEST(DoubleArrayTest, Sample) {
         "bac",
         "bb"
     };
-    using double_array_type = DoubleArray<uint32_t, false>;
-    double_array_type::input_trie trie;
+    using double_array_type = string_map32<char>;
+    double_array_type da(set);
     for (std::string_view s : set) {
-        trie.insert(s, 1);
-    }
-    double_array_type da(trie);
-    for (std::string_view s : set) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }
 
 TEST(DoubleArrayTest, SampleLargeLegacy) {
-    using double_array_type = DoubleArray<uint32_t, true>;
-    double_array_type::input_trie trie;
-    for (auto& s : large_keyset) {
-        trie.insert(s, 1);
-    }
+    using double_array_type = string_map32<char>;
     sim_ds::Stopwatch sw;
-    double_array_type da(trie);
+    double_array_type da(large_keyset);
     std::cout << "Build time(m): " << sw.get_milli_sec() << std::endl;
     for (std::string_view s : large_keyset) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }
 
 TEST(DoubleArrayTest, SampleLarge) {
-    using double_array_type = DoubleArray<uint32_t, false>;
-    double_array_type::input_trie trie;
-    for (auto& s : large_keyset) {
-        trie.insert(s, 1);
-    }
+    using double_array_type = string_map32<char>;
     sim_ds::Stopwatch sw;
-    double_array_type da(trie);
+    double_array_type da(large_keyset);
     std::cout << "Build time(m): " << sw.get_milli_sec() << std::endl;
     for (std::string_view s : large_keyset) {
-        EXPECT_TRUE(da.accept(s));
+        EXPECT_TRUE(da.find(s) != nullptr);
     }
 }

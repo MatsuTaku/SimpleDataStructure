@@ -16,6 +16,7 @@ namespace sim_ds {
 
 template <class SerializedSequence>
 class BlockReference {
+    using _self = BlockReference<SerializedSequence>;
     using Storage = SerializedSequence;
     using storage_type = typename SerializedSequence::storage_type;
     using storage_pointer = typename SerializedSequence::storage_pointer;
@@ -33,22 +34,37 @@ class BlockReference {
 public:
     template <int Id>
     id_type get() const {
-        return get_<Id, id_type>(element_table_[Id].size);
+        return _get<Id, id_type>(element_table_[Id].size);
     }
     
     template <int Id, typename T>
     T restricted_get() const {
-        return get_<Id, T>(std::min(size_t(element_table_[Id].size), sizeof(T)));
+        return _get<Id, T>(std::min(size_t(element_table_[Id].size), sizeof(T)));
+    }
+    
+    id_type get_at(size_t id) const {
+        return _get_at(id);
     }
     
     template <int Id>
     id_type set(id_type value) {
-        return set_<Id, id_type>(element_table_[Id].size, value);
+        return _set<Id, id_type>(element_table_[Id].size, value);
     }
     
     template <int Id, typename T>
     T restricted_set(T value) {
-        return set_<Id, T>(std::min(size_t(element_table_[Id].size), sizeof(T)), value);
+        return _set<Id, T>(std::min(size_t(element_table_[Id].size), sizeof(T)), value);
+    }
+    
+    template <typename T>
+    id_type set_at(size_t id, T x) {
+        return _set_at(id, x);
+    }
+    
+    _self operator=(std::initializer_list<id_type> x) {
+        size_t i = 0;
+        for (auto v : x)
+            set_at(i++, v);
     }
     
 private:
@@ -57,7 +73,7 @@ private:
                             ) noexcept : pointer_(pointer), element_table_(element_table) {}
     
     template <int Id, typename T>
-    T get_(size_t width) const {
+    T _get(size_t width) const {
         assert(Id < element_table_.size());
         assert(width <= element_table_[Id].size);
         
@@ -69,12 +85,32 @@ private:
         return value;
     }
     
+    id_type _get_at(size_t id) const {
+        id_type value = 0;
+        auto relative_pointer = pointer_ + element_table_[id].pos;
+        auto width = element_table_[id].size;
+        for (size_t i = 0; i < width; i++)
+            value |= static_cast<id_type>(*(relative_pointer + i)) << (i * kBitsPerWord);
+        
+        return value;
+    }
+    
     template <int Id, typename T>
-    T set_(size_t width, T value) {
+    T _set(size_t width, T value) {
         assert(Id < element_table_.size());
         assert(width <= element_table_[Id].size);
         
         auto relative_pointer = pointer_ + element_table_[Id].pos;
+        for (size_t i = 0; i < width; i++)
+            *(relative_pointer + i) = static_cast<storage_type>(value >> (i * kBitsPerWord));
+        
+        return value;
+    }
+    
+    template <typename T>
+    T _set_at(size_t id, T value) {
+        auto relative_pointer = pointer_ + element_table_[id].pos;
+        auto width = element_table_[id].size;
         for (size_t i = 0; i < width; i++)
             *(relative_pointer + i) = static_cast<storage_type>(value >> (i * kBitsPerWord));
         
@@ -238,8 +274,41 @@ public:
         return get_(offset_(index) + element_table_[Id].pos, element_table_[Id].size);
     }
     
+    void reserve(size_t size) {
+        bytes_.reserve(offset_(size));
+    }
+    
     void resize(size_t size) {
         bytes_.resize(offset_(size));
+    }
+    
+    void resize(size_t new_size, std::initializer_list<id_type> values) {
+        if (new_size < size()) {
+            resize(new_size);
+        } else if (new_size > size()) {
+            auto prev_size = size();
+            resize(new_size);
+            for (size_t i = prev_size; i < new_size; i++) {
+                auto b = block(i);
+                size_t id = 0;
+                for (auto v : values) {
+                    b.set_at(id++, v);
+                }
+            }
+        }
+    }
+    
+    void emplace_back() {
+        bytes_.resize(offset_(size() + 1));
+    }
+    
+    void push_back(std::initializer_list<id_type> values) {
+        bytes_.resize(offset_(size() + 1));
+        size_t i = 0;
+        auto b = block(size()-1);
+        for (auto v : values) {
+            b.set_at(i++, v);
+        }
     }
     
     // MARK: IO
