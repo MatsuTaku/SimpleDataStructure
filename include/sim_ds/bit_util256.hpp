@@ -10,8 +10,7 @@
 
 #include "bit_util.hpp"
 
-namespace sim_ds {
-namespace bit_util {
+namespace sim_ds::bit_util {
 
 
 // MARK: - set
@@ -52,7 +51,7 @@ inline bool is_zero256(const uint64_t* x_addr) {
 #ifdef __AVX2__
 inline bool is_zero256_intrinsics(__m256i x) {
     int iszero_mask = _mm256_movemask_epi8(_mm256_cmpeq_epi64(x, _mm256_set1_epi64x(0)));
-    return iszero_mask == 0xFFFFFFFF;
+    return iszero_mask == (int)0xFFFFFFFF;
 }
 #endif
 
@@ -132,7 +131,7 @@ void xor_map(const uint64_t* x_addr, uint8_t mask, uint64_t* dst_addr) {
         std::swap(*(dst_addr+1), *(dst_addr+3));
     }
 }
-    
+
 #if defined(__AVX2__)
 __m256i xor_map_intrinsics(__m256i x, uint8_t mask) {
     if (mask & 1) {
@@ -174,7 +173,6 @@ __m256i xor_map_intrinsics(__m256i x, uint8_t mask) {
 }
 #endif
 
-} // namespace bit_util
-} // namespace sim_ds
+} // namespace sim_ds::bit_util
 
 #endif /* bit_util256_hpp */

@@ -117,9 +117,9 @@ SuccinctBitVector<UseSelect>::SuccinctBitVector(BitVector&& bits) : bits_(std::f
     if constexpr (UseSelect) {
         size_t sum_threshold = 512;
         select_tips_.push_back(0);
-        for (size_t i = 1; i < basic_block_size; i++) {
-            if (sum_threshold <= basic_block_[i * 2]) {
-                select_tips_.push_back(i - 1);
+        for (size_t j = 1; j < basic_block_size; j++) {
+            if (sum_threshold <= basic_block_[j * 2]) {
+                select_tips_.push_back(j - 1);
                 sum_threshold += 512;
             }
         }
@@ -139,14 +139,14 @@ SuccinctBitVector<UseSelect>::rank_1(const size_t index) const {
 
 template <>
 size_t
-SuccinctBitVector<false>::select(size_t index) const {
+SuccinctBitVector<false>::select([[maybe_unused]] size_t index) const {
     throw "select(size_t) is not supported. You must use SuccinctBitVector<true>.";
 }
 
 template <>
 size_t
 SuccinctBitVector<true>::select(size_t index) const {
-    id_type left = 0, right = num_blocks();
+    size_t left = 0, right = num_blocks();
     size_t i = index;
     
     if (select_tips_.size() != 0) {
@@ -165,8 +165,8 @@ SuccinctBitVector<true>::select(size_t index) const {
     i += 1; // for i+1 th
     i -= basic_block_[left * 2];
     
-    auto second_tip = [&](size_t index) {
-        return (basic_block_[index/8*2+1] >> (63-9*(index%8))) & bit_util::width_mask<9>;
+    auto second_tip = [&](size_t idx) {
+        return (basic_block_[idx/8*2+1] >> (63-9*(idx%8))) & bit_util::width_mask<9>;
     };
     size_t offset = 1;
     size_t second_tip_size = size()/64+1;
