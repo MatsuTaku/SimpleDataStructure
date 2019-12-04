@@ -32,7 +32,7 @@ set(COMPILE_OPTIONS
     $<$<CXX_COMPILER_ID:GCC>:${GCC_WARNING_OPTIONS}>
     $<$<CXX_COMPILER_ID:MSVC>:${MSVC_WARNING_OPTIONS}>
 )
-target_compile_options(sim_ds PRIVATE ${COMPILE_OPTIONS})
+#target_compile_options(sim_ds PRIVATE ${COMPILE_OPTIONS})
 
 message(STATUS "BUILD_TYPE          is  ${CMAKE_BUILD_TYPE}")
 message(STATUS "CXX_STANDARD        is  ${CMAKE_CXX_STANDARD}")
