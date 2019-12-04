@@ -15,13 +15,13 @@ set(SiDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB HEADERS ${SiDS_INCLUDE_DIR}/sim_ds.hpp ${SiDS_INCLUDE_DIR}/sim_ds/*.hpp)
 
 # Build Public Library
-add_library(sim_ds STATIC ${SiDS_INCLUDE_DIR}/sim_ds.cpp ${HEADERS})
+add_library(sim_ds INTERFACE)
 target_include_directories(sim_ds INTERFACE ${SiDS_INCLUDE_DIR})
 
 find_package(Boost 1.53.0 REQUIRED)
-target_include_directories(sim_ds PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories(sim_ds INTERFACE ${Boost_INCLUDE_DIRS})
 
-target_compile_options(sim_ds PRIVATE -march=native)
+target_compile_options(sim_ds INTERFACE -march=native)
 
 set(CLANG_WARNING_OPTIONS -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-old-style-cast -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-zero-as-null-pointer-constant -Wno-shadow-field-in-constructor -Wno-missing-prototypes)
 set(GCC_WARNING_OPTIONS -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -Werror -Wno-unused)

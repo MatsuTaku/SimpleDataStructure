@@ -193,16 +193,70 @@ inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
 inline int ctz(uint32_t x) {
 #ifdef __BMI__
     return _tzcnt_u32(x);
+#elif defined(__POPCNT__)
+  return _mm_popcnt_u32((x & -x) - 1);
 #else
-    return popcnt32((x & -x) - 1);
+	// Arrange of nlz algorithm in http://www.nminoru.jp/~nminoru/programming/bitcount.html#leading-0bits
+	if (x == 0)
+		return 32;
+	unsigned long long c = 0;
+	if (x & 0x0000FFFF) {
+		x &= 0x0000FFFF;
+		c |= 16;
+	}
+	if (x & 0x00FF00FF) {
+		x &= 0x00FF00FF;
+		c |= 8;
+	}
+	if (x & 0x0F0F0F0F) {
+		x &= 0x0F0F0F0F;
+		c |= 4;
+	}
+	if (x & 0x33333333) {
+		x &= 0x33333333;
+		c |= 2;
+	}
+	if (x & 0x55555555) {
+		c |= 1;
+	}
+	return c ^ 31;
 #endif
 }
 
 inline int ctz(uint64_t x) {
 #ifdef __BMI__
     return _tzcnt_u64(x);
+#elif defined(__POPCNT__)
+  return _mm_popcnt_u64((x & -x) - 1);
 #else
-    return popcnt64((x & -x) - 1);
+	// Arrange of nlz algorithm in http://www.nminoru.jp/~nminoru/programming/bitcount.html#leading-0bits
+	if (x == 0)
+		return 64;
+	unsigned long long c = 0;
+	if (x & 0x00000000FFFFFFFF) {
+		x &= 0x00000000FFFFFFFF;
+		c |= 32;
+	}
+	if (x & 0x0000FFFF0000FFFF) {
+		x &= 0x0000FFFF0000FFFF;
+		c |= 16;
+	}
+	if (x & 0x00FF00FF00FF00FF) {
+		x &= 0x00FF00FF00FF00FF;
+		c |= 8;
+	}
+	if (x & 0x0F0F0F0F0F0F0F0F) {
+		x &= 0x0F0F0F0F0F0F0F0F;
+		c |= 4;
+	}
+	if (x & 0x3333333333333333) {
+		x &= 0x3333333333333333;
+		c |= 2;
+	}
+	if (x & 0x5555555555555555) {
+		c |= 1;
+	}
+	return c ^ 63;
 #endif
 }
 
