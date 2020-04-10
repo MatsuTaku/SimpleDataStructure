@@ -5,7 +5,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "sim_ds/graph_util.hpp"
+#include "sim_ds/string_util/graph_util.hpp"
 
 using namespace sim_ds;
 

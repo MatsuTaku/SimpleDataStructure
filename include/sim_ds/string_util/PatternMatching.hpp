@@ -8,8 +8,8 @@
 #ifndef PatternMatching_hpp
 #define PatternMatching_hpp
 
-#include "basic.hpp"
-#include "FactorOracle.hpp"
+#include "sim_ds/basic.hpp"
+#include "sim_ds/string_util/FactorOracle.hpp"
 
 namespace sim_ds {
 

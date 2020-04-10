@@ -6,7 +6,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "sim_ds/PatternMatching.hpp"
+#include "sim_ds/string_util/PatternMatching.hpp"
 
 namespace {
 

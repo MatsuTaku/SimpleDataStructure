@@ -9,12 +9,12 @@
 
 #include <iterator>
 
-#include "basic.hpp"
+#include "sim_ds/basic.hpp"
 #include "graph_util.hpp"
-#include "bit_util.hpp"
-#include "BitVector.hpp"
-#include "SuccinctBitVector.hpp"
-#include "log.hpp"
+#include "sim_ds/bit_util.hpp"
+#include "sim_ds/BitVector.hpp"
+#include "sim_ds/SuccinctBitVector.hpp"
+#include "sim_ds/log.hpp"
 
 namespace sim_ds {
 

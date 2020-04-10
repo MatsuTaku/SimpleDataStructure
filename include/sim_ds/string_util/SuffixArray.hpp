@@ -8,9 +8,9 @@
 #ifndef SuffixArray_hpp
 #define SuffixArray_hpp
 
-#include "basic.hpp"
-#include "FitVector.hpp"
-#include "calc.hpp"
+#include "sim_ds/basic.hpp"
+#include "sim_ds/FitVector.hpp"
+#include "sim_ds/calc.hpp"
 
 #include <limits>
 

@@ -7,7 +7,7 @@
 #ifndef Graph_hpp
 #define Graph_hpp
 
-#include "basic.hpp"
+#include "sim_ds/basic.hpp"
 
 namespace sim_ds {
 namespace graph_util {

@@ -6,7 +6,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "sim_ds/FactorOracle.hpp"
+#include "sim_ds/string_util/FactorOracle.hpp"
 
 TEST(FactorOracleTest, sample) {
     sim_ds::FactorOracle fo("abbbabaaab");

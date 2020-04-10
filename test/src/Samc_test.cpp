@@ -6,7 +6,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "sim_ds/Samc.hpp"
+#include "sim_ds/string_util/Samc.hpp"
 
 using namespace sim_ds;
 

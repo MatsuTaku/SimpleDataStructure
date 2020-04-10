@@ -8,8 +8,8 @@
 #ifndef FactorOracle_hpp
 #define FactorOracle_hpp
 
-#include "basic.hpp"
-#include "BitVector.hpp"
+#include "sim_ds/basic.hpp"
+#include "sim_ds/BitVector.hpp"
 
 namespace sim_ds {
 
