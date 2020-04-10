@@ -115,6 +115,7 @@ protected:
     explicit _SamcImpl(StrIter begin, StrIter end) : _SamcImpl(string_array_explorer(begin, end, 0)) {}
 
     template <typename T, typename S>
+    [[deprecated]]
     explicit _SamcImpl(const graph_util::Trie<T, S>& trie);
 
 private:
@@ -129,9 +130,9 @@ private:
 
 };
 
-template <typename ValueType>
+template <typename CodeType>
 template <typename Iter>
-_SamcImpl<ValueType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
+_SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
   std::map<size_t, char> storage_map;
   std::queue<std::pair<size_t, string_array_explorer<Iter>>> node_queue;
   // set root
@@ -190,7 +191,7 @@ _SamcImpl<ValueType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
         size_t inset = index - head_[depth+1];
         max_height = std::max(max_height, inset+1);
         empty_bv[inset] = false;
-        if (c != '\0') {
+        if (c != kLeafChar) {
           node_queue.emplace(index, nodes[i]);
         }
       }
@@ -210,9 +211,9 @@ _SamcImpl<ValueType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
 
 }
 
-template <typename ValueType>
+template <typename CodeType>
 template <typename T, typename S>
-_SamcImpl<ValueType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
+_SamcImpl<CodeType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
   std::vector<size_t> node_indexes = {graph_util::kRootIndex};
   storage_.emplace_back('^'); // root
   head_.emplace_back(0);
@@ -222,7 +223,7 @@ _SamcImpl<ValueType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
     std::cerr << "depth: " << head_.size()
               << ", block_height: " << max_index << std::endl;
 #endif
-    std::array<std::vector<code_type>, kAlphabetSize> indices_list;
+    std::array<std::vector<size_t>, kAlphabetSize> indices_list;
     size_t height = max_index + 1;
     for (size_t i = 0; i < height; i++) {
       auto index = storage_.size() - height + i;
@@ -280,9 +281,9 @@ _SamcImpl<ValueType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
   }
 }
 
-template <typename ValueType>
-typename _SamcImpl<ValueType>::position_type
-_SamcImpl<ValueType>::y_check_(const std::vector<size_t>& indices, const BitVector& empties) const {
+template <typename CodeType>
+typename _SamcImpl<CodeType>::position_type
+_SamcImpl<CodeType>::y_check_(const std::vector<size_t>& indices, const BitVector& empties) const {
   const auto word_size = (empties.size()-1)/kMaskWidth+1;
   auto field_bits = [&](size_t i) {
       return i < word_size ? empties.data()[i] : 0;
@@ -309,9 +310,9 @@ _SamcImpl<ValueType>::y_check_(const std::vector<size_t>& indices, const BitVect
   return empties.size() + indices.front() - indices.back(); // ERROR
 }
 
-template <typename ValueType>
-typename _SamcImpl<ValueType>::position_type
-_SamcImpl<ValueType>::y_check_legacy_(const std::vector<size_t>& indices, const BitVector& empties) const {
+template <typename CodeType>
+typename _SamcImpl<CodeType>::position_type
+_SamcImpl<CodeType>::y_check_legacy_(const std::vector<size_t>& indices, const BitVector& empties) const {
   std::vector<mask_type> indice_mask(indices.back()/kMaskWidth+1, 0);
   for (auto id : indices) {
     indice_mask[id/kMaskWidth] |= 1ull << (id%kMaskWidth);
@@ -374,9 +375,9 @@ _SamcImpl<ValueType>::y_check_legacy_(const std::vector<size_t>& indices, const 
   return gap + empty_front;
 }
 
-template <typename ValueType>
+template <typename CodeType>
 size_t
-_SamcImpl<ValueType>::shifts_of_conflicts_(mask_type fields, mask_type mask, mask_type conflicts) const {
+_SamcImpl<CodeType>::shifts_of_conflicts_(mask_type fields, mask_type mask, mask_type conflicts) const {
   assert((fields & mask) == conflicts);
   using bit_util::ctz, bit_util::clz;
   auto conflict_front = ctz(conflicts);
@@ -386,15 +387,15 @@ _SamcImpl<ValueType>::shifts_of_conflicts_(mask_type fields, mask_type mask, mas
 }
 
 
-template <typename ValueType>
-class Samc : _SamcImpl<ValueType> {
+template <typename CodeType>
+class Samc : _SamcImpl<CodeType> {
 public:
-    using value_type = ValueType;
-    using _base = _SamcImpl<value_type>;
+    using code_type = CodeType;
+    using _base = _SamcImpl<code_type>;
     template <typename T, typename S>
     using input_trie = graph_util::Trie<T, S>;
 
-    static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
+    static constexpr uint8_t kLeafChar = '\0';
 
 public:
     Samc() = default;
@@ -403,6 +404,7 @@ public:
     explicit Samc(StrIter begin, StrIter end) : _base(begin, end) {}
 
     template <typename T, typename S>
+    [[deprecated("Maybe consume much memory. You should construct from string-iterator like (begin end)")]]
     explicit Samc(const input_trie<T, S>& trie) : _base(trie) {}
 
     bool accept(std::string_view key) const;
@@ -427,9 +429,9 @@ private:
 
 };
 
-template <typename ValueType>
+template <typename CodeType>
 bool
-Samc<ValueType>::accept(std::string_view key) const {
+Samc<CodeType>::accept(std::string_view key) const {
   size_t node = 0;
   size_t depth = 0;
   for (; depth < key.size(); depth++) {
@@ -449,10 +451,10 @@ Samc<ValueType>::accept(std::string_view key) const {
 
 // MARK: SamcDict
 
-template <typename ValueType>
-class _SamcDictImpl : protected _SamcImpl<ValueType> {
-    using value_type = ValueType;
-    using _base = _SamcImpl<value_type>;
+template <typename CodeType>
+class _SamcDictImpl : protected _SamcImpl<CodeType> {
+    using code_type = CodeType;
+    using _base = _SamcImpl<code_type>;
 
 public:
     static constexpr uint8_t kLeafChar = graph_util::kLeafChar;
@@ -507,11 +509,11 @@ public:
 };
 
 
-template <typename ValueType>
-class SamcDict : _SamcDictImpl<ValueType> {
+template <typename CodeType>
+class SamcDict : _SamcDictImpl<CodeType> {
 public:
-    using value_type = ValueType;
-    using _base = _SamcDictImpl<value_type>;
+    using code_type = CodeType;
+    using _base = _SamcDictImpl<code_type>;
     template <typename T, typename S>
     using input_trie = graph_util::Trie<T, S>;
 
@@ -549,9 +551,9 @@ private:
 
 };
 
-template <typename ValueType>
+template <typename CodeType>
 size_t
-SamcDict<ValueType>::lookup(std::string_view key) const {
+SamcDict<CodeType>::lookup(std::string_view key) const {
   size_t node = 0;
   size_t depth = 0;
   for (; depth < key.size(); depth++) {
@@ -571,9 +573,9 @@ SamcDict<ValueType>::lookup(std::string_view key) const {
   return _base::id(terminal);
 }
 
-template <typename ValueType>
+template <typename CodeType>
 std::string
-SamcDict<ValueType>::access(size_t value) const {
+SamcDict<CodeType>::access(size_t value) const {
   std::string text;
   size_t node = _base::leaf(value);
   size_t depth = std::upper_bound(_base::head_.begin(), _base::head_.end(), node) - _base::head_.begin() - 1;
