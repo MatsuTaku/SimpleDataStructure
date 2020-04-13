@@ -198,7 +198,8 @@ _SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
     }
     head_.push_back(head_[depth+1] + max_height);
 #ifndef NDEBUG
-    auto used = SuccinctBitVector<false>(empty_bv).rank_0(empty_bv.size());
+    size_t used = 0;
+    for (auto b:empty_bv) if (!b) used++;
     double per_used = double(used) / empty_bv.size() * 100;
     std::cerr << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
 #endif
@@ -274,7 +275,8 @@ _SamcImpl<CodeType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
     }
     head_.push_back(storage_.size() - 1);
 #ifndef NDEBUG
-    auto used = SuccinctBitVector<false>(empties).rank_0(empties.size());
+    size_t used = 0;
+    for (bool b:empties) if (!b) used++;
     double per_used = double(used) / empties.size() * 100;
     std::cerr << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
 #endif
