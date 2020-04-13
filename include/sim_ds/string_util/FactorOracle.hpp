@@ -1,6 +1,5 @@
 //
 //  FactorOracle.hpp
-//  BitVector_test
 //
 //  Created by 松本拓真 on 2019/02/24.
 //
@@ -8,7 +7,6 @@
 #ifndef FactorOracle_hpp
 #define FactorOracle_hpp
 
-#include "sim_ds/basic.hpp"
 #include "sim_ds/BitVector.hpp"
 
 namespace sim_ds {
@@ -34,44 +32,33 @@ private:
     
     friend class FactorOracleBaseCTAFO;
     
-public:
-    FactorOracleBaseCTAFOBuilder(std::string_view text) : check_(text.begin(), text.end()), base_(text.size() + 1, kEmptyValue) {
-        Build();
-    }
-    
-    template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
-              class CharTraits = std::char_traits<typename IterTraits::value_type>>
-    FactorOracleBaseCTAFOBuilder(InputIter begin, InputIter end) : check_(begin, end), base_(end - begin + 1, kEmptyValue) {
-        Build();
-    }
-    
-    void Build() {
-        std::cerr << "Build FO" << std::endl;
+    void _build() {
+//        std::cerr << "_build FO" << std::endl;
         const size_t kKeySize = check_.size();
         const size_t kNumStates = kKeySize + 1;
         
-        std::cerr << " expand block" << std::endl;
+//        std::cerr << " expand block" << std::endl;
         int cnt = 0;
         while (next_.size() < kNumStates - 1) {
-            std::cerr << ++cnt << std::endl;
-            expand_block();
+//            std::cerr << ++cnt << std::endl;
+            _expand_block();
         }
         std::vector<id_type> lrs(kNumStates);
         
-        std::cerr << " edging" << std::endl;
+//        std::cerr << " edging" << std::endl;
         // Add letters on-line algorithm
         set_next(0, 0);
         for (size_t i = 0; i < kKeySize; i++) {
             lrs[0] = i + 1;
             size_t k = lrs[i];
-            while (k < i + 1 and translate(k, i + 1) == 0) {
-                insert_trans(k, i + 1);
+            while (k < i + 1 and transition(k, i + 1) == 0) {
+                _insert_trans(k, i + 1);
                 k = lrs[k];
             }
-            lrs[i + 1] = k == i + 1 ? 0 : translate(k, i + 1);
+            lrs[i + 1] = k == i + 1 ? 0 : transition(k, i + 1);
         }
         
-        std::cerr << " clear" << std::endl;
+//        std::cerr << " clear" << std::endl;
         // Initialize empty-element of next to zero.
         for (size_t i = 0; i < next_.size(); i++) {
             if (not used_trans_[i])
@@ -79,16 +66,16 @@ public:
         }
     }
     
-    void resize(size_t new_size) {
+    void _resize(size_t new_size) {
         next_.resize(new_size);
         used_state_.resize(new_size);
         used_trans_.resize(new_size);
         prev_.resize(new_size);
     }
     
-    void expand_block() {
+    void _expand_block() {
         size_t begin = next_.size();
-        resize(next_.size() + kBlockSize);
+        _resize(next_.size() + kBlockSize);
         size_t end = next_.size();
         // empty-element linking
         if (empty_trans_front_ != 0 or not used_trans_[0]) {
@@ -109,22 +96,8 @@ public:
         prev_[end - 1] = end - 2;
     }
     
-    std::vector<id_type> get_transes(size_t state) const {
-        auto b = base(state);
-        if (b == kEmptyValue)
-            return {};
-        std::vector<id_type> transes;
-        for (size_t c = 1; c <= 0xff; c++) {
-            auto n = next(b ^ c);
-            if (used_trans_[b ^ c] and n > 0 and check(n) == c) {
-                transes.push_back(n);
-            }
-        }
-        return transes;
-    }
-    
-    size_t find_base(const std::vector<id_type>& transes) {
-        for (auto index = empty_trans_front_;; index = next(index)) {
+    size_t _find_base(const std::vector<id_type>& transes) {
+        for (auto index = empty_trans_front_; ; index = next(index)) {
             assert(not used_trans_[index]);
             auto b = index ^ check(transes.front());
             if (not used_state_[b]) {
@@ -139,29 +112,16 @@ public:
                     return b;
             }
             if (next(index) == empty_trans_front_) {
-                expand_block();
+                _expand_block();
             }
         }
-        return 0;
+        throw std::logic_error("Not found base due to unknown factor.");
     }
     
-    void set_next(size_t index, id_type x) {
-        assert(not used_trans_[index]);
-        if (next(index) != kEmptyValue) {
-            if (empty_trans_front_ == index) {
-                empty_trans_front_ = next(index) == empty_trans_front_ ? 0 : next(index);
-            }
-            next_[prev_[index]] = next(index);
-            prev_[next(index)] = prev_[index];
-        }
-        used_trans_[index] = true;
-        next_[index] = x;
-    }
-    
-    void insert_trans(id_type state, id_type next_state) {
+    void _insert_trans(id_type state, id_type next_state) {
         auto c = check(next_state);
         if (base(state) == kEmptyValue) { // First trans of state
-            auto init_b = find_base({next_state});
+            auto init_b = _find_base({next_state});
             auto trans = init_b ^ c;
             base_[state] = init_b;
             set_next(trans, next_state);
@@ -169,7 +129,7 @@ public:
         } else if (used_trans_[base(state) ^ c]) { // Confrict
             auto transes = get_transes(state);
             transes.push_back(next_state);
-            auto new_b = find_base(transes);
+            auto new_b = _find_base(transes);
             auto old_b = base(state);
             used_state_[old_b] = false;
             used_state_[new_b] = true;
@@ -191,7 +151,45 @@ public:
         }
     }
     
-    id_type translate(id_type state, id_type n) {
+public:
+    explicit FactorOracleBaseCTAFOBuilder(std::string_view text) : check_(text.begin(), text.end()), base_(text.size() + 1, kEmptyValue) {
+        _build();
+    }
+    
+    template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
+              class CharTraits = std::char_traits<typename IterTraits::value_type>>
+    explicit FactorOracleBaseCTAFOBuilder(InputIter begin, InputIter end) : check_(begin, end), base_(end - begin + 1, kEmptyValue) {
+        _build();
+    }
+    
+    std::vector<id_type> get_transes(size_t state) const {
+        auto b = base(state);
+        if (b == kEmptyValue)
+            return {};
+        std::vector<id_type> transes;
+        for (size_t c = 1; c <= 0xff; c++) {
+            auto n = next(b ^ c);
+            if (used_trans_[b ^ c] and n > 0 and check(n) == c) {
+                transes.push_back(n);
+            }
+        }
+        return transes;
+    }
+    
+    void set_next(size_t index, id_type x) {
+        assert(not used_trans_[index]);
+        if (next(index) != kEmptyValue) {
+            if (empty_trans_front_ == index) {
+                empty_trans_front_ = next(index) == empty_trans_front_ ? 0 : next(index);
+            }
+            next_[prev_[index]] = next(index);
+            prev_[next(index)] = prev_[index];
+        }
+        used_trans_[index] = true;
+        next_[index] = x;
+    }
+    
+    id_type transition(id_type state, id_type n) {
         if (check(state + 1) == check(n)) {
             return state + 1;
         }
@@ -223,7 +221,6 @@ public:
     
     using Builder = FactorOracleBaseCTAFOBuilder<id_type>;
     
-    static constexpr size_t kBlockSize = 0x100;
     static constexpr id_type kEmptyValue = std::numeric_limits<id_type>::max();
     
 private:
@@ -232,13 +229,14 @@ private:
     std::vector<id_type> next_;
     
 public:
-    FactorOracleBaseCTAFO(Builder&& builder) : check_(std::move(builder.check_)), base_(std::move(builder.base_)), next_(std::move(builder.next_)) {}
+    explicit FactorOracleBaseCTAFO(Builder&& builder) : check_(std::move(builder.check_)), base_(std::move(builder.base_)), next_(std::move(builder.next_)) {}
     
-    FactorOracleBaseCTAFO(std::string_view text) : FactorOracleBaseCTAFO(Builder(text)) {}
+    template <class InputIter>
+    explicit FactorOracleBaseCTAFO(InputIter begin, InputIter end) : FactorOracleBaseCTAFO(Builder(begin, end)) {
+        static_assert(std::is_convertible_v<typename std::iterator_traits<InputIter>::value_type, char>);
+    }
     
-    template <class InputIter, class IterTraits = std::iterator_traits<InputIter>,
-              class CharTraits = std::char_traits<typename IterTraits::value_type>>
-    FactorOracleBaseCTAFO(InputIter begin, InputIter end) : FactorOracleBaseCTAFO(Builder(begin, end)) {}
+    explicit FactorOracleBaseCTAFO(std::string_view text) : FactorOracleBaseCTAFO(text.begin(), text.end()) {}
     
     uint8_t check(size_t index) const {return index == 0 ? '\0' : check_[index - 1];}
     
@@ -301,7 +299,7 @@ public:
     
     bool accept(Exproler& exp) const {
         size_t state = 0;
-        for (;exp.pos_ < exp.size(); exp.pos_++) {
+        for (; exp.pos_ < exp.size(); exp.pos_++) {
             if (not image(state, exp.c()))
                 return false;
         }

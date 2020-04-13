@@ -14,7 +14,7 @@ set(SiDS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB HEADERS ${SiDS_INCLUDE_DIR}/sim_ds.hpp ${SiDS_INCLUDE_DIR}/sim_ds/*.hpp)
 
-# Build Public Library
+# _build Public Library
 add_library(sim_ds INTERFACE)
 target_include_directories(sim_ds INTERFACE ${SiDS_INCLUDE_DIR})
 

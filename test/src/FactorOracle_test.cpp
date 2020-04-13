@@ -31,7 +31,7 @@ TEST(FactorOracleTest, full_exploration_small) {
 
 TEST(FactorOracleTest, full_exploration_large) {
     std::string text;
-    const size_t SIZE = 0xFFFF;
+    const size_t SIZE = 0x1000;
     const std::string alphabets = "abcd";
     for (size_t i = 0; i < SIZE; i++) {
         text.push_back(alphabets[rand() % 4]);
