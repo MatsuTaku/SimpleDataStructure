@@ -292,7 +292,7 @@ _SamcImpl<CodeType>::y_check_(const std::vector<size_t>& indices, const BitVecto
   };
   assert(position_type(empties.size()) + indices.front() - indices.back() >= 0);
   auto field_size = (empties.size() + indices.front() - indices.back())/kMaskWidth+1;
-  position_type heads = indices.front();
+  position_type heads = *min_element(indices.begin(), indices.end());
   for (size_t i = 0; i < field_size; i++) {
     mask_type candidates = -1ull;
     for (auto id : indices) {
