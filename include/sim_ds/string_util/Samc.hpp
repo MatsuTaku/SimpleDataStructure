@@ -174,7 +174,8 @@ _SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
       std::cerr << c << ':' << uint8_t(c) << ", indices: " << indices.size() << std::endl;
 #endif
       auto& nodes = node_table[c];
-      auto indices_height = 1 + *max_element(indices.begin(), indices.end()) - *min_element(indices.begin(), indices.end());
+      auto minmaxelms = std::minmax_element(indices.begin(), indices.end());
+      auto indices_height = 1 + *minmaxelms.second - *minmaxelms.first;
       if (empty_bv.size() < max_height + indices_height)
         empty_bv.resize(max_height + indices_height, true);
       auto y_front = y_check_(indices, empty_bv);
