@@ -29,7 +29,7 @@ TEST(SamcTest, Sample) {
 
 TEST(SamcTest, SampleLookup) {
     SamcDict<uint32_t> samc(sample.begin(), sample.end());
-    
+
     std::set<size_t> ids;
     for (size_t i = 0; i < sample.size(); i++) {
         ids.insert(samc.lookup(sample[i]));
@@ -39,7 +39,7 @@ TEST(SamcTest, SampleLookup) {
 
 TEST(SamcTest, SampleAccess) {
     SamcDict<uint32_t> samc(sample.begin(), sample.end());
-    
+
     std::vector<std::string> gets;
     for (size_t i = 0; i < sample.size(); i++) {
         gets.push_back(samc.access(i));
@@ -49,3 +49,22 @@ TEST(SamcTest, SampleAccess) {
         EXPECT_EQ(gets[i], sample[i]);
     }
 }
+
+//TEST(SamcTest, corpus) {
+//    std::vector<std::string> corpus;
+//    std::ifstream ifs("../../corpus/Japan_Postal_Code_sorted.txt");
+//    if (!ifs) {
+//        std::cerr<<"file not found" << std::endl;
+//        exit(1);
+//    }
+//    std::string s;
+//    for (std::string s; std::getline(ifs, s); ) {
+//        if (s.empty()) continue;
+//        corpus.push_back(s);
+//        std::cerr<<s<<std::endl;
+//    }
+//    Samc<uint32_t> samc(corpus.begin(), corpus.end());
+//    for (auto& s : corpus) {
+//        EXPECT_TRUE(samc.accept(s));
+//    }
+//}

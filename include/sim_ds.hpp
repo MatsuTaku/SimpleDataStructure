@@ -21,6 +21,7 @@
 #include "sim_ds/string_util/graph_util.hpp"
 #include "sim_ds/string_util/Samc.hpp"
 #include "sim_ds/EmptyLinkedVector.hpp"
+#include "sim_ds/InitializableArray.hpp"
 #include "sim_ds/bit_util.hpp"
 #include "sim_ds/bit_util256.hpp"
 
