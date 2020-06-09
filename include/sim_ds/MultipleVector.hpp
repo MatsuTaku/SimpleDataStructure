@@ -194,6 +194,14 @@ public:
 protected:
     table_type element_table_;
     std::vector<storage_type> bytes_ = {};
+
+    Element element_(size_t index) const {
+      return element_table_[index];
+    }
+
+    uint8_t byte_(size_t index) const {
+      return bytes_[index];
+    }
     
     size_t offset_(size_t index) const {
         return index * block_size();
