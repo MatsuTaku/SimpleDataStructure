@@ -64,7 +64,7 @@ public:
 
 // MARK: - Samc
 
-template <typename CodeType>
+template <typename CodeType, bool LegacyBuild=false>
 class _SamcImpl {
 public:
     using code_type = CodeType;
@@ -116,7 +116,9 @@ protected:
 
     template <typename T, typename S>
     [[deprecated]]
-    explicit _SamcImpl(const graph_util::Trie<T, S>& trie);
+    explicit _SamcImpl(const graph_util::Trie<T, S>& trie) {
+      throw std::logic_error("Cannot use deprecated constructor.");
+    }
 
 private:
     using mask_type = uint64_t;
@@ -130,9 +132,9 @@ private:
 
 };
 
-template <typename CodeType>
+template <typename CodeType, bool LegacyBuild>
 template <typename Iter>
-_SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
+_SamcImpl<CodeType, LegacyBuild>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
   std::map<size_t, char> storage_map;
   std::queue<std::pair<size_t, string_array_explorer<Iter>>> node_queue;
   // set root
@@ -143,10 +145,10 @@ _SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
   for (size_t depth = 0; ; ++depth) {
     if (node_queue.empty())
       break;
-#ifndef NDEBUG
-    std::cerr << "depth: " << depth
-              << ", block_height: " << head_[depth+1]-head_[depth] << std::endl;
-#endif
+//#ifndef NDEBUG
+//    std::cerr << "depth: " << depth
+//              << ", block_height: " << head_[depth+1]-head_[depth] << std::endl;
+//#endif
     std::array<std::vector<size_t>, kAlphabetSize> indices_table;
     std::array<std::vector<string_array_explorer<Iter>>, kAlphabetSize> node_table;
     while (not node_queue.empty()) {
@@ -163,22 +165,22 @@ _SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
     BitVector empty_bv;
     size_t max_height = 0;
     code_table_.emplace_back();
-#ifndef NDEBUG
-    std::cerr << "ycheck for each char..." << std::endl;;
-#endif
+//#ifndef NDEBUG
+//    std::cerr << "ycheck for each char..." << std::endl;;
+//#endif
     for (size_t c = 0; c < kAlphabetSize; c++) {
       auto& indices = indices_table[c];
       if (indices.empty())
         continue;
-#ifndef NDEBUG
-      std::cerr << c << ':' << uint8_t(c) << ", indices: " << indices.size() << std::endl;
-#endif
+//#ifndef NDEBUG
+//      std::cerr << c << ':' << uint8_t(c) << ", indices: " << indices.size() << std::endl;
+//#endif
       auto& nodes = node_table[c];
       auto minmaxelms = std::minmax_element(indices.begin(), indices.end());
       auto indices_height = 1 + *minmaxelms.second - *minmaxelms.first;
       if (empty_bv.size() < max_height + indices_height)
         empty_bv.resize(max_height + indices_height, true);
-      auto y_front = y_check_(indices, empty_bv);
+      auto y_front = !LegacyBuild ? y_check_(indices, empty_bv) : y_check_legacy_(indices, empty_bv);
       const size_t prev_height = head_[depth+1]-head_[depth];
       auto code = prev_height + y_front;
       code_table_[depth][c] = code;
@@ -198,12 +200,12 @@ _SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
       }
     }
     head_.push_back(head_[depth+1] + max_height);
-#ifndef NDEBUG
-    size_t used = 0;
-    for (auto b:empty_bv) if (!b) used++;
-    double per_used = double(used) / empty_bv.size() * 100;
-    std::cerr << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
-#endif
+//#ifndef NDEBUG
+//    size_t used = 0;
+//    for (auto b:empty_bv) if (!b) used++;
+//    double per_used = double(used) / empty_bv.size() * 100;
+//    std::cerr << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
+//#endif
   }
 
   // Store character to storage_
@@ -213,80 +215,9 @@ _SamcImpl<CodeType>::_SamcImpl(const string_array_explorer<Iter>& explorer) {
 
 }
 
-template <typename CodeType>
-template <typename T, typename S>
-_SamcImpl<CodeType>::_SamcImpl(const graph_util::Trie<T, S>& trie) {
-  std::vector<size_t> node_indexes = {graph_util::kRootIndex};
-  storage_.emplace_back('^'); // root
-  head_.emplace_back(0);
-  position_type max_index = 0;
-  while (max_index >= 0) {
-#ifndef NDEBUG
-    std::cerr << "depth: " << head_.size()
-              << ", block_height: " << max_index << std::endl;
-#endif
-    std::array<std::vector<size_t>, kAlphabetSize> indices_list;
-    size_t height = max_index + 1;
-    for (size_t i = 0; i < height; i++) {
-      auto index = storage_.size() - height + i;
-      if (storage_[index] == kEmptyChar)
-        continue;
-      trie.node(node_indexes[index]).for_each_edge([&](uint8_t c, auto) {
-          indices_list[c].push_back(i);
-      });
-    }
-#ifndef NDEBUG
-    std::cerr << "ycheck for each char..." << std::endl;;
-#endif
-    BitVector empties;
-    auto old_size = storage_.size();
-    max_index = -1;
-    code_table_.emplace_back();
-    for (size_t i = 0; i < kAlphabetSize; i++) {
-      auto& indices = indices_list[i];
-      if (indices.empty()) {
-        code_table_.back()[i] = 0;
-        continue;
-      }
-#ifndef NDEBUG
-      std::cerr << i << ':' << uint8_t(i) << ", indices: " << indices.size() << std::endl;
-#endif
-      empties.resize(max_index + 1 + height, true);
-      auto y_front = y_check_(indices, empties);
-      max_index = std::max(max_index, y_front + position_type(indices.back()));
-      assert(height + y_front <= std::numeric_limits<code_type>::max());
-      code_table_.back()[i] = height + y_front;
-      storage_.resize(old_size + max_index + 1, kEmptyChar);
-      node_indexes.resize(old_size + max_index + 1);
-      for (auto id : indices) {
-        auto index = y_front + id;
-        auto abs_index = old_size + index;
-        assert(storage_[abs_index] == kEmptyChar and
-               empties[index]);
-        storage_[abs_index] = i;
-        empties[index] = false;
-        auto parent_index = abs_index - (height + y_front);
-        auto parent_node = trie.node(node_indexes[parent_index]);
-        node_indexes[abs_index] = parent_node.target(i);
-      }
-    }
-    if (max_index == -1) {
-      code_table_.erase(code_table_.end()-1);
-      break;
-    }
-    head_.push_back(storage_.size() - 1);
-#ifndef NDEBUG
-    size_t used = 0;
-    for (bool b:empties) if (!b) used++;
-    double per_used = double(used) / empties.size() * 100;
-    std::cerr << "used: " << std::fixed << std::setprecision(2) << " %" << per_used << std::endl << std::endl;
-#endif
-  }
-}
-
-template <typename CodeType>
-typename _SamcImpl<CodeType>::position_type
-_SamcImpl<CodeType>::y_check_(const std::vector<size_t>& indices, const BitVector& empties) const {
+template <typename CodeType, bool LegacyBuild>
+typename _SamcImpl<CodeType, LegacyBuild>::position_type
+_SamcImpl<CodeType, LegacyBuild>::y_check_(const std::vector<size_t>& indices, const BitVector& empties) const {
   const auto word_size = (empties.size()-1)/kMaskWidth+1;
   auto field_bits = [&](size_t i) {
       return i < word_size ? empties.data()[i] : 0;
@@ -310,77 +241,28 @@ _SamcImpl<CodeType>::y_check_(const std::vector<size_t>& indices, const BitVecto
     if (candidates)
       return position_type(kMaskWidth) * i + bit_util::ctz(candidates) - heads;
   }
-  return empties.size() + indices.front() - indices.back(); // ERROR
+  return (position_type)empties.size() + indices.front() - indices.back(); // ERROR
 }
 
-template <typename CodeType>
-typename _SamcImpl<CodeType>::position_type
-_SamcImpl<CodeType>::y_check_legacy_(const std::vector<size_t>& indices, const BitVector& empties) const {
-  std::vector<mask_type> indice_mask(indices.back()/kMaskWidth+1, 0);
-  for (auto id : indices) {
-    indice_mask[id/kMaskWidth] |= 1ull << (id%kMaskWidth);
-  }
-  auto field_bits_at = [&](long long index) -> mask_type {
-      return index < (empties.size()-1)/kMaskWidth+1 ? ~empties.data()[index] : 0;
-  };
-
-  SuccinctBitVector<true> sbv(empties);
-  auto num_empties = [&](size_t begin, size_t end) {
-      return sbv.rank(end) - sbv.rank(begin);
-  };
-
-  auto idfront = indices.front();
-  auto idback = indices.back();
-  auto check = [&](position_type offset) -> size_t {
-      assert(offset + idback < empties.size());
-
-      auto index_front = offset + idfront;
-      auto index_end = offset + idback+1;
-      auto n_empties = num_empties(index_front, index_end);
-      if (index_end - index_front == n_empties) // All of values are corresponding to expanded area.
-        return 0;
-      if (n_empties < indices.size()) { // There are not enough number of empty areas.
-        return indices.size() - n_empties;
+template <typename CodeType, bool LegacyBuild>
+typename _SamcImpl<CodeType, LegacyBuild>::position_type
+_SamcImpl<CodeType, LegacyBuild>::y_check_legacy_(const std::vector<size_t>& indices, const BitVector& empties) const {
+  for (position_type front = -(position_type)*std::min_element(indices.begin(), indices.end()); ; ++front) {
+    bool found = true;
+    for (auto id:indices) {
+      if (!empties[front + id]) {
+        found = false;
+        continue;
       }
-
-      for (auto id : indices) {
-        if (not empties[offset + id]) {
-          const mask_type mask = indice_mask[id/kMaskWidth];
-          mask_type field = 0;
-          const position_type p = offset + kMaskWidth*(id/kMaskWidth);
-          const auto insets = offset & (kMaskWidth-1);
-          if (p < 0) {
-            field = field_bits_at(0) << (kMaskWidth-insets);
-          } else {
-            const auto pi = p/kMaskWidth;
-            if (insets == 0)
-              field = field_bits_at(pi);
-            else
-              field = (field_bits_at(pi) >> insets) | (field_bits_at(pi+1) << (kMaskWidth-insets));
-          }
-          size_t shifts = 0;
-          mask_type conflicts = mask & field;
-          while ((shifts += shifts_of_conflicts_(field, mask << shifts, conflicts)) < kMaskWidth and
-                 (conflicts = (mask << shifts) & field)) continue;
-          return shifts;
-        }
-      }
-
-      return 0;
-  };
-
-  const position_type gap = - position_type(idfront);
-  position_type empty_front = sbv.select(0);
-  size_t shifts;
-  while ((shifts = check(gap + empty_front)) > 0) {
-    empty_front += shifts;
+    }
+    if (found)
+      return front;
   }
-  return gap + empty_front;
 }
 
-template <typename CodeType>
+template <typename CodeType, bool LegacyBuild>
 size_t
-_SamcImpl<CodeType>::shifts_of_conflicts_(mask_type fields, mask_type mask, mask_type conflicts) const {
+_SamcImpl<CodeType, LegacyBuild>::shifts_of_conflicts_(mask_type fields, mask_type mask, mask_type conflicts) const {
   assert((fields & mask) == conflicts);
   using bit_util::ctz, bit_util::clz;
   auto conflict_front = ctz(conflicts);
@@ -390,11 +272,11 @@ _SamcImpl<CodeType>::shifts_of_conflicts_(mask_type fields, mask_type mask, mask
 }
 
 
-template <typename CodeType>
-class Samc : _SamcImpl<CodeType> {
+template <typename CodeType, bool LegacyBuild=false>
+class Samc : _SamcImpl<CodeType, LegacyBuild> {
 public:
     using code_type = CodeType;
-    using _base = _SamcImpl<code_type>;
+    using _base = _SamcImpl<code_type, LegacyBuild>;
     template <typename T, typename S>
     using input_trie = graph_util::Trie<T, S>;
 
@@ -432,9 +314,9 @@ private:
 
 };
 
-template <typename CodeType>
+template <typename CodeType, bool LegacyBuild>
 bool
-Samc<CodeType>::accept(std::string_view key) const {
+Samc<CodeType, LegacyBuild>::accept(std::string_view key) const {
   size_t node = 0;
   size_t depth = 0;
   for (; depth < key.size(); depth++) {

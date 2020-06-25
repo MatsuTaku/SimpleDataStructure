@@ -21,7 +21,7 @@ const std::vector<std::string> sample = {
 }
 
 TEST(SamcTest, Sample) {
-    Samc<uint32_t> samc(sample.begin(), sample.end());
+    Samc<uint32_t, true> samc(sample.begin(), sample.end());
     for (auto& s : sample) {
         EXPECT_TRUE(samc.accept(s));
     }
