@@ -3,21 +3,7 @@
 xcode/
 build/
 
-
-### https://raw.github.com/github/gitignore/320a610b9ffba3ff28166370b6dd9f73096e34b7/CMake.gitignore
-
-*CMakeCache.txt
-*CMakeFiles
-*CMakeScripts
-*Testing
-*Makefile
-*cmake_install.cmake
-*install_manifest.txt
-*compile_commands.json
-*CTestTestfile.cmake
-
-
-### https://raw.github.com/github/gitignore/320a610b9ffba3ff28166370b6dd9f73096e34b7/C++.gitignore
+### https://raw.github.com/github/gitignore/218a941be92679ce67d0484547e3e142b2f5f6f0/C++.gitignore
 
 # Prerequisites
 *.d
@@ -52,3 +38,17 @@ build/
 *.out
 *.app
 
+
+### https://raw.github.com/github/gitignore/218a941be92679ce67d0484547e3e142b2f5f6f0/CMake.gitignore
+
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps

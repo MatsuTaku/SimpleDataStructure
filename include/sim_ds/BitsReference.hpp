@@ -51,9 +51,10 @@ public:
         }
         return *this;
     }
-    
+
     BitsReference& operator=(const BitsReference& x) {
-        return static_cast<value_type>(x);
+        this->operator=(x.operator value_type());
+        return *this;
     }
     
     BitsIterator<Sequence, false> operator&() const {
