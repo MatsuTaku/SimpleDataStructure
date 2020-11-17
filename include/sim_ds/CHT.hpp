@@ -39,6 +39,7 @@ private:
     bool IsOccupied(size_t i) const { return arr_[i] & kOccupiedMask; }
     bool IsContinuation(size_t i) const { return arr_[i] & kContinuationMask; }
     bool IsShifted(size_t i) const { return arr_[i] & kShiftedMask; }
+    bool IsNull(size_t i) const { return (arr_[i] % (1ull<<kFlagBits)) == 0; }
 
     uint64_t Quotient(size_t i) const { return (arr_[i] & quo_mask_) >> kFlagBits; }
 
@@ -93,7 +94,7 @@ public:
         return {false, 0};
     }
 
-    bool needs_expand() const {
+    bool IsFilled() const {
         return used_ == max_size_;
     }
 
@@ -101,8 +102,8 @@ public:
         assert(64-bit_util::clz(key) <= key_bits_);
         assert(64-bit_util::clz(value) <= ValueBits);
 
-        if (needs_expand()) {
-            expand();
+        if (IsFilled()) {
+            reserve(size()*2);
         }
 
         uint64_t initial_h = hasher_.hash(key);
@@ -118,11 +119,11 @@ public:
                 i = succ(i);
             } while (IsContinuation(i));
         }
-        if (arr_[i] % (1u<<kFlagBits) != 0) {
+        if (!IsNull(i)) {
             auto j = i;
             do {
                 j = succ(j);
-            } while (arr_[j] % (1u<<kFlagBits) != 0);
+            } while (!IsNull(j));
             do {
                 auto pj = pred(j);
                 arr_[j] = (
@@ -183,13 +184,19 @@ public:
         std::cout<<"cnt shifted: "<<cnt<<std::endl;
     }
 
-    void expand() {
-        auto need_size = size_*2*(100-1)/MaxLoadFactorPercent+1;
+    void reserve(size_t _size) {
+        if (_size <= size())
+            return;
+        auto need_size = _size * (100-1)/MaxLoadFactorPercent+1;
         auto new_bucket_bits = 64-bit_util::clz(need_size-1);
-        expand(1ull<<new_bucket_bits);
+        _resize(1ull << new_bucket_bits);
     }
+    
+    size_t size() const {return size_;}
+    size_t bucket() const {return bucket_size_;}
 
-    void expand(size_t new_bucket_size) {
+private:
+    void _resize(size_t new_bucket_size) {
         CHT next(key_bits_, new_bucket_size);
         size_t i = 0;
         size_t cnt = 0;
@@ -217,9 +224,6 @@ public:
         }
         *this = next;
     }
-    
-    size_t size() const {return size_;}
-    size_t bucket() const {return bucket_size_;}
 
 };
 
