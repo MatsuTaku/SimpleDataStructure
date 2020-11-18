@@ -92,6 +92,8 @@ public:
     }
 
     void shrink_to_fit() {
+        if (size() == cap_)
+            return;
         _allocate(size());
     }
 
