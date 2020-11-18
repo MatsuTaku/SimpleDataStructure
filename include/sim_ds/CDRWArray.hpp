@@ -14,7 +14,7 @@ private:
     std::array<CHT<0>, 64> sat_table_{};
 
 public:
-    explicit CDRWArray(size_t size) : size_(size) {
+    explicit CDRWArray(size_t size=0) : size_(size) {
         if (size == 0) return;
         auto size_bits = 64-bit_util::clz((uint64_t)size-1);
         widthes_ = FitVector(7, size);
@@ -53,6 +53,79 @@ public:
     }
 
     size_t size() const { return size_; }
+
+};
+
+
+class CDRWVector {
+private:
+    size_t size_=0;
+    size_t cap_=0;
+    CDRWArray arr_;
+
+public:
+    explicit CDRWVector(size_t size=0) : size_(size), cap_(size), arr_(size) {}
+
+    size_t size() const { return size_; }
+
+    size_t capacity() const { return cap_; }
+
+    uint64_t get(size_t i) const {
+        return arr_.get(i);
+    }
+
+    void set(size_t i, uint64_t value) {
+        arr_.set(i, value);
+    }
+
+    void resize(size_t new_size) {
+        if (new_size > cap_) {
+            _allocate(std::max(new_size, cap_*2));
+        }
+        size_ = new_size;
+    }
+
+    void reserve(size_t reserved_size) {
+        if (reserved_size <= cap_)
+            return;
+        _allocate(std::max(reserved_size, cap_*2));
+    }
+
+    void shrink_to_fit() {
+        _allocate(size());
+    }
+
+    void push_back(uint64_t value) {
+        if (size() == cap_)
+            _allocate(size()*2);
+        size_++;
+        set(size()-1, value);
+    }
+
+    void pop_back() {
+        if (size() == 0)
+            return;
+        if (size()*3 < cap_)
+            _allocate(size()*2);
+        size_--;
+    }
+
+    void clear() {
+        size_ = 0;
+    }
+
+    bool empty() const { return size() == 0; }
+
+private:
+    void _allocate(size_t new_cap) {
+        assert(new_cap >= size());
+        assert(bit_util::popcnt(new_cap) == 1);
+        CDRWArray next(new_cap);
+        for (size_t i = 0; i < size(); i++)
+            next.set(i, get(i));
+        arr_ = next;
+        cap_ = new_cap;
+    }
 
 };
 
