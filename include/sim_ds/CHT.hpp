@@ -17,10 +17,11 @@ class CHT {
     static_assert(MaxLoadFactorPercent < 100);
 public:
     static constexpr size_t kDefaultBucketSize = 8;
-    static constexpr unsigned kFlagBits = 3;
+    static constexpr unsigned kFlagBits = 4;
     static constexpr uint64_t kOccupiedMask = 1u << 0;
     static constexpr uint64_t kContinuationMask = 1u << 1;
     static constexpr uint64_t kShiftedMask = 1u << 2;
+    static constexpr uint64_t kDeletedMask = 1u << 3;
 
 private:
     unsigned key_bits_;
@@ -39,24 +40,32 @@ private:
     bool IsOccupied(size_t i) const { return arr_[i] & kOccupiedMask; }
     bool IsContinuation(size_t i) const { return arr_[i] & kContinuationMask; }
     bool IsShifted(size_t i) const { return arr_[i] & kShiftedMask; }
+    bool IsDeleted(size_t i) const { return arr_[i] & kDeletedMask; }
     bool IsNull(size_t i) const { return (arr_[i] % (1ull<<kFlagBits)) == 0; }
 
     uint64_t Quotient(size_t i) const { return (arr_[i] & quo_mask_) >> kFlagBits; }
 
 public:
-    CHT(unsigned key_bits, size_t bucket_size = kDefaultBucketSize) :
+    CHT() = default;
+    explicit CHT(unsigned key_bits, size_t bucket_size = kDefaultBucketSize) :
         key_bits_(key_bits),
         bucket_size_(bucket_size),
-        bucket_bits_(bit_util::ctz(bucket_size)),
+        bucket_bits_(bit_util::ctz((uint64_t)bucket_size)),
         bucket_mask_((1ull<<bucket_bits_)-1),
         max_size_(bucket_size*MaxLoadFactorPercent/100),
-        min_size_(bucket_size*(MaxLoadFactorPercent-1)/(MaxLoadFactorPercent+100)+1),
+        min_size_(bucket_size*(MaxLoadFactorPercent-1)/400+1),
         values_(ValueBits, bucket_size_),
         hasher_(key_bits_) {
         assert(bit_util::popcnt(bucket_size) == 1);
         unsigned quo_bits = std::max(0, (int)key_bits - (int)bucket_bits_);
         arr_ = FitVector(quo_bits + kFlagBits, bucket_size_);
         quo_mask_ = ((1ull << quo_bits)-1) << kFlagBits;
+    }
+
+    void set_value_width(unsigned width) {
+        if (ValueBits != 0 or size() != 0)
+            throw std::bad_function_call();
+        values_ = FitVector(width, bucket());
     }
 
     size_t ToClusterHead(size_t i) const {
@@ -99,8 +108,8 @@ public:
     }
 
     void set(size_t key, uint64_t value) {
-        assert(64-bit_util::clz(key) <= key_bits_);
-        assert(64-bit_util::clz(value) <= ValueBits);
+        assert(64-bit_util::clz((uint64_t)key) <= key_bits_);
+        assert(64-bit_util::clz(value) <= values_.unit_width());
 
         if (IsFilled()) {
             reserve(size()*2);
@@ -113,6 +122,10 @@ public:
         if (IsOccupied(initial_i)) {
             do {
                 if (Quotient(i) == quo) {
+                    if (IsDeleted(i)) {
+                        arr_[i] = arr_[i] & ~kDeletedMask;
+                        size_++;
+                    }
                     values_[i] = value;
                     return;
                 }
@@ -127,7 +140,7 @@ public:
             do {
                 auto pj = pred(j);
                 arr_[j] = (
-                    (arr_[j] & kOccupiedMask) |
+                    (arr_[j] & (kOccupiedMask|kDeletedMask)) |
                     (arr_[pj] & (quo_mask_|kContinuationMask)) |
                     kShiftedMask
                 );
@@ -154,6 +167,29 @@ public:
         ++size_;
         ++used_;
         values_[i] = value;
+    }
+
+    void erase(uint64_t key) {
+        if (size() == min_size_) {
+            reserve(size()*2);
+        }
+
+        auto initial_h = hasher_.hash(key);
+        auto quo = initial_h / bucket_bits_;
+        auto initial_i = initial_h & bucket_mask_;
+        if (!IsOccupied(initial_i))
+            return;
+        auto i = ToClusterHead(initial_i);
+        do {
+            if (Quotient(i) == quo) {
+                if (!IsDeleted(i)) {
+                    arr_[i] = arr_[i] | kDeletedMask;
+                    size_--;
+                }
+                return;
+            }
+            i = succ(i);
+        } while (IsContinuation(i));
     }
 
     size_t succ(size_t i) const {
@@ -188,7 +224,7 @@ public:
         if (_size <= size())
             return;
         auto need_size = _size * (100-1)/MaxLoadFactorPercent+1;
-        auto new_bucket_bits = 64-bit_util::clz(need_size-1);
+        auto new_bucket_bits = 64-bit_util::clz((uint64_t)need_size-1);
         _resize(1ull << new_bucket_bits);
     }
     
@@ -198,9 +234,11 @@ public:
 private:
     void _resize(size_t new_bucket_size) {
         CHT next(key_bits_, new_bucket_size);
+        if (ValueBits == 0)
+            next.set_value_width(values_.unit_width());
         size_t i = 0;
         size_t cnt = 0;
-        while (cnt < size()) {
+        while (cnt < used_) {
             while (!(IsOccupied(i) and !IsShifted(i))) {
                 i = succ(i);
             }
@@ -215,9 +253,11 @@ private:
                     f = qs.front();
                     qs.pop();
                 }
-                uint64_t x = (Quotient(i) << bucket_bits_) | f;
-                x = hasher_.ihash(x);
-                next.set(x, values_[i]);
+                if (!IsDeleted(i)) {
+                    uint64_t x = (Quotient(i) << bucket_bits_) | f;
+                    x = hasher_.ihash(x);
+                    next.set(x, values_[i]);
+                }
                 cnt++;
                 i = succ(i);
             } while (IsShifted(i));

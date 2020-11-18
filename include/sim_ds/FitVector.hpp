@@ -121,9 +121,11 @@ public:
     size_t size() const {return size_;}
     
     bool empty() const {return size() == 0;}
+
+    size_t unit_width() const { return bits_per_element_; }
     
     void resize(size_t size) {
-        storage_.resize(size == 0 ? 0 : ((size * bits_per_element_ - 1) / kBitsPerWord) + 1);
+        storage_.resize(size == 0 or bits_per_element_ == 0 ? 0 : ((size * bits_per_element_ - 1) / kBitsPerWord) + 1);
         size_ = size;
     }
     

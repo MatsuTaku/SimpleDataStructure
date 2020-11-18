@@ -10,7 +10,7 @@ private:
     unsigned shifts_;
 
 public:
-    explicit Xorshift(unsigned width) : shifts_((width+1)/2) {}
+    explicit Xorshift(unsigned width=64) : shifts_((width+1)/2) {}
 
     template<unsigned K>
     uint64_t hash(uint64_t x) const {
@@ -96,7 +96,7 @@ private:
     unsigned width_;
     uint64_t mask_;
 public:
-    explicit MultiplyHash(unsigned width) :
+    explicit MultiplyHash(unsigned width=64) :
         width_(width),
         mask_(width < 64 ? (1ull<<width)-1 : ~0ll) {}
 
@@ -119,7 +119,7 @@ private:
     MultiplyHash multiply_hash_;
 
 public:
-    explicit SplitMixHash(unsigned width) :
+    explicit SplitMixHash(unsigned width=64) :
         xorshift_(width), multiply_hash_(width) {}
 
     uint64_t hash(uint64_t x) const {
