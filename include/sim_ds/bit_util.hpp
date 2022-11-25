@@ -190,7 +190,7 @@ inline uint64_t bextr(uint64_t x, size_t start, size_t len) {
 
 // MARK: - ctz/clz
 
-inline int ctz(uint32_t x) {
+inline int ctz32(uint32_t x) {
 #ifdef __BMI__
     return _tzcnt_u32(x);
 #elif defined(__POPCNT__)
@@ -223,7 +223,7 @@ inline int ctz(uint32_t x) {
 #endif
 }
 
-inline int ctz(uint64_t x) {
+inline int ctz64(uint64_t x) {
 #ifdef __BMI__
     return _tzcnt_u64(x);
 #elif defined(__POPCNT__)
@@ -258,6 +258,16 @@ inline int ctz(uint64_t x) {
 	}
 	return c ^ 63;
 #endif
+}
+
+template<typename Word>
+inline Word ctz(Word x) {
+  if constexpr (sizeof(Word) <= 4)
+    return ctz32(x);
+  else if constexpr (sizeof(Word) <= 8)
+    return ctz64(x);
+  else
+    return 0;
 }
 
 inline int clz(uint32_t x) {
